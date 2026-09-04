@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { WizardClient } from "@/components/choose/wizard-client";
+import { generateCsrfToken } from "@/lib/csrf-actions";
 import { ArrowLeft } from "lucide-react";
 
 export const metadata = {
@@ -8,6 +9,8 @@ export const metadata = {
 };
 
 export default function ChoosePage() {
+  const csrfToken = generateCsrfToken();
+
   return (
     <div className="min-h-screen bg-white">
       <div className="container mx-auto px-4 py-8">
@@ -23,7 +26,7 @@ export default function ChoosePage() {
           </p>
         </div>
 
-        <WizardClient />
+        <WizardClient csrfToken={csrfToken} />
       </div>
     </div>
   );

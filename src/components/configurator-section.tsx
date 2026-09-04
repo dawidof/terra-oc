@@ -34,6 +34,11 @@ interface ConfiguratorSectionProps {
   trimName: string;
   sourceCountry: string | null;
   condition: string;
+  csrfToken: string;
+  logisticsCost: number | null;
+  customsCost: number | null;
+  serviceFee: number | null;
+  deliveryDays: number | null;
 }
 
 export function ConfiguratorSection({
@@ -46,6 +51,11 @@ export function ConfiguratorSection({
   trimName,
   sourceCountry,
   condition,
+  csrfToken,
+  logisticsCost,
+  customsCost,
+  serviceFee,
+  deliveryDays,
 }: ConfiguratorSectionProps) {
   const [showLeadForm, setShowLeadForm] = useState(false);
   const [configuration, setConfiguration] = useState<{
@@ -89,6 +99,11 @@ export function ConfiguratorSection({
               sourceCountry={sourceCountry || "Китай"}
               condition={condition}
               sourcePrice={basePrice}
+              csrfToken={csrfToken}
+              logisticsCost={logisticsCost}
+              customsCost={customsCost}
+              serviceFee={serviceFee}
+              deliveryDays={deliveryDays}
             />
           ) : (
             <Card>

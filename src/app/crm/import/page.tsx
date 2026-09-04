@@ -3,18 +3,24 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Database, RefreshCw, FileText, AlertCircle } from "lucide-react";
+import { Database, RefreshCw, FileText, AlertCircle, Play, CheckCircle, Loader2 } from "lucide-react";
 
 interface ImportStats {
   brands: number;
   models: number;
   trims: number;
   offers: number;
+  urlCount: number;
+  rawCount: number;
 }
+
+type StepStatus = "idle" | "running" | "done" | "error";
 
 export default function ImportPage() {
   const [stats, setStats] = useState<ImportStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [stepStatuses, setStepStatuses] = useState<Record<string, StepStatus>>({});
+  const [stepOutputs, setStepOutputs] = useState<Record<string, string>>({});
 
   async function fetchStats() {
     setLoading(true);
@@ -34,6 +40,54 @@ export default function ImportPage() {
   useEffect(() => {
     fetchStats();
   }, []);
+
+  async function runAction(action: string) {
+    setStepStatuses((prev) => ({ ...prev, [action]: "running" }));
+    setStepOutputs((prev) => ({ ...prev, [action]: "" }));
+
+    try {
+      const res = await fetch("/api/admin/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setStepStatuses((prev) => ({ ...prev, [action]: "done" }));
+        setStepOutputs((prev) => ({
+          ...prev,
+          [action]: data.output || JSON.stringify(data, null, 2),
+        }));
+        if (action === "persist" || action === "scrape") {
+          fetchStats();
+        }
+      } else {
+        setStepStatuses((prev) => ({ ...prev, [action]: "error" }));
+        setStepOutputs((prev) => ({ ...prev, [action]: data.error || "Unknown error" }));
+      }
+    } catch (err) {
+      setStepStatuses((prev) => ({ ...prev, [action]: "error" }));
+      setStepOutputs((prev) => ({
+        ...prev,
+        [action]: err instanceof Error ? err.message : "Network error",
+      }));
+    }
+  }
+
+  function getStepIcon(status: StepStatus) {
+    switch (status) {
+      case "running":
+        return <Loader2 className="h-4 w-4 animate-spin text-blue-600" />;
+      case "done":
+        return <CheckCircle className="h-4 w-4 text-emerald-600" />;
+      case "error":
+        return <AlertCircle className="h-4 w-4 text-red-600" />;
+      default:
+        return <Play className="h-4 w-4" />;
+    }
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -84,6 +138,14 @@ export default function ImportPage() {
         </Card>
       </div>
 
+      {/* Data Summary */}
+      {stats && (
+        <div className="mb-6 flex items-center gap-4 text-sm text-muted-foreground">
+          <span>URL в файле: <strong>{stats.urlCount}</strong></span>
+          <span>Спарсено: <strong>{stats.rawCount}</strong></span>
+        </div>
+      )}
+
       {/* Import Actions */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <Card>
@@ -103,9 +165,9 @@ export default function ImportPage() {
               <p>https://gonzo-motors.uz/car/zeekr-7x</p>
               <p>https://gonzo-motors.uz/car/byd-seal</p>
             </div>
-            <Button variant="outline" className="w-full" disabled>
-              Открыть файл urls.txt
-            </Button>
+            <div className="rounded-lg bg-blue-50 p-3 text-xs text-blue-700">
+              {stats?.urlCount ? `${stats.urlCount} URL(ов) найдено` : "Файл пуст или не найден"}
+            </div>
           </CardContent>
         </Card>
 
@@ -121,12 +183,26 @@ export default function ImportPage() {
               Извлекает данные со страниц и сохраняет в{" "}
               <code className="rounded bg-gray-100 px-1 py-0.5">data/raw/</code>
             </p>
-            <div className="rounded-lg bg-gray-900 p-3 font-mono text-xs text-green-400">
-              <p>$ pnpm import:scrape</p>
-            </div>
-            <Button variant="outline" className="w-full" disabled>
-              Запустить скрапинг
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => runAction("scrape")}
+              disabled={stepStatuses.scrape === "running"}
+            >
+              {getStepIcon(stepStatuses.scrape || "idle")}
+              <span className="ml-2">
+                {stepStatuses.scrape === "running"
+                  ? "Выполняется..."
+                  : stepStatuses.scrape === "done"
+                    ? "Повторить скрапинг"
+                    : "Запустить скрапинг"}
+              </span>
             </Button>
+            {stepOutputs.scrape && (
+              <pre className="max-h-40 overflow-auto rounded-lg bg-gray-900 p-3 font-mono text-xs text-green-400">
+                {stepOutputs.scrape}
+              </pre>
+            )}
           </CardContent>
         </Card>
 
@@ -141,12 +217,26 @@ export default function ImportPage() {
             <p className="text-sm text-muted-foreground">
               Проверяет данные на ошибки и неполные поля перед импортом
             </p>
-            <div className="rounded-lg bg-gray-900 p-3 font-mono text-xs text-green-400">
-              <p># Автоматически при импорте</p>
-            </div>
-            <Button variant="outline" className="w-full" disabled>
-              Проверить данные
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => runAction("validate")}
+              disabled={stepStatuses.validate === "running"}
+            >
+              {getStepIcon(stepStatuses.validate || "idle")}
+              <span className="ml-2">
+                {stepStatuses.validate === "running"
+                  ? "Проверяется..."
+                  : stepStatuses.validate === "done"
+                    ? "Проверить снова"
+                    : "Проверить данные"}
+              </span>
             </Button>
+            {stepOutputs.validate && (
+              <pre className="max-h-40 overflow-auto rounded-lg bg-gray-900 p-3 font-mono text-xs text-green-400">
+                {stepOutputs.validate}
+              </pre>
+            )}
           </CardContent>
         </Card>
 
@@ -161,12 +251,26 @@ export default function ImportPage() {
             <p className="text-sm text-muted-foreground">
               Импортирует нормализованные данные в базу данных
             </p>
-            <div className="rounded-lg bg-gray-900 p-3 font-mono text-xs text-green-400">
-              <p>$ pnpm import:persist</p>
-            </div>
-            <Button variant="outline" className="w-full" disabled>
-              Импортировать в БД
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => runAction("persist")}
+              disabled={stepStatuses.persist === "running"}
+            >
+              {getStepIcon(stepStatuses.persist || "idle")}
+              <span className="ml-2">
+                {stepStatuses.persist === "running"
+                  ? "Импортируется..."
+                  : stepStatuses.persist === "done"
+                    ? "Импортировать снова"
+                    : "Импортировать в БД"}
+              </span>
             </Button>
+            {stepOutputs.persist && (
+              <pre className="max-h-40 overflow-auto rounded-lg bg-gray-900 p-3 font-mono text-xs text-green-400">
+                {stepOutputs.persist}
+              </pre>
+            )}
           </CardContent>
         </Card>
       </div>

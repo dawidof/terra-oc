@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,11 @@ interface LeadFormProps {
   sourceCountry: string;
   condition: string;
   sourcePrice: number;
+  csrfToken: string;
+  logisticsCost: number | null;
+  customsCost: number | null;
+  serviceFee: number | null;
+  deliveryDays: number | null;
 }
 
 export function LeadForm({
@@ -46,7 +52,17 @@ export function LeadForm({
   sourceCountry,
   condition,
   sourcePrice,
+  csrfToken,
+  logisticsCost,
+  customsCost,
+  serviceFee,
+  deliveryDays,
 }: LeadFormProps) {
+  const searchParams = useSearchParams();
+  const utmSource = searchParams.get("utm_source") || undefined;
+  const utmMedium = searchParams.get("utm_medium") || undefined;
+  const utmCampaign = searchParams.get("utm_campaign") || undefined;
+
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,7 +88,10 @@ export function LeadForm({
     try {
       const res = await fetch("/api/leads", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrfToken,
+        },
         body: JSON.stringify({
           name,
           phone,
@@ -92,6 +111,14 @@ export function LeadForm({
           currency: "USD",
           source: "configurator",
           comment,
+          utmSource,
+          utmMedium,
+          utmCampaign,
+          referrer: typeof document !== "undefined" ? document.referrer : undefined,
+          logisticsCost,
+          customsCost,
+          serviceFee,
+          deliveryDays,
         }),
       });
 

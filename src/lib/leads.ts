@@ -8,6 +8,7 @@ import {
   configurationOptionGroups,
   configurationOptions,
 } from "@/db/schema";
+import { notifyNewLead } from "@/lib/notifications";
 
 export interface LeadInput {
   name: string;
@@ -38,6 +39,10 @@ export interface LeadInput {
   utmCampaign?: string;
   referrer?: string;
   comment?: string;
+  logisticsCost?: number;
+  customsCost?: number;
+  serviceFee?: number;
+  deliveryDays?: number;
 }
 
 function normalizePhone(phone: string): string {
@@ -117,6 +122,9 @@ export async function createLead(input: LeadInput) {
       sourcePrice: input.sourcePrice ? String(input.sourcePrice) : null,
       sourceCurrency: input.currency,
       estimatedTotal: input.estimatedTotal ? String(input.estimatedTotal) : null,
+      logisticsCost: input.logisticsCost ? String(input.logisticsCost) : null,
+      customsCost: input.customsCost ? String(input.customsCost) : null,
+      serviceFee: input.serviceFee ? String(input.serviceFee) : null,
     });
   }
 
@@ -128,6 +136,16 @@ export async function createLead(input: LeadInput) {
       vehicle: input.trimId ? `${input.brandName} ${input.modelName} ${input.trimName}` : null,
     },
   });
+
+  // Send notification (non-blocking)
+  notifyNewLead({
+    leadId: lead.id,
+    customerName: input.name,
+    customerPhone: input.phone,
+    vehicle: input.trimId ? `${input.brandName} ${input.modelName} ${input.trimName}` : undefined,
+    source: input.source || "website",
+    estimatedTotal: input.estimatedTotal ? String(input.estimatedTotal) : undefined,
+  }).catch((err) => console.error("Lead notification error:", err));
 
   return lead;
 }

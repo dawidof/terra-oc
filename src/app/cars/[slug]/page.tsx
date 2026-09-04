@@ -1,15 +1,16 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { getCarBySlug, getCarOffers, getCarMedia, getTrimSpecs, getAllTrims, getSimilarCars } from "@/lib/queries";
+import { getCarBySlug, getCarOffers, getCarMedia, getTrimSpecs, getAllTrims, getSimilarCars, getUsedVehicleDetails } from "@/lib/queries";
 import { getComparisonSpecs } from "@/lib/compare";
 import { getConfigurationOptions } from "@/lib/leads";
+import { generateCsrfToken } from "@/lib/csrf-actions";
 import { ConfiguratorSection } from "@/components/configurator-section";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { ChevronRight, Zap, Fuel, Gauge, Calendar, MapPin, Truck } from "lucide-react";
+import { ChevronRight, Zap, Fuel, Gauge, Calendar, MapPin, Truck, FileText, Shield } from "lucide-react";
 import { CarCard } from "@/components/car-card";
 import { TrimComparisonTable } from "@/components/trim-comparison-table";
 import { VehicleAdminBar } from "@/components/admin/vehicle-admin-bar";
@@ -58,11 +59,16 @@ export default async function CarDetailPage({ params }: Props) {
     getConfigurationOptions(car.trimId),
   ]);
 
+  const csrfToken = generateCsrfToken();
+
+  const offer = offers[0];
+  const usedDetails = offer ? await getUsedVehicleDetails(offer.id) : [];
+  const usedDetail = usedDetails[0] || null;
+
   // Get comparison specs for trim comparison table
   const trimIds = allTrims.map((t) => t.id);
   const comparisonSpecs = await getComparisonSpecs(trimIds);
 
-  const offer = offers[0];
   const similarCars = await getSimilarCars(
     car.bodyType,
     car.trimId,
@@ -195,6 +201,58 @@ export default async function CarDetailPage({ params }: Props) {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Used vehicle details */}
+            {usedDetail && (
+              <Card className="mb-6 border-amber-200 bg-amber-50">
+                <CardContent className="p-4">
+                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                    <Shield className="h-4 w-4 text-amber-600" />
+                    Информация о б/у автомобиле
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    {usedDetail.vin && (
+                      <div>
+                        <div className="text-muted-foreground">VIN</div>
+                        <div className="font-mono font-medium">{usedDetail.vin}</div>
+                      </div>
+                    )}
+                    {usedDetail.mileageKm != null && (
+                      <div>
+                        <div className="text-muted-foreground">Пробег</div>
+                        <div className="font-medium">{usedDetail.mileageKm.toLocaleString("ru-RU")} км</div>
+                      </div>
+                    )}
+                    {usedDetail.auctionGrade && (
+                      <div>
+                        <div className="text-muted-foreground">Класс аукциона</div>
+                        <div className="font-medium">{usedDetail.auctionGrade}</div>
+                      </div>
+                    )}
+                    {usedDetail.ownersCount != null && (
+                      <div>
+                        <div className="text-muted-foreground">Владельцев</div>
+                        <div className="font-medium">{usedDetail.ownersCount}</div>
+                      </div>
+                    )}
+                    {usedDetail.accidentStatus && (
+                      <div>
+                        <div className="text-muted-foreground">Аварийность</div>
+                        <div className="font-medium">{usedDetail.accidentStatus}</div>
+                      </div>
+                    )}
+                    {usedDetail.manufactureDate && (
+                      <div>
+                        <div className="text-muted-foreground">Дата выпуска</div>
+                        <div className="font-medium">
+                          {new Date(usedDetail.manufactureDate).toLocaleDateString("ru-RU")}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Quick specs */}
             <div className="grid grid-cols-2 gap-3 mb-6">
@@ -348,6 +406,11 @@ export default async function CarDetailPage({ params }: Props) {
               trimName={car.trimName}
               sourceCountry={offer?.sourceCountry || "Китай"}
               condition={offer?.condition || "new"}
+              csrfToken={csrfToken}
+              logisticsCost={offer?.estimatedLogistics ? Number(offer.estimatedLogistics) : null}
+              customsCost={offer?.estimatedCustoms ? Number(offer.estimatedCustoms) : null}
+              serviceFee={offer?.estimatedServiceFee ? Number(offer.estimatedServiceFee) : null}
+              deliveryDays={offer?.deliveryDays || null}
             />
           </div>
         )}

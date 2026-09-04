@@ -9,6 +9,40 @@ import {
   auditLogs,
 } from "@/db/schema";
 
+const TRIM_UPDATABLE_FIELDS = new Set([
+  "name",
+  "powertrainType",
+  "drivetrain",
+  "motorPowerKw",
+  "rangeKm",
+  "acceleration0100",
+  "batteryCapacityKwh",
+  "basePrice",
+  "basePriceCurrency",
+  "active",
+]);
+
+const OFFER_UPDATABLE_FIELDS = new Set([
+  "sourcePrice",
+  "sourceCurrency",
+  "estimatedTotalUsd",
+  "deliveryDays",
+  "sourceCountry",
+  "condition",
+  "modelYear",
+]);
+
+const REVIEW_UPDATABLE_FIELDS = new Set([
+  "name",
+  "city",
+  "rating",
+  "vehicleLabel",
+  "text",
+  "published",
+  "featured",
+  "sortOrder",
+]);
+
 export async function logAudit(
   userId: string,
   entityType: string,
@@ -33,6 +67,10 @@ export async function updateTrimField(
   value: any,
   userId: string
 ) {
+  if (!TRIM_UPDATABLE_FIELDS.has(field)) {
+    throw new Error(`Field "${field}" is not updatable`);
+  }
+
   const [before] = await db.select().from(trims).where(eq(trims.id, trimId)).limit(1);
   if (!before) throw new Error("Trim not found");
 
@@ -50,6 +88,10 @@ export async function updateOfferField(
   value: any,
   userId: string
 ) {
+  if (!OFFER_UPDATABLE_FIELDS.has(field)) {
+    throw new Error(`Field "${field}" is not updatable`);
+  }
+
   const [before] = await db.select().from(vehicleOffers).where(eq(vehicleOffers.id, offerId)).limit(1);
   if (!before) throw new Error("Offer not found");
 
@@ -71,6 +113,7 @@ export async function updateReview(
 
   const changes: Record<string, any> = {};
   for (const key of Object.keys(data)) {
+    if (!REVIEW_UPDATABLE_FIELDS.has(key)) continue;
     if (before[key as keyof typeof before] !== data[key]) {
       changes[key] = data[key];
     }

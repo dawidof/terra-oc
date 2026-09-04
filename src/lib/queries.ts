@@ -7,6 +7,7 @@ import {
   trims,
   vehicleOffers,
   vehicleMedia,
+  usedVehicleDetails,
   specificationGroups,
   specificationDefinitions,
   trimSpecificationValues,
@@ -212,6 +213,14 @@ export async function getCarOffers(trimId: string) {
     .select()
     .from(vehicleOffers)
     .where(eq(vehicleOffers.trimId, trimId));
+}
+
+export async function getUsedVehicleDetails(offerId: string) {
+  return db
+    .select()
+    .from(usedVehicleDetails)
+    .where(eq(usedVehicleDetails.offerId, offerId))
+    .limit(1);
 }
 
 export async function getCarMedia(modelVersionId: string) {

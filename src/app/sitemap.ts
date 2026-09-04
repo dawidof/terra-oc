@@ -1,9 +1,11 @@
 import type { MetadataRoute } from "next";
+import { db } from "@/db";
+import { trims } from "@/db/schema";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://terraauto.uz";
 
-  return [
+  const staticPages: MetadataRoute.Sitemap = [
     {
       url: baseUrl,
       lastModified: new Date(),
@@ -59,4 +61,17 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.3,
     },
   ];
+
+  const allTrims = await db
+    .select({ slug: trims.slug })
+    .from(trims);
+
+  const carPages: MetadataRoute.Sitemap = allTrims.map((trim) => ({
+    url: `${baseUrl}/cars/${trim.slug}`,
+    lastModified: new Date(),
+    changeFrequency: "weekly" as const,
+    priority: 0.8,
+  }));
+
+  return [...staticPages, ...carPages];
 }

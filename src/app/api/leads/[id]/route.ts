@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { updateLeadStatus, assignLead, setFollowUp } from "@/lib/crm";
+import { leadUpdateSchema } from "@/lib/validation-schemas";
 
 export async function PATCH(
   request: NextRequest,
@@ -16,20 +17,28 @@ export async function PATCH(
   const userId = (session.user as any).id;
   const userRole = (session.user as any).role;
 
+  const parsed = leadUpdateSchema.safeParse(body);
+  if (!parsed.success) {
+    const message = parsed.error.issues[0]?.message || "Validation error";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+
+  const data = parsed.data;
+
   try {
-    if (body.status) {
-      await updateLeadStatus(id, body.status, userId);
+    if (data.status) {
+      await updateLeadStatus(id, data.status, userId);
     }
 
-    if (body.assignedManagerId !== undefined) {
+    if (data.assignedManagerId !== undefined) {
       if (userRole !== "admin") {
         return NextResponse.json({ error: "Only admin can assign" }, { status: 403 });
       }
-      await assignLead(id, body.assignedManagerId, userId);
+      await assignLead(id, data.assignedManagerId ?? "", userId);
     }
 
-    if ("nextFollowUpAt" in body) {
-      await setFollowUp(id, body.nextFollowUpAt);
+    if ("nextFollowUpAt" in data) {
+      await setFollowUp(id, data.nextFollowUpAt ?? null);
     }
 
     return NextResponse.json({ success: true });

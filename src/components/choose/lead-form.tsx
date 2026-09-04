@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -26,9 +27,15 @@ interface LeadFormProps {
   };
   recommendations: any[];
   onBack: () => void;
+  csrfToken: string;
 }
 
-export function LeadForm({ answers, recommendations, onBack }: LeadFormProps) {
+export function LeadForm({ answers, recommendations, onBack, csrfToken }: LeadFormProps) {
+  const searchParams = useSearchParams();
+  const utmSource = searchParams.get("utm_source") || undefined;
+  const utmMedium = searchParams.get("utm_medium") || undefined;
+  const utmCampaign = searchParams.get("utm_campaign") || undefined;
+
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,12 +61,19 @@ export function LeadForm({ answers, recommendations, onBack }: LeadFormProps) {
     try {
       const res = await fetch("/api/leads/selector", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrfToken,
+        },
         body: JSON.stringify({
           name,
           phone,
           telegram,
           preferredContactMethod: preferredContact,
+          utmSource,
+          utmMedium,
+          utmCampaign,
+          referrer: typeof document !== "undefined" ? document.referrer : undefined,
           comment: [
             `Бюджет: ${answers.budget || "—"}`,
             `Кузов: ${answers.bodyType || "—"}`,

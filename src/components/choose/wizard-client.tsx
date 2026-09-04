@@ -100,7 +100,11 @@ const STEPS = [
   },
 ];
 
-export function WizardClient() {
+interface WizardClientProps {
+  csrfToken: string;
+}
+
+export function WizardClient({ csrfToken }: WizardClientProps) {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<WizardAnswers>({});
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
@@ -146,6 +150,7 @@ export function WizardClient() {
           answers={answers}
           recommendations={recommendations}
           onBack={() => setShowLeadForm(false)}
+          csrfToken={csrfToken}
         />
       </div>
     );

@@ -37,7 +37,7 @@ async function getActiveRule(
   condition: string,
   powertrain: string
 ) {
-  const now = new Date();
+  const now = new Date().toISOString();
   const rules = await db
     .select()
     .from(calculationRuleVersions)
@@ -47,8 +47,8 @@ async function getActiveRule(
         eq(calculationRuleVersions.condition, condition),
         eq(calculationRuleVersions.powertrain, powertrain),
         eq(calculationRuleVersions.active, true),
-        sql`${calculationRuleVersions.validFrom} <= ${now}`,
-        sql`(${calculationRuleVersions.validTo} IS NULL OR ${calculationRuleVersions.validTo} >= ${now})`
+        sql`${calculationRuleVersions.validFrom} <= ${now}::timestamp`,
+        sql`(${calculationRuleVersions.validTo} IS NULL OR ${calculationRuleVersions.validTo} >= ${now}::timestamp)`
       )
     )
     .orderBy(sql`${calculationRuleVersions.createdAt} DESC`)
@@ -67,7 +67,7 @@ async function getExchangeRate(fromCurrency: string, toCurrency: string) {
         eq(exchangeRates.toCurrency, toCurrency)
       )
     )
-    .orderBy(sql`${exchangeRates.recordedAt} DESC`)
+    .orderBy(exchangeRates.recordedAt)
     .limit(1);
 
   return rates[0] || null;
