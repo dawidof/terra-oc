@@ -1,0 +1,386 @@
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
+import { getCarBySlug, getCarOffers, getCarMedia, getTrimSpecs, getAllTrims, getSimilarCars } from "@/lib/queries";
+import { getComparisonSpecs } from "@/lib/compare";
+import { getConfigurationOptions } from "@/lib/leads";
+import { ConfiguratorSection } from "@/components/configurator-section";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { ChevronRight, Zap, Fuel, Gauge, Calendar, MapPin, Truck } from "lucide-react";
+import { CarCard } from "@/components/car-card";
+import { TrimComparisonTable } from "@/components/trim-comparison-table";
+import { VehicleAdminBar } from "@/components/admin/vehicle-admin-bar";
+
+interface Props {
+  params: Promise<{ slug: string }>;
+}
+
+function formatPrice(price: string | null): string {
+  if (!price) return "Цена уточняется";
+  return `$${Number(price).toLocaleString("en-US")}`;
+}
+
+function powertrainLabel(type: string | null): string {
+  switch (type) {
+    case "bev": return "Электро";
+    case "phev": return "Гибрид";
+    case "hev": return "Гибрид";
+    case "reev": return "REEV";
+    case "petrol": return "Бензин";
+    case "diesel": return "Дизель";
+    default: return type || "";
+  }
+}
+
+export async function generateMetadata({ params }: Props) {
+  const { slug } = await params;
+  const car = await getCarBySlug(slug);
+  if (!car) return { title: "Автомобиль не найден" };
+  return {
+    title: `${car.brandName} ${car.modelName} ${car.trimName} — TerraAuto`,
+    description: car.shortDescription || `${car.brandName} ${car.modelName} ${car.trimName}. Электромобиль из Китая.`,
+  };
+}
+
+export default async function CarDetailPage({ params }: Props) {
+  const { slug } = await params;
+  const car = await getCarBySlug(slug);
+  if (!car) notFound();
+
+  const [offers, media, specs, allTrims, optionGroups] = await Promise.all([
+    getCarOffers(car.trimId),
+    getCarMedia(car.modelVersionId),
+    getTrimSpecs(car.trimId),
+    getAllTrims(car.modelVersionId),
+    getConfigurationOptions(car.trimId),
+  ]);
+
+  // Get comparison specs for trim comparison table
+  const trimIds = allTrims.map((t) => t.id);
+  const comparisonSpecs = await getComparisonSpecs(trimIds);
+
+  const offer = offers[0];
+  const similarCars = await getSimilarCars(
+    car.bodyType,
+    car.trimId,
+    offer ? Number(offer.estimatedTotalUsd) - 10000 : 20000,
+    offer ? Number(offer.estimatedTotalUsd) + 10000 : 60000
+  );
+
+  const groupedSpecs: Record<string, { name: string; value: string }[]> = {};
+  for (const spec of specs) {
+    if (!groupedSpecs[spec.groupName]) {
+      groupedSpecs[spec.groupName] = [];
+    }
+    let value = "";
+    if (spec.valueText) value = spec.valueText;
+    else if (spec.valueNumber) value = `${spec.valueNumber}${spec.unit ? ` ${spec.unit}` : ""}`;
+    else if (spec.valueBoolean !== null) value = spec.valueBoolean ? "Да" : "Нет";
+    if (value) {
+      groupedSpecs[spec.groupName].push({ name: spec.specName, value });
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-white">
+      <div className="container mx-auto px-4 py-6">
+        {/* Admin bar */}
+        <VehicleAdminBar
+          trimId={car.trimId}
+          data={{
+            trimName: car.trimName,
+            trimSlug: car.trimSlug,
+            powertrainType: car.powertrainType,
+            drivetrain: car.drivetrain,
+            motorPowerKw: car.motorPowerKw,
+            rangeKm: car.rangeKm,
+            acceleration0100: car.acceleration0100,
+            batteryCapacityKwh: car.batteryCapacityKwh,
+            basePrice: car.basePrice,
+            estimatedTotalUsd: offer?.estimatedTotalUsd || null,
+            sourcePrice: offer?.sourcePrice || null,
+            deliveryDays: offer?.deliveryDays || null,
+            active: true,
+          }}
+        />
+
+        {/* Breadcrumbs */}
+        <nav className="mb-6 flex items-center gap-2 text-sm text-muted-foreground">
+          <Link href="/" className="hover:text-foreground">Главная</Link>
+          <ChevronRight className="h-3 w-3" />
+          <Link href="/cars" className="hover:text-foreground">Автомобили</Link>
+          <ChevronRight className="h-3 w-3" />
+          <Link href={`/cars?brand=${car.brandSlug}`} className="hover:text-foreground">
+            {car.brandName}
+          </Link>
+          <ChevronRight className="h-3 w-3" />
+          <span className="text-foreground">{car.modelName}</span>
+        </nav>
+
+        {/* Hero section */}
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+          {/* Gallery */}
+          <div className="space-y-4">
+            <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-gray-100">
+              {media[0] ? (
+                <Image
+                  src={media[0].url}
+                  alt={media[0].alt || `${car.brandName} ${car.modelName}`}
+                  fill
+                  className="object-cover"
+                  priority
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center text-gray-400">
+                  Фото скоро
+                </div>
+              )}
+            </div>
+            {media.length > 1 && (
+              <div className="grid grid-cols-4 gap-2">
+                {media.slice(0, 4).map((m, i) => (
+                  <div key={m.id} className="relative aspect-square overflow-hidden rounded-lg bg-gray-100">
+                    <Image src={m.url} alt={m.alt || ""} fill className="object-cover" sizes="150px" />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Info */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Badge variant={car.powertrainType === "bev" ? "default" : "secondary"}>
+                {powertrainLabel(car.powertrainType)}
+              </Badge>
+              {car.drivetrain && <Badge variant="outline">{car.drivetrain}</Badge>}
+              {car.brandCountry && <Badge variant="outline">{car.brandCountry}</Badge>}
+            </div>
+
+            <h1 className="text-3xl font-bold mb-1">
+              {car.brandName} {car.modelName}
+            </h1>
+            <p className="text-xl text-muted-foreground mb-4">
+              {car.trimName} • {car.modelVersionName}
+            </p>
+
+            {car.shortDescription && (
+              <p className="text-muted-foreground mb-6">{car.shortDescription}</p>
+            )}
+
+            {/* Pricing */}
+            <Card className="mb-6">
+              <CardContent className="p-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-sm text-muted-foreground">Цена авто</div>
+                    <div className="text-2xl font-bold">{formatPrice(offer?.sourcePrice || car.basePrice)}</div>
+                    {offer?.priceBasis && (
+                      <div className="text-xs text-muted-foreground">{offer.priceBasis}</div>
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">Ориентировочно под ключ</div>
+                    <div className="text-2xl font-bold text-emerald-600">
+                      {formatPrice(offer?.estimatedTotalUsd)}
+                    </div>
+                    {offer?.deliveryDays && (
+                      <div className="text-xs text-muted-foreground">~{offer.deliveryDays} дней доставка</div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Quick specs */}
+            <div className="grid grid-cols-2 gap-3 mb-6">
+              {car.motorPowerKw && (
+                <div className="flex items-center gap-2 rounded-lg border p-3">
+                  <Zap className="h-4 w-4 text-emerald-600" />
+                  <div>
+                    <div className="text-xs text-muted-foreground">Мощность</div>
+                    <div className="font-medium">{car.motorPowerKw} кВт</div>
+                  </div>
+                </div>
+              )}
+              {car.enginePowerHp && (
+                <div className="flex items-center gap-2 rounded-lg border p-3">
+                  <Gauge className="h-4 w-4 text-emerald-600" />
+                  <div>
+                    <div className="text-xs text-muted-foreground">Мощность</div>
+                    <div className="font-medium">{car.enginePowerHp} л.с.</div>
+                  </div>
+                </div>
+              )}
+              {car.rangeKm && (
+                <div className="flex items-center gap-2 rounded-lg border p-3">
+                  <Zap className="h-4 w-4 text-emerald-600" />
+                  <div>
+                    <div className="text-xs text-muted-foreground">Запас хода</div>
+                    <div className="font-medium">{car.rangeKm} км</div>
+                  </div>
+                </div>
+              )}
+              {car.acceleration0100 && (
+                <div className="flex items-center gap-2 rounded-lg border p-3">
+                  <Gauge className="h-4 w-4 text-emerald-600" />
+                  <div>
+                    <div className="text-xs text-muted-foreground">0-100 км/ч</div>
+                    <div className="font-medium">{car.acceleration0100} сек</div>
+                  </div>
+                </div>
+              )}
+              {car.modelYearFrom && (
+                <div className="flex items-center gap-2 rounded-lg border p-3">
+                  <Calendar className="h-4 w-4 text-emerald-600" />
+                  <div>
+                    <div className="text-xs text-muted-foreground">Год</div>
+                    <div className="font-medium">{car.modelYearFrom}</div>
+                  </div>
+                </div>
+              )}
+              {offer?.sourceCountry && (
+                <div className="flex items-center gap-2 rounded-lg border p-3">
+                  <MapPin className="h-4 w-4 text-emerald-600" />
+                  <div>
+                    <div className="text-xs text-muted-foreground">Страна</div>
+                    <div className="font-medium">{offer.sourceCountry}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* CTAs */}
+            <div className="flex flex-col gap-3">
+              <Link href="/calculator">
+                <Button size="lg" className="w-full">
+                  Рассчитать стоимость
+                </Button>
+              </Link>
+              <a href="#configurator">
+                <Button size="lg" variant="outline" className="w-full">
+                  Выбрать комплектацию
+                </Button>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {/* Trim selector */}
+        {allTrims.length > 1 && (
+          <section className="mt-12">
+            <h2 className="mb-6 text-2xl font-bold">Комплектации</h2>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {allTrims.map((trim) => (
+                <Link key={trim.id} href={`/cars/${trim.slug}`}>
+                  <Card className={`h-full transition-shadow hover:shadow-md ${trim.slug === slug ? "ring-2 ring-emerald-600" : ""}`}>
+                    <CardContent className="p-4">
+                      <h3 className="font-semibold mb-2">{trim.name}</h3>
+                      <div className="text-lg font-bold mb-3">{formatPrice(trim.basePrice)}</div>
+                      <div className="space-y-1 text-sm text-muted-foreground">
+                        {trim.powertrainType && <div>{powertrainLabel(trim.powertrainType)} {trim.drivetrain}</div>}
+                        {trim.motorPowerKw && <div>{trim.motorPowerKw} кВт</div>}
+                        {trim.rangeKm && <div>{trim.rangeKm} км запас хода</div>}
+                        {trim.acceleration0100 && <div>0-100: {trim.acceleration0100} сек</div>}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Trim comparison */}
+        {allTrims.length > 1 && comparisonSpecs.length > 0 && (
+          <section className="mt-12">
+            <h2 className="mb-6 text-2xl font-bold">Сравнение комплектаций</h2>
+            <Card>
+              <CardContent className="p-6">
+                <TrimComparisonTable
+                  trims={allTrims}
+                  specs={comparisonSpecs}
+                  currentSlug={slug}
+                />
+              </CardContent>
+            </Card>
+          </section>
+        )}
+
+        {/* Specifications */}
+        {Object.keys(groupedSpecs).length > 0 && (
+          <section className="mt-12">
+            <h2 className="mb-6 text-2xl font-bold">Технические характеристики</h2>
+            <div className="space-y-6">
+              {Object.entries(groupedSpecs).map(([groupName, specs]) => (
+                <Card key={groupName}>
+                  <CardContent className="p-6">
+                    <h3 className="text-lg font-semibold mb-4">{groupName}</h3>
+                    <div className="space-y-2">
+                      {specs.map((spec, i) => (
+                        <div key={i} className="flex items-center justify-between py-2 border-b border-dashed last:border-0">
+                          <span className="text-muted-foreground">{spec.name}</span>
+                          <span className="font-medium">{spec.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Configurator + Lead */}
+        {optionGroups.length > 0 && (
+          <div id="configurator">
+            <ConfiguratorSection
+              optionGroups={optionGroups}
+              basePrice={Number(car.basePrice)}
+              estimatedTotalUsd={offer?.estimatedTotalUsd || null}
+              trimId={car.trimId}
+              brandName={car.brandName}
+              modelName={car.modelName}
+              trimName={car.trimName}
+              sourceCountry={offer?.sourceCountry || "Китай"}
+              condition={offer?.condition || "new"}
+            />
+          </div>
+        )}
+
+        {/* Similar cars */}
+        {similarCars.length > 0 && (
+          <section className="mt-12">
+            <h2 className="mb-6 text-2xl font-bold">Похожие автомобили</h2>
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {similarCars.map((car) => (
+                <CarCard
+                  key={car.trimId}
+                  brandName={car.brandName}
+                  brandSlug={car.brandSlug}
+                  modelName={car.modelName}
+                  modelSlug={car.modelSlug}
+                  trimName={car.trimName}
+                  trimSlug={car.trimSlug}
+                  powertrainType={car.powertrainType}
+                  drivetrain={car.drivetrain}
+                  motorPowerKw={car.motorPowerKw}
+                  enginePowerHp={null}
+                  rangeKm={car.rangeKm}
+                  basePrice={car.basePrice}
+                  estimatedTotalUsd={car.estimatedTotalUsd}
+                  imageUrl={car.imageUrl}
+                  modelYear={null}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
+    </div>
+  );
+}
