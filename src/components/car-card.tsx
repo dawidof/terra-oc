@@ -25,8 +25,9 @@ interface CarCardProps {
 }
 
 function formatPrice(price: string | null): string {
-  if (!price) return "Цена уточняется";
+  if (!price || price === "0") return "Цена уточняется";
   const num = Number(price);
+  if (num === 0) return "Цена уточняется";
   return `$${num.toLocaleString("en-US")}`;
 }
 

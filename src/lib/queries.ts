@@ -358,22 +358,8 @@ export async function getFeaturedCars() {
 }
 
 export async function getFeaturedModels() {
-  const cheapestPerModel = db
-    .select({
-      modelId: carModels.id,
-      minPrice: sql<string>`min(${trims.basePrice})`.as('min_price'),
-    })
-    .from(trims)
-    .innerJoin(modelVersions, eq(trims.modelVersionId, modelVersions.id))
-    .innerJoin(carModels, eq(modelVersions.carModelId, carModels.id))
-    .innerJoin(brands, eq(carModels.brandId, brands.id))
-    .innerJoin(vehicleOffers, eq(vehicleOffers.trimId, trims.id))
-    .where(and(eq(carModels.featured, true), eq(brands.active, true), eq(trims.active, true)))
-    .groupBy(carModels.id)
-    .as('cheapest_per_model');
-
   return db
-    .select({
+    .selectDistinctOn([carModels.id], {
       modelId: carModels.id,
       modelName: carModels.name,
       modelSlug: carModels.slug,
@@ -391,18 +377,14 @@ export async function getFeaturedModels() {
       estimatedTotalUsd: vehicleOffers.estimatedTotalUsd,
       imageUrl: vehicleMedia.url,
     })
-    .from(cheapestPerModel)
-    .innerJoin(carModels, eq(cheapestPerModel.modelId, carModels.id))
+    .from(trims)
+    .innerJoin(modelVersions, eq(trims.modelVersionId, modelVersions.id))
+    .innerJoin(carModels, eq(modelVersions.carModelId, carModels.id))
     .innerJoin(brands, eq(carModels.brandId, brands.id))
-    .innerJoin(modelVersions, eq(modelVersions.carModelId, carModels.id))
-    .innerJoin(trims, and(
-      eq(trims.modelVersionId, modelVersions.id),
-      eq(trims.basePrice, cheapestPerModel.minPrice),
-      eq(trims.active, true)
-    ))
     .innerJoin(vehicleOffers, eq(vehicleOffers.trimId, trims.id))
     .leftJoin(vehicleMedia, and(eq(vehicleMedia.modelVersionId, modelVersions.id), eq(vehicleMedia.sortOrder, 0)))
-    .orderBy(asc(cheapestPerModel.minPrice))
+    .where(and(eq(carModels.featured, true), eq(brands.active, true), eq(trims.active, true)))
+    .orderBy(asc(carModels.id), asc(trims.basePrice))
     .limit(8);
 }
 

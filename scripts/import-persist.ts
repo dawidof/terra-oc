@@ -88,7 +88,7 @@ async function ensureTrim(modelVersionId: string, trimData: any) {
     batteryCapacityKwh: trimData.batteryCapacityKwh ? String(trimData.batteryCapacityKwh) : null,
     rangeKm: trimData.rangeKm,
     acceleration0100: trimData.acceleration0100 ? String(trimData.acceleration0100) : null,
-    basePrice: trimData.basePrice || "0",
+    basePrice: trimData.basePrice || null,
     basePriceCurrency: trimData.priceCurrency || "USD",
   }).returning();
   console.log(`    + Created trim: ${trimData.name}`);
@@ -105,7 +105,7 @@ async function ensureOffer(trimId: string, trimData: any, sourceCountry: string)
   const logistics = "3000";
   const customs = "4500";
   const serviceFee = "1500";
-  const basePrice = Number(trimData.basePrice) || 0;
+  const basePrice = Number(trimData.basePrice || trimData.price) || 0;
   const total = basePrice + Number(logistics) + Number(customs) + Number(serviceFee);
 
   const [offer] = await db.insert(vehicleOffers).values({
@@ -221,6 +221,7 @@ async function main() {
         const trim = await ensureTrim(version.id, {
           ...trimData,
           slug: trimSlug,
+          basePrice: trimData.price,
         });
 
         // Ensure offer
