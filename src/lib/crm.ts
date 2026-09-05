@@ -8,7 +8,9 @@ import {
   leadNotes,
   leadActivities,
   vehicleOffers,
+  trims,
 } from "@/db/schema";
+import { calculate, type CalculatorInput } from "@/lib/calculator";
 
 export interface LeadFilters {
   status?: string;
@@ -121,6 +123,7 @@ export async function getLeadById(id: string) {
       id: leads.id,
       status: leads.status,
       source: leads.source,
+      trimId: leads.trimId,
       estimatedTotalUsd: leads.estimatedTotalUsd,
       currency: leads.currency,
       comment: leads.comment,
@@ -186,9 +189,52 @@ export async function getLeadById(id: string) {
     .where(eq(leadActivities.leadId, id))
     .orderBy(desc(leadActivities.createdAt));
 
+  let computedBreakdown = null;
+  if (config) {
+    const configJson = config.configurationJson as Record<string, unknown> | null;
+    const hasBreakdown = configJson?.calculatorBreakdown;
+
+    if (!hasBreakdown && lead.estimatedTotalUsd && lead.trimId) {
+      const [trim] = await db
+        .select()
+        .from(trims)
+        .where(eq(trims.id, lead.trimId))
+        .limit(1);
+
+      if (trim) {
+        const calcResult = await calculate({
+          sourceCountry: config.sourceCountry || "Китай",
+          condition: (config.condition as "new" | "used") || "new",
+          purchasePrice: Number(config.sourcePrice) || Number(lead.estimatedTotalUsd),
+          currency: lead.currency || "USD",
+          powertrain: (trim.powertrainType as CalculatorInput["powertrain"]) || "petrol",
+          engineDisplacementCc: trim.engineDisplacementCc ?? undefined,
+          enginePowerHp: trim.enginePowerHp ?? undefined,
+          motorPowerKw: trim.motorPowerKw ?? undefined,
+          batteryCapacityKwh: trim.batteryCapacityKwh ? Number(trim.batteryCapacityKwh) : undefined,
+          trimId: lead.trimId,
+        });
+
+        if (calcResult) {
+          computedBreakdown = {
+            vehiclePrice: calcResult.vehiclePrice,
+            logistics: calcResult.logistics,
+            customsDuty: calcResult.customsDuty,
+            exciseTax: calcResult.exciseTax,
+            vat: calcResult.vat,
+            certificationFees: calcResult.certificationFees,
+            serviceFee: calcResult.serviceFee,
+            total: calcResult.total,
+          };
+        }
+      }
+    }
+  }
+
   return {
     ...lead,
     configuration: config || null,
+    computedBreakdown,
     notes,
     activities,
   };
@@ -243,6 +289,52 @@ export async function setFollowUp(leadId: string, datetime: string | null) {
     .update(leads)
     .set({ nextFollowUpAt: datetime ? new Date(datetime) : null, updatedAt: new Date() })
     .where(eq(leads.id, leadId));
+}
+
+export async function updateLeadEstimate(
+  leadId: string,
+  estimatedTotal: number | null,
+  additionalCosts: { label: string; amount: number }[] | null,
+  userId: string,
+  calculatorBreakdown?: Record<string, number> | null
+) {
+  if (estimatedTotal !== null) {
+    await db
+      .update(leads)
+      .set({ estimatedTotalUsd: String(estimatedTotal), updatedAt: new Date() })
+      .where(eq(leads.id, leadId));
+  }
+
+  const [existing] = await db
+    .select({ id: leadConfigurations.id, configurationJson: leadConfigurations.configurationJson })
+    .from(leadConfigurations)
+    .where(eq(leadConfigurations.leadId, leadId))
+    .limit(1);
+
+  if (existing) {
+    const currentConfig = (existing.configurationJson as Record<string, unknown>) || {};
+    await db
+      .update(leadConfigurations)
+      .set({
+        estimatedTotal: estimatedTotal !== null ? String(estimatedTotal) : existing.configurationJson ? undefined : null,
+        configurationJson: {
+          ...currentConfig,
+          ...(additionalCosts != null ? { additional_costs: additionalCosts } : {}),
+          ...(calculatorBreakdown != null ? { calculatorBreakdown } : {}),
+        },
+      })
+      .where(eq(leadConfigurations.leadId, leadId));
+  }
+
+  await db.insert(leadActivities).values({
+    leadId,
+    userId,
+    type: "estimate_updated",
+    metadataJson: {
+      estimatedTotal,
+      additionalCosts: additionalCosts || [],
+    },
+  });
 }
 
 export async function getDashboardStats(userId?: string, role?: string) {

@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { drizzle } from "drizzle-orm/postgres-js";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import postgres from "postgres";
 import {
   brands,
@@ -376,7 +376,11 @@ async function main() {
   // Helper to add config options for a trim
   async function addConfigOptions(trimId: string, options: { type: string; name: string; items: { name: string; code: string; priceDelta: string | null }[] }[]) {
     for (const group of options) {
-      const existing = await db.select().from(configurationOptionGroups).where(eq(configurationOptionGroups.trimId, trimId));
+      const existing = await db.select().from(configurationOptionGroups)
+        .where(and(
+          eq(configurationOptionGroups.trimId, trimId),
+          eq(configurationOptionGroups.type, group.type),
+        ));
       if (existing.length > 0) continue;
 
       const [grp] = await db.insert(configurationOptionGroups).values({
@@ -450,6 +454,62 @@ async function main() {
       ]},
     ]);
     console.log("  ✓ Config options for Kia Sportage GT-Line");
+  }
+
+  // Haval Jolion Standard config
+  const jolionStandard = jolionTrims[0];
+  if (jolionStandard) {
+    await addConfigOptions(jolionStandard.id, [
+      { type: "exterior_color", name: "Цвет кузова", items: [
+        { name: "Белый", code: "white", priceDelta: "0" },
+        { name: "Чёрный", code: "black", priceDelta: "0" },
+        { name: "Серый", code: "grey", priceDelta: "0" },
+      ]},
+      { type: "interior_color", name: "Цвет салона", items: [
+        { name: "Чёрный", code: "black", priceDelta: "0" },
+      ]},
+    ]);
+    console.log("  ✓ Config options for Haval Jolion Standard");
+  }
+
+  // Haval Jolion Comfort config
+  const jolionComfort = jolionTrims[1];
+  if (jolionComfort) {
+    await addConfigOptions(jolionComfort.id, [
+      { type: "exterior_color", name: "Цвет кузова", items: [
+        { name: "Белый", code: "white", priceDelta: "0" },
+        { name: "Чёрный", code: "black", priceDelta: "0" },
+        { name: "Серый", code: "grey", priceDelta: "0" },
+        { name: "Синий", code: "blue", priceDelta: "300" },
+      ]},
+      { type: "interior_color", name: "Цвет салона", items: [
+        { name: "Чёрный", code: "black", priceDelta: "0" },
+        { name: "Бежевый", code: "beige", priceDelta: "0" },
+      ]},
+    ]);
+    console.log("  ✓ Config options for Haval Jolion Comfort");
+  }
+
+  // Haval Jolion Premium config
+  const jolionPremium = jolionTrims[2];
+  if (jolionPremium) {
+    await addConfigOptions(jolionPremium.id, [
+      { type: "exterior_color", name: "Цвет кузова", items: [
+        { name: "Белый", code: "white", priceDelta: "0" },
+        { name: "Чёрный", code: "black", priceDelta: "0" },
+        { name: "Серый", code: "grey", priceDelta: "0" },
+        { name: "Синий", code: "blue", priceDelta: "300" },
+        { name: "Красный", code: "red", priceDelta: "300" },
+      ]},
+      { type: "interior_color", name: "Цвет салона", items: [
+        { name: "Чёрный", code: "black", priceDelta: "0" },
+        { name: "Бежевый", code: "beige", priceDelta: "0" },
+      ]},
+      { type: "package", name: "Пакеты", items: [
+        { name: "Пакет «Премиум»", code: "premium-pkg", priceDelta: "1500" },
+      ]},
+    ]);
+    console.log("  ✓ Config options for Haval Jolion Premium");
   }
 
   // ═════════════════════════════════════════════════════════════════════════════

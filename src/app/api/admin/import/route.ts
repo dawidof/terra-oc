@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { brands, carModels, trims, vehicleOffers } from "@/db/schema";
-import { count } from "drizzle-orm";
+import { brands, carModels, trims, vehicleOffers, importUrls } from "@/db/schema";
+import { count, eq } from "drizzle-orm";
 import { execSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
@@ -18,19 +18,12 @@ export async function GET() {
   const [trimCount] = await db.select({ count: count() }).from(trims);
   const [offerCount] = await db.select({ count: count() }).from(vehicleOffers);
 
-  const urlsFile = path.join(process.cwd(), "data", "urls.txt");
+  // Count URLs from database
+  const [dbUrlCount] = await db.select({ count: count() }).from(importUrls);
+
+  // Count raw JSON files
   const rawDir = path.join(process.cwd(), "data", "raw");
-  let urlCount = 0;
   let rawCount = 0;
-
-  if (fs.existsSync(urlsFile)) {
-    const content = fs.readFileSync(urlsFile, "utf-8");
-    urlCount = content
-      .split("\n")
-      .map((l) => l.trim())
-      .filter((l) => l && !l.startsWith("#")).length;
-  }
-
   if (fs.existsSync(rawDir)) {
     rawCount = fs
       .readdirSync(rawDir)
@@ -44,7 +37,7 @@ export async function GET() {
       trims: trimCount.count,
       offers: offerCount.count,
     },
-    urlCount,
+    urlCount: dbUrlCount.count,
     rawCount,
   });
 }

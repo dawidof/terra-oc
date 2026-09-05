@@ -162,14 +162,22 @@ export function LeadForm({ answers, recommendations, onBack, csrfToken }: LeadFo
             </div>
             <div className="space-y-2">
               <Label>Предпочтительная связь</Label>
-              <Select value={preferredContact} onValueChange={(v) => v && setPreferredContact(v)}>
+              <Select
+                value={preferredContact}
+                onValueChange={(v) => v && setPreferredContact(v)}
+                items={[
+                  { value: "phone", label: "Телефон" },
+                  { value: "telegram", label: "Telegram" },
+                  { value: "whatsapp", label: "WhatsApp" },
+                ]}
+              >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Телефон" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="phone">Телефон</SelectItem>
-                  <SelectItem value="telegram">Telegram</SelectItem>
-                  <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                  <SelectItem value="phone" label="Телефон">Телефон</SelectItem>
+                  <SelectItem value="telegram" label="Telegram">Telegram</SelectItem>
+                  <SelectItem value="whatsapp" label="WhatsApp">WhatsApp</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -64,14 +64,15 @@ export function FilterBar({ brands }: FilterBarProps) {
         <Select
           value={searchParams.get("brand") || ""}
           onValueChange={(v) => handleFilterChange("brand", v)}
+          items={[{ value: "all", label: "Все марки" }, ...brands.map((b) => ({ value: b.slug, label: b.name }))]}
         >
           <SelectTrigger className="w-full sm:w-[150px]">
             <SelectValue placeholder="Марка" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Все марки</SelectItem>
+            <SelectItem value="all" label="Все марки">Все марки</SelectItem>
             {brands.map((b) => (
-              <SelectItem key={b.slug} value={b.slug}>
+              <SelectItem key={b.slug} value={b.slug} label={b.name}>
                 {b.name}
               </SelectItem>
             ))}
@@ -81,48 +82,69 @@ export function FilterBar({ brands }: FilterBarProps) {
         <Select
           value={searchParams.get("powertrain") || ""}
           onValueChange={(v) => handleFilterChange("powertrain", v)}
+          items={[
+            { value: "all", label: "Любой" },
+            { value: "bev", label: "Электро" },
+            { value: "phev", label: "Гибрид" },
+            { value: "petrol", label: "Бензин" },
+            { value: "diesel", label: "Дизель" },
+          ]}
         >
           <SelectTrigger className="w-full sm:w-[150px]">
             <SelectValue placeholder="Тип топлива" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Любой</SelectItem>
-            <SelectItem value="bev">Электро</SelectItem>
-            <SelectItem value="phev">Гибрид</SelectItem>
-            <SelectItem value="petrol">Бензин</SelectItem>
-            <SelectItem value="diesel">Дизель</SelectItem>
+            <SelectItem value="all" label="Любой">Любой</SelectItem>
+            <SelectItem value="bev" label="Электро">Электро</SelectItem>
+            <SelectItem value="phev" label="Гибрид">Гибрид</SelectItem>
+            <SelectItem value="petrol" label="Бензин">Бензин</SelectItem>
+            <SelectItem value="diesel" label="Дизель">Дизель</SelectItem>
           </SelectContent>
         </Select>
 
         <Select
           value={searchParams.get("bodyType") || ""}
           onValueChange={(v) => handleFilterChange("bodyType", v)}
+          items={[
+            { value: "all", label: "Любой" },
+            { value: "SUV", label: "Кроссовер" },
+            { value: "sedan", label: "Седан" },
+            { value: "hatchback", label: "Хэтчбек" },
+          ]}
         >
           <SelectTrigger className="w-full sm:w-[150px]">
             <SelectValue placeholder="Кузов" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Любой</SelectItem>
-            <SelectItem value="SUV">Кроссовер</SelectItem>
-            <SelectItem value="sedan">Седан</SelectItem>
-            <SelectItem value="hatchback">Хэтчбек</SelectItem>
+            <SelectItem value="all" label="Любой">Любой</SelectItem>
+            <SelectItem value="SUV" label="Кроссовер">Кроссовер</SelectItem>
+            <SelectItem value="sedan" label="Седан">Седан</SelectItem>
+            <SelectItem value="hatchback" label="Хэтчбек">Хэтчбек</SelectItem>
           </SelectContent>
         </Select>
 
         <Select
           value={searchParams.get("sort") || "popular"}
           onValueChange={(v) => handleFilterChange("sort", v)}
+          items={[
+            { value: "popular", label: "Популярные" },
+            { value: "price_asc", label: "Цена ↑" },
+            { value: "price_desc", label: "Цена ↓" },
+            { value: "newest", label: "Новинки" },
+            { value: "power", label: "Мощность" },
+            { value: "range", label: "Запас хода" },
+          ]}
         >
           <SelectTrigger className="w-full sm:w-[150px]">
             <SelectValue placeholder="Сортировка" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="popular">Популярные</SelectItem>
-            <SelectItem value="price_asc">Цена ↑</SelectItem>
-            <SelectItem value="price_desc">Цена ↓</SelectItem>
-            <SelectItem value="newest">Новинки</SelectItem>
-            <SelectItem value="power">Мощность</SelectItem>
-            <SelectItem value="range">Запас хода</SelectItem>
+            <SelectItem value="popular" label="Популярные">Популярные</SelectItem>
+            <SelectItem value="price_asc" label="Цена ↑">Цена ↑</SelectItem>
+            <SelectItem value="price_desc" label="Цена ↓">Цена ↓</SelectItem>
+            <SelectItem value="newest" label="Новинки">Новинки</SelectItem>
+            <SelectItem value="power" label="Мощность">Мощность</SelectItem>
+            <SelectItem value="range" label="Запас хода">Запас хода</SelectItem>
           </SelectContent>
         </Select>
       </div>

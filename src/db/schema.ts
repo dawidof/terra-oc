@@ -284,6 +284,42 @@ export const configurationOptions = pgTable("configuration_options", {
   available: boolean("available").notNull().default(true),
 });
 
+// ─── Color Pricing ─────────────────────────────────────────────────────────
+
+export const colorPricing = pgTable("color_pricing", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  colorOptionId: uuid("color_option_id")
+    .notNull()
+    .references(() => configurationOptions.id),
+  trimId: uuid("trim_id")
+    .notNull()
+    .references(() => trims.id),
+  priceDelta: numeric("price_delta", { precision: 12, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 3 }).notNull().default("USD"),
+  effectiveFrom: timestamp("effective_from", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  effectiveTo: timestamp("effective_to", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// ─── Car Color Images ──────────────────────────────────────────────────────
+
+export const carColorImages = pgTable("car_color_images", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  colorOptionId: uuid("color_option_id")
+    .notNull()
+    .references(() => configurationOptions.id),
+  imageUrl: text("image_url").notNull(),
+  alt: text("alt"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 // ─── Reviews ────────────────────────────────────────────────────────────────
 
 export const reviews = pgTable("reviews", {
@@ -452,6 +488,23 @@ export const contentPages = pgTable("content_pages", {
   seoTitle: varchar("seo_title", { length: 255 }),
   seoDescription: text("seo_description"),
   published: boolean("published").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+});
+
+// ─── Import URLs ────────────────────────────────────────────────────────────
+
+export const importUrls = pgTable("import_urls", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  url: varchar("url", { length: 500 }).notNull(),
+  sourceSite: varchar("source_site", { length: 100 }),
+  status: varchar("status", { length: 20 }).notNull().default("pending"),
+  errorMessage: text("error_message"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

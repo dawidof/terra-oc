@@ -4,11 +4,13 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 
 interface AdminContextType {
   isAdmin: boolean;
+  is_admin_user: boolean;
   toggleAdmin: () => void;
 }
 
 const AdminContext = createContext<AdminContextType>({
   isAdmin: false,
+  is_admin_user: false,
   toggleAdmin: () => {},
 });
 
@@ -35,8 +37,10 @@ export function AdminProvider({ children, userRole }: { children: ReactNode; use
     });
   }
 
+  const is_admin_user = userRole === "admin";
+
   return (
-    <AdminContext.Provider value={{ isAdmin, toggleAdmin }}>
+    <AdminContext.Provider value={{ isAdmin, is_admin_user, toggleAdmin }}>
       {children}
     </AdminContext.Provider>
   );

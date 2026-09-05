@@ -1,4 +1,4 @@
-import { eq, or, sql } from "drizzle-orm";
+import { eq, or, sql, and } from "drizzle-orm";
 import { db } from "@/db";
 import {
   customers,
@@ -7,6 +7,8 @@ import {
   leadActivities,
   configurationOptionGroups,
   configurationOptions,
+  colorPricing,
+  carColorImages,
 } from "@/db/schema";
 import { notifyNewLead } from "@/lib/notifications";
 
@@ -29,6 +31,18 @@ export interface LeadInput {
     wheels?: string;
     options?: string[];
     unpriced_options?: string[];
+    totalDelta?: number;
+    calculatorBreakdown?: {
+      vehiclePrice: number;
+      logistics: number;
+      customsDuty: number;
+      exciseTax: number;
+      vat: number;
+      certificationFees: number;
+      serviceFee: number;
+      total: number;
+    };
+    additional_costs?: { label: string; amount: number }[];
   };
   sourcePrice?: number;
   estimatedTotal?: number;
@@ -52,7 +66,7 @@ function normalizePhone(phone: string): string {
 export async function createLead(input: LeadInput) {
   const normalizedPhone = normalizePhone(input.phone);
 
-  let customer = await db
+  const customer = await db
     .select()
     .from(customers)
     .where(
@@ -171,4 +185,31 @@ export async function getConfigurationOptions(trimId: string) {
   }
 
   return result;
+}
+
+export async function getColorPricing(trimId: string) {
+  const now = new Date().toISOString();
+  return db
+    .select({
+      id: colorPricing.id,
+      colorOptionId: colorPricing.colorOptionId,
+      priceDelta: colorPricing.priceDelta,
+      currency: colorPricing.currency,
+    })
+    .from(colorPricing)
+    .where(
+      and(
+        eq(colorPricing.trimId, trimId),
+        sql`${colorPricing.effectiveFrom}::timestamp <= ${now}::timestamp`,
+        sql`(${colorPricing.effectiveTo} IS NULL OR ${colorPricing.effectiveTo}::timestamp > ${now}::timestamp)`
+      )
+    );
+}
+
+export async function getCarColorImages(colorOptionId: string) {
+  return db
+    .select()
+    .from(carColorImages)
+    .where(eq(carColorImages.colorOptionId, colorOptionId))
+    .orderBy(carColorImages.sortOrder);
 }

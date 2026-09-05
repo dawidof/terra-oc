@@ -66,7 +66,7 @@ export async function getComparisonVehicle(trimSlug: string): Promise<Comparison
     .innerJoin(carModels, eq(modelVersions.carModelId, carModels.id))
     .innerJoin(brands, eq(carModels.brandId, brands.id))
     .innerJoin(vehicleOffers, eq(vehicleOffers.trimId, trims.id))
-    .leftJoin(vehicleMedia, eq(vehicleMedia.modelVersionId, modelVersions.id))
+    .leftJoin(vehicleMedia, and(eq(vehicleMedia.modelVersionId, modelVersions.id), eq(vehicleMedia.sortOrder, 0)))
     .where(eq(trims.slug, trimSlug))
     .limit(1);
 

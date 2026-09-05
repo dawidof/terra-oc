@@ -78,14 +78,15 @@ export function LeadFilters({ managers, currentFilters }: LeadFiltersProps) {
       <Select
         value={currentFilters.status || ""}
         onValueChange={(v) => updateFilter("status", v || "")}
+        items={[{ value: "all", label: "Все статусы" }, ...statusOptions]}
       >
         <SelectTrigger className="w-full sm:w-44">
           <SelectValue placeholder="Все статусы" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">Все статусы</SelectItem>
+          <SelectItem value="all" label="Все статусы">Все статусы</SelectItem>
           {statusOptions.map((opt) => (
-            <SelectItem key={opt.value} value={opt.value}>
+            <SelectItem key={opt.value} value={opt.value} label={opt.label}>
               {opt.label}
             </SelectItem>
           ))}
@@ -95,14 +96,15 @@ export function LeadFilters({ managers, currentFilters }: LeadFiltersProps) {
       <Select
         value={currentFilters.assignedManagerId || ""}
         onValueChange={(v) => updateFilter("assignedManagerId", v || "")}
+        items={[{ value: "all", label: "Все менеджеры" }, ...managers.map((m) => ({ value: m.id, label: m.name }))]}
       >
         <SelectTrigger className="w-full sm:w-44">
           <SelectValue placeholder="Все менеджеры" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">Все менеджеры</SelectItem>
+          <SelectItem value="all" label="Все менеджеры">Все менеджеры</SelectItem>
           {managers.map((m) => (
-            <SelectItem key={m.id} value={m.id}>
+            <SelectItem key={m.id} value={m.id} label={m.name}>
               {m.name}
             </SelectItem>
           ))}
@@ -112,17 +114,25 @@ export function LeadFilters({ managers, currentFilters }: LeadFiltersProps) {
       <Select
         value={currentFilters.source || ""}
         onValueChange={(v) => updateFilter("source", v || "")}
+        items={[
+          { value: "all", label: "Все источники" },
+          { value: "website", label: "Сайт" },
+          { value: "configurator", label: "Конфигуратор" },
+          { value: "calculator", label: "Калькулятор" },
+          { value: "phone", label: "Телефон" },
+          { value: "telegram", label: "Telegram" },
+        ]}
       >
         <SelectTrigger className="w-full sm:w-40">
           <SelectValue placeholder="Все источники" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">Все источники</SelectItem>
-          <SelectItem value="website">Сайт</SelectItem>
-          <SelectItem value="configurator">Конфигуратор</SelectItem>
-          <SelectItem value="calculator">Калькулятор</SelectItem>
-          <SelectItem value="phone">Телефон</SelectItem>
-          <SelectItem value="telegram">Telegram</SelectItem>
+          <SelectItem value="all" label="Все источники">Все источники</SelectItem>
+          <SelectItem value="website" label="Сайт">Сайт</SelectItem>
+          <SelectItem value="configurator" label="Конфигуратор">Конфигуратор</SelectItem>
+          <SelectItem value="calculator" label="Калькулятор">Калькулятор</SelectItem>
+          <SelectItem value="phone" label="Телефон">Телефон</SelectItem>
+          <SelectItem value="telegram" label="Telegram">Telegram</SelectItem>
         </SelectContent>
       </Select>
 

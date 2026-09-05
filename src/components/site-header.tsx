@@ -9,7 +9,7 @@ import { useAdmin } from "@/contexts/admin-context";
 import { Menu, X } from "lucide-react";
 
 export function SiteHeader() {
-  const { isAdmin } = useAdmin();
+  const { isAdmin, is_admin_user } = useAdmin();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
@@ -33,11 +33,11 @@ export function SiteHeader() {
           <Link href="/how-it-works" className="text-sm text-muted-foreground hover:text-foreground">
             Как купить
           </Link>
+          {is_admin_user && (
+            <AdminToggle />
+          )}
           {isAdmin && (
-            <>
-              <AdminToggle />
-              <SettingsDrawer />
-            </>
+            <SettingsDrawer />
           )}
           <Link href="/login">
             <Button variant="outline" size="sm">
@@ -71,10 +71,10 @@ export function SiteHeader() {
           <Link href="/how-it-works" className="py-2 text-sm" onClick={() => setMobileOpen(false)}>
             Как купить
           </Link>
-          {isAdmin && (
+          {is_admin_user && (
             <div className="flex items-center gap-2 py-2">
               <AdminToggle />
-              <SettingsDrawer />
+              {isAdmin && <SettingsDrawer />}
             </div>
           )}
           <Link href="/login" onClick={() => setMobileOpen(false)}>

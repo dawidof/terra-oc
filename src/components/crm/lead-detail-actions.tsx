@@ -67,7 +67,7 @@ export function LeadDetailActions({
       }
 
       if (followUpDate !== (nextFollowUpAt ? new Date(nextFollowUpAt).toISOString().slice(0, 16) : "")) {
-        updates.nextFollowUpAt = followUpDate || null;
+        updates.nextFollowUpAt = followUpDate ? new Date(followUpDate).toISOString() : null;
       }
 
       if (Object.keys(updates).length === 0) {
@@ -102,13 +102,17 @@ export function LeadDetailActions({
         {/* Status */}
         <div className="space-y-2">
           <Label>Статус</Label>
-          <Select value={status} onValueChange={(v) => v && setStatus(v)}>
+          <Select
+            value={status}
+            onValueChange={(v) => v && setStatus(v)}
+            items={statusOptions}
+          >
             <SelectTrigger>
-              <SelectValue />
+              <SelectValue placeholder="Статус" />
             </SelectTrigger>
             <SelectContent>
               {statusOptions.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
+                <SelectItem key={opt.value} value={opt.value} label={opt.label}>
                   {opt.label}
                 </SelectItem>
               ))}
@@ -126,14 +130,15 @@ export function LeadDetailActions({
             <Select
               value={managerId}
               onValueChange={(v) => setManagerId(v || "")}
+              items={[{ value: "none", label: "Не назначен" }, ...managers.map((m) => ({ value: m.id, label: m.name }))]}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Не назначен" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">Не назначен</SelectItem>
+                <SelectItem value="none" label="Не назначен">Не назначен</SelectItem>
                 {managers.map((m) => (
-                  <SelectItem key={m.id} value={m.id}>
+                  <SelectItem key={m.id} value={m.id} label={m.name}>
                     {m.name}
                   </SelectItem>
                 ))}

@@ -6,6 +6,7 @@ export interface RawVehicleData {
   model: string;
   trims: RawTrim[];
   scrapedAt: string;
+  specGroups?: Record<string, Record<string, string | null>[]>;
 }
 
 export interface RawTrim {
@@ -27,6 +28,7 @@ export interface RawTrim {
   imageUrls: string[];
   specs: Record<string, string>;
   rawSpecs: Record<string, string>;
+  specGroups?: Record<string, Record<string, string | null>[]>;
 }
 
 const DRIVETRAIN_ALIASES: Record<string, string> = {

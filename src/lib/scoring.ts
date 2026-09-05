@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { trims, vehicleOffers, carModels, brands, modelVersions } from "@/db/schema";
+import { trims, vehicleOffers, carModels, brands, modelVersions, vehicleMedia } from "@/db/schema";
 import { eq, and, gte, lte, desc } from "drizzle-orm";
 
 export interface WizardAnswers {
@@ -227,12 +227,14 @@ export async function getRecommendations(answers: WizardAnswers): Promise<Scored
       brandName: brands.name,
       seats: modelVersions.seats,
       estimatedTotalUsd: vehicleOffers.estimatedTotalUsd,
+      imageUrl: vehicleMedia.url,
     })
     .from(trims)
     .innerJoin(modelVersions, eq(trims.modelVersionId, modelVersions.id))
     .innerJoin(carModels, eq(modelVersions.carModelId, carModels.id))
     .innerJoin(brands, eq(carModels.brandId, brands.id))
     .leftJoin(vehicleOffers, eq(trims.id, vehicleOffers.trimId))
+    .leftJoin(vehicleMedia, and(eq(modelVersions.id, vehicleMedia.modelVersionId), eq(vehicleMedia.sortOrder, 0)))
     .where(eq(trims.active, true));
 
   const prices = allTrims
@@ -302,7 +304,7 @@ export async function getRecommendations(answers: WizardAnswers): Promise<Scored
       batteryCapacityKwh: trim.batteryCapacityKwh,
       seats: trim.seats,
       estimatedTotalUsd: trim.estimatedTotalUsd || trim.basePrice,
-      imageUrl: null,
+      imageUrl: trim.imageUrl || null,
       score: normalizedScore,
       reasons: reasons.slice(0, 3),
     });

@@ -30,6 +30,7 @@ interface Recommendation {
   estimatedTotalUsd: string | null;
   score: number;
   reasons: string[];
+  imageUrl: string | null;
 }
 
 const STEPS = [
@@ -100,6 +101,17 @@ const STEPS = [
   },
 ];
 
+function getLastAnsweredStep(answers: WizardAnswers): number {
+  const stepKeys: (keyof WizardAnswers)[] = ["budget", "bodyType", "powertrain", "seats", "priority", "usage"];
+  for (let i = stepKeys.length - 1; i >= 0; i--) {
+    const key = stepKeys[i];
+    if (answers[key] && answers[key] !== "any") {
+      return i;
+    }
+  }
+  return 0;
+}
+
 interface WizardClientProps {
   csrfToken: string;
 }
@@ -110,6 +122,7 @@ export function WizardClient({ csrfToken }: WizardClientProps) {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(false);
   const [showLeadForm, setShowLeadForm] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   const currentStep = STEPS[step];
   const progress = ((step + 1) / STEPS.length) * 100;
@@ -132,6 +145,7 @@ export function WizardClient({ csrfToken }: WizardClientProps) {
       console.error("Failed to get recommendations:", err);
     } finally {
       setLoading(false);
+      setSubmitted(true);
     }
   }
 
@@ -140,6 +154,50 @@ export function WizardClient({ csrfToken }: WizardClientProps) {
     setAnswers({});
     setRecommendations([]);
     setShowLeadForm(false);
+    setSubmitted(false);
+  }
+
+  function handleSoftenedFilter(key: string, value: string) {
+    const newAnswers = { ...answers, [key]: value };
+    setAnswers(newAnswers);
+    setLoading(true);
+    fetch("/api/choose", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newAnswers),
+    })
+      .then((res) => res.json())
+      .then((data) => setRecommendations(data.recommendations || []))
+      .catch((err) => console.error("Failed to get recommendations:", err))
+      .finally(() => setLoading(false));
+  }
+
+  function handleViewAll() {
+    const allAny: WizardAnswers = {
+      budget: "any",
+      bodyType: "any",
+      powertrain: "any",
+      seats: "any",
+      priority: "any",
+      usage: "any",
+    };
+    setAnswers(allAny);
+    setLoading(true);
+    fetch("/api/choose", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(allAny),
+    })
+      .then((res) => res.json())
+      .then((data) => setRecommendations(data.recommendations || []))
+      .catch((err) => console.error("Failed to get recommendations:", err))
+      .finally(() => setLoading(false));
+  }
+
+  function handleEditLastAnswer() {
+    const lastStep = getLastAnsweredStep(answers);
+    setStep(lastStep);
+    setSubmitted(false);
   }
 
   // Show lead form
@@ -157,13 +215,17 @@ export function WizardClient({ csrfToken }: WizardClientProps) {
   }
 
   // Show results
-  if (recommendations.length > 0) {
+  if (submitted) {
     return (
       <div className="mx-auto max-w-4xl">
         <Results
+          answers={answers}
           recommendations={recommendations}
           onReset={handleReset}
           onLeadForm={() => setShowLeadForm(true)}
+          onSoftenedFilter={handleSoftenedFilter}
+          onViewAll={handleViewAll}
+          onEditLastAnswer={handleEditLastAnswer}
         />
       </div>
     );

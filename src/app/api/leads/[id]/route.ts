@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { updateLeadStatus, assignLead, setFollowUp } from "@/lib/crm";
+import { updateLeadStatus, assignLead, setFollowUp, updateLeadEstimate } from "@/lib/crm";
 import { leadUpdateSchema } from "@/lib/validation-schemas";
 
 export async function PATCH(
@@ -39,6 +39,16 @@ export async function PATCH(
 
     if ("nextFollowUpAt" in data) {
       await setFollowUp(id, data.nextFollowUpAt ?? null);
+    }
+
+    if (data.estimatedTotal !== undefined || data.additionalCosts !== undefined || data.calculatorBreakdown !== undefined) {
+      await updateLeadEstimate(
+        id,
+        data.estimatedTotal ?? null,
+        data.additionalCosts ?? null,
+        userId,
+        data.calculatorBreakdown ?? null
+      );
     }
 
     return NextResponse.json({ success: true });

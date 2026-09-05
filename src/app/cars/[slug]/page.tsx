@@ -1,19 +1,18 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { getCarBySlug, getCarOffers, getCarMedia, getTrimSpecs, getAllTrims, getSimilarCars, getUsedVehicleDetails } from "@/lib/queries";
 import { getComparisonSpecs } from "@/lib/compare";
-import { getConfigurationOptions } from "@/lib/leads";
+import { getConfigurationOptions, getCarColorImages } from "@/lib/leads";
 import { generateCsrfToken } from "@/lib/csrf-actions";
 import { ConfiguratorSection } from "@/components/configurator-section";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { ChevronRight, Zap, Fuel, Gauge, Calendar, MapPin, Truck, FileText, Shield } from "lucide-react";
 import { CarCard } from "@/components/car-card";
 import { TrimComparisonTable } from "@/components/trim-comparison-table";
 import { VehicleAdminBar } from "@/components/admin/vehicle-admin-bar";
+import { CarGallery } from "@/components/car-gallery";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -58,6 +57,23 @@ export default async function CarDetailPage({ params }: Props) {
     getAllTrims(car.modelVersionId),
     getConfigurationOptions(car.trimId),
   ]);
+
+  const colorOptionIds = optionGroups
+    .filter((g) => g.type === "exterior_color" || g.type === "interior_color")
+    .flatMap((g) => g.options.map((o) => o.id));
+
+  let colorImagesMap: Record<string, { url: string; alt: string | null }[]> = {};
+  try {
+    const colorImagesEntries = await Promise.all(
+      colorOptionIds.map(async (id) => {
+        const imgs = await getCarColorImages(id);
+        return [id, imgs.map((img) => ({ url: img.imageUrl, alt: img.alt }))] as const;
+      })
+    );
+    colorImagesMap = Object.fromEntries(colorImagesEntries);
+  } catch {
+    // car_color_images table may not exist yet
+  }
 
   const csrfToken = generateCsrfToken();
 
@@ -129,33 +145,11 @@ export default async function CarDetailPage({ params }: Props) {
         {/* Hero section */}
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
           {/* Gallery */}
-          <div className="space-y-4">
-            <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-gray-100">
-              {media[0] ? (
-                <Image
-                  src={media[0].url}
-                  alt={media[0].alt || `${car.brandName} ${car.modelName}`}
-                  fill
-                  className="object-cover"
-                  priority
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                />
-              ) : (
-                <div className="flex h-full items-center justify-center text-gray-400">
-                  Фото скоро
-                </div>
-              )}
-            </div>
-            {media.length > 1 && (
-              <div className="grid grid-cols-4 gap-2">
-                {media.slice(0, 4).map((m, i) => (
-                  <div key={m.id} className="relative aspect-square overflow-hidden rounded-lg bg-gray-100">
-                    <Image src={m.url} alt={m.alt || ""} fill className="object-cover" sizes="150px" />
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <CarGallery
+            images={media.map((m) => ({ id: m.id, url: m.url, alt: m.alt }))}
+            brandName={car.brandName}
+            modelName={car.modelName}
+          />
 
           {/* Info */}
           <div>
@@ -411,6 +405,8 @@ export default async function CarDetailPage({ params }: Props) {
               customsCost={offer?.estimatedCustoms ? Number(offer.estimatedCustoms) : null}
               serviceFee={offer?.estimatedServiceFee ? Number(offer.estimatedServiceFee) : null}
               deliveryDays={offer?.deliveryDays || null}
+              colorImages={colorImagesMap}
+              defaultMedia={media.map((m) => ({ id: m.id, url: m.url, alt: m.alt }))}
             />
           </div>
         )}

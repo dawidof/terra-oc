@@ -1,8 +1,13 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as cheerio from "cheerio";
+import "dotenv/config";
+import { drizzle } from "drizzle-orm/postgres-js";
+import { eq } from "drizzle-orm";
+import postgres from "postgres";
 import type { RawVehicleData, RawTrim } from "../src/lib/normalizer";
 import { normalizeDrivetrain, normalizePowertrain, normalizeBodyType, parseNumber, parsePrice, generateSlug } from "../src/lib/normalizer";
+import { importUrls } from "../src/db/schema";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const URLS_FILE = path.join(DATA_DIR, "urls.txt");
@@ -17,14 +22,53 @@ function sleep(ms: number): Promise<void> {
 
 function loadUrls(): string[] {
   if (!fs.existsSync(URLS_FILE)) {
-    console.error(`❌ URL list not found: ${URLS_FILE}`);
-    process.exit(1);
+    return [];
   }
   const content = fs.readFileSync(URLS_FILE, "utf-8");
   return content
     .split("\n")
     .map((line) => line.trim())
     .filter((line) => line && !line.startsWith("#"));
+}
+
+async function loadUrlsFromDb(): Promise<string[]> {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) return [];
+
+  const client = postgres(connectionString);
+  const db = drizzle(client);
+
+  try {
+    const rows = await db
+      .select({ url: importUrls.url })
+      .from(importUrls)
+      .where(eq(importUrls.status, "pending"));
+
+    return rows.map((r) => r.url);
+  } catch {
+    return [];
+  } finally {
+    await client.end();
+  }
+}
+
+async function updateUrlStatus(url: string, status: string, errorMessage?: string) {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) return;
+
+  const client = postgres(connectionString);
+  const db = drizzle(client);
+
+  try {
+    await db
+      .update(importUrls)
+      .set({ status, errorMessage: errorMessage || null, updatedAt: new Date() })
+      .where(eq(importUrls.url, url));
+  } catch {
+    // ignore
+  } finally {
+    await client.end();
+  }
 }
 
 async function fetchPage(url: string): Promise<string | null> {
@@ -44,11 +88,269 @@ async function fetchPage(url: string): Promise<string | null> {
   }
 }
 
+// ─── Gonzo-specific parsing ─────────────────────────────────────────────
+
+function isGonzoUrl(url: string): boolean {
+  return url.includes("gonzo-motors.uz");
+}
+
+function extractGonzoVehicleData(html: string, url: string): RawVehicleData | null {
+  const $ = cheerio.load(html);
+  const title = $("title").text().trim() || $("h1").first().text().trim();
+
+  const brand = extractGonzoBrand($, title);
+  const model = extractGonzoModel($, title);
+
+  if (!brand || !model) {
+    console.log(`  ⚠ Could not determine brand/model from: ${title}`);
+    return null;
+  }
+
+  const trims = extractGonzoTrims($, url);
+  const specGroups = extractGonzoSpecGroups($);
+
+  return {
+    sourceUrl: url,
+    sourceSite: "gonzo-motors.uz",
+    title,
+    brand,
+    model,
+    trims,
+    scrapedAt: new Date().toISOString(),
+    specGroups: specGroups || undefined,
+  };
+}
+
+function extractGonzoBrand($: cheerio.CheerioAPI, title: string): string | null {
+  const knownBrands = [
+    "Zeekr", "BYD", "Changan", "Geely", "Chery", "Haval", "MG",
+    "BMW", "Mercedes", "Audi", "Toyota", "Hyundai", "Kia",
+    "Tesla", "Nio", "Xpeng", "Li Auto", "Deepal", "Avatr",
+    "Lynk", "Proton", "Jetour", "Omoda", "Jaecoo", "Voyah",
+  ];
+
+  const text = title + " " + $("h1").first().text();
+  for (const brand of knownBrands) {
+    if (text.toLowerCase().includes(brand.toLowerCase())) {
+      return brand;
+    }
+  }
+
+  const metaContent = $('meta[name="description"]').attr("content") || "";
+  for (const brand of knownBrands) {
+    if (metaContent.toLowerCase().includes(brand.toLowerCase())) {
+      return brand;
+    }
+  }
+
+  return null;
+}
+
+function extractGonzoModel($: cheerio.CheerioAPI, title: string): string | null {
+  const h1 = $("h1").first().text().trim();
+  const text = h1 || title;
+
+  const cleaned = text
+    .replace(/(?:купить|цена|в наличии|в ташкенте|в узбекистане|доставка|официальный|дилер|авто|автомобиль)/gi, "")
+    .trim();
+
+  const modelMatch = cleaned.match(/^[\w\s]+?\s+((?:[\w]+\s*)+(?:\d{4})?)/i);
+  if (modelMatch) {
+    return modelMatch[1].trim();
+  }
+
+  const words = cleaned.split(/\s+/).filter((w) => w.length > 1);
+  if (words.length >= 2) {
+    return words.slice(0, 3).join(" ");
+  }
+
+  return null;
+}
+
+function extractGonzoTrims($: cheerio.CheerioAPI, url: string): RawTrim[] {
+  const trims: RawTrim[] = [];
+
+  // Extract trim names and prices from the page content
+  // Look for patterns like "7X 75kW RWD Max - 35.800$"
+  const priceBlocks = $("body").text();
+  const pricePattern = /(\w[\w\s]+(?:RWD|AWD|4WD|2WD|Max|Ultra|Smart|Performance|Standard|Base|Pro|Plus|Elite|Comfort|Luxury)[\w\s]*)\s*[-–]\s*(\d[\d.,]*)\s*\$/gi;
+  let match;
+  while ((match = pricePattern.exec(priceBlocks)) !== null) {
+    const name = match[1].trim();
+    const priceStr = match[2].replace(/[.,](?=\d{3})/g, "");
+    const priceData = parsePrice(priceStr + "$");
+
+    if (name && name.length < 100) {
+      trims.push({
+        name,
+        price: priceData ? String(priceData.amount) : null,
+        priceCurrency: "USD",
+        priceBasis: "CIP",
+        powertrainType: "bev",
+        drivetrain: normalizeDrivetrain(name.includes("RWD") ? "задний" : name.includes("AWD") || name.includes("4WD") ? "полноприводный" : null),
+        motorPowerKw: parseNumber(name.match(/(\d+)\s*kW/i)?.[1] || null),
+        enginePowerHp: null,
+        engineDisplacementCc: null,
+        batteryCapacityKwh: parseNumber(name.match(/(\d+)\s*kWh/i)?.[1] || null),
+        rangeKm: null,
+        acceleration0100: null,
+        bodyType: "SUV",
+        seats: 5,
+        description: "",
+        imageUrls: [],
+        specs: {},
+        rawSpecs: {},
+      });
+    }
+  }
+
+  // Fallback: if no trims found from price patterns, try the table data
+  if (trims.length === 0) {
+    const firstTable = $(".t431__data-part1").first().text().trim();
+    if (firstTable) {
+      const headerParts = firstTable.split(";").map((s) => s.trim()).filter(Boolean);
+      // First part is "Комплектация", rest are trim names
+      const trimNames = headerParts.slice(1);
+      for (const name of trimNames) {
+        if (name && name.length < 100) {
+          trims.push({
+            name,
+            price: null,
+            priceCurrency: "USD",
+            priceBasis: "CIP",
+            powertrainType: "bev",
+            drivetrain: normalizeDrivetrain(name.includes("RWD") || name.includes("2WD") ? "задний" : name.includes("AWD") || name.includes("4WD") ? "полноприводный" : null),
+            motorPowerKw: null,
+            enginePowerHp: null,
+            engineDisplacementCc: null,
+            batteryCapacityKwh: parseNumber(name.match(/(\d+)\s*kWh/i)?.[1] || null),
+            rangeKm: null,
+            acceleration0100: null,
+            bodyType: "SUV",
+            seats: 5,
+            description: "",
+            imageUrls: [],
+            specs: {},
+            rawSpecs: {},
+          });
+        }
+      }
+    }
+  }
+
+  // Extract spec data from tables and merge into trims
+  const specGroups = extractGonzoSpecGroups($);
+  if (specGroups && trims.length > 0) {
+    // Merge specs into trims
+    for (const groupName of Object.keys(specGroups)) {
+      const rows = specGroups[groupName];
+      for (const row of rows) {
+        const specName = row["__specName"];
+        if (!specName) continue;
+
+        for (let i = 0; i < trims.length; i++) {
+          const trimName = trims[i].name;
+          const value = row[trimName] || row[`col_${i}`] || null;
+          if (value && value !== "+" && value !== "-") {
+            trims[i].specs[specName] = value;
+            trims[i].rawSpecs[specName] = value;
+          }
+        }
+      }
+    }
+  }
+
+  return trims;
+}
+
+function extractGonzoSpecGroups($: cheerio.CheerioAPI): Record<string, Record<string, string | null>[]> | null {
+  const groups: Record<string, Record<string, string | null>[]> = {};
+
+  // Find the t397 tab section that contains spec group names
+  // The spec groups section has buttons with aria-controls pointing to t431 record IDs
+  // It's the t397 section that's NOT an accordion (no uc-accord class)
+  const tabNames: string[] = [];
+  
+  // Target the second t397 section (spec groups), not the first (colors)
+  // The spec groups section has class "t-rec_pt_0" and no "uc-accord" class
+  const specTabSection = $("[data-record-type='397']").filter((_, el) => {
+    const $el = $(el);
+    // The spec groups section doesn't have the accordion class
+    return !$el.hasClass("uc-accord-a-1") && !$el.hasClass("uc-accord-a-2");
+  }).first();
+
+  if (specTabSection.length) {
+    specTabSection.find(".t397__title").each((_, el) => {
+      const name = $(el).text().trim();
+      if (name && name.length < 100) {
+        tabNames.push(name);
+      }
+    });
+  }
+
+  // Fallback: try to find tab names from select options
+  if (tabNames.length === 0) {
+    $("[data-record-type='397']").each((_, section) => {
+      $(section).find(".t397__select option").each((_, el) => {
+        const name = $(el).text().trim();
+        if (name && name.length < 100 && !tabNames.includes(name)) {
+          tabNames.push(name);
+        }
+      });
+    });
+  }
+
+  // Each t431 section corresponds to a tab
+  const tables = $(".t431");
+  tables.each((tableIndex, tableEl) => {
+    const $table = $(tableEl);
+    const groupName = tabNames[tableIndex] || `Группа ${tableIndex + 1}`;
+
+    const part1 = $table.find(".t431__data-part1").text().trim();
+    const part2 = $table.find(".t431__data-part2").text().trim();
+
+    if (!part1 && !part2) return;
+
+    // Parse header (trim names)
+    const headerParts = part1.split(";").map((s) => s.trim()).filter(Boolean);
+    const trimNames = headerParts.slice(1); // skip "Комплектация"
+
+    // Parse data rows
+    const rows: Record<string, string | null>[] = [];
+    const dataLines = part2.split("\n").map((l) => l.trim()).filter(Boolean);
+
+    for (const line of dataLines) {
+      const parts = line.split(";").map((s) => s.trim());
+      if (parts.length < 2) continue;
+
+      const specName = parts[0];
+      if (!specName) continue;
+
+      const row: Record<string, string | null> = { __specName: specName };
+
+      for (let i = 0; i < trimNames.length; i++) {
+        const value = parts[i + 1]?.trim() || null;
+        row[trimNames[i]] = value;
+        row[`col_${i}`] = value;
+      }
+
+      rows.push(row);
+    }
+
+    if (rows.length > 0) {
+      groups[groupName] = rows;
+    }
+  });
+
+  return Object.keys(groups).length > 0 ? groups : null;
+}
+
+// ─── Generic parsing (original) ────────────────────────────────────────
+
 function extractVehicleData(html: string, url: string): RawVehicleData | null {
   const $ = cheerio.load(html);
   const title = $("title").text().trim() || $("h1").first().text().trim();
 
-  // Try to extract brand and model from title or page content
   const brand = extractBrand($, title);
   const model = extractModel($, title);
 
@@ -71,22 +373,19 @@ function extractVehicleData(html: string, url: string): RawVehicleData | null {
 }
 
 function extractBrand($: cheerio.CheerioAPI, title: string): string | null {
-  // Common brand names to look for
   const knownBrands = [
     "Zeekr", "BYD", "Changan", "Geely", "Chery", "Haval", "MG",
     "BMW", "Mercedes", "Audi", "Toyota", "Hyundai", "Kia",
     "Tesla", "Nio", "Xpeng", "Li Auto", "Deepal", "Avatr",
-    "Lynk", "Proton", "Jetour", "Omoda", "Jaecoo",
+    "Lynk", "Proton", "Jetour", "Omoda", "Jaecoo", "Voyah",
   ];
 
-  // Check title first
   for (const brand of knownBrands) {
     if (title.toLowerCase().includes(brand.toLowerCase())) {
       return brand;
     }
   }
 
-  // Check h1
   const h1 = $("h1").first().text();
   for (const brand of knownBrands) {
     if (h1.toLowerCase().includes(brand.toLowerCase())) {
@@ -94,7 +393,6 @@ function extractBrand($: cheerio.CheerioAPI, title: string): string | null {
     }
   }
 
-  // Check meta tags
   const metaContent = $('meta[name="description"]').attr("content") || "";
   for (const brand of knownBrands) {
     if (metaContent.toLowerCase().includes(brand.toLowerCase())) {
@@ -106,22 +404,18 @@ function extractBrand($: cheerio.CheerioAPI, title: string): string | null {
 }
 
 function extractModel($: cheerio.CheerioAPI, title: string): string | null {
-  // Try to extract model from h1 or title
   const h1 = $("h1").first().text().trim();
   const text = h1 || title;
 
-  // Remove brand name and common words to get model
   const cleaned = text
     .replace(/(?:купить|цена|в наличии|в ташкенте|в узбекистане|доставка|официальный|дилер|авто|автомобиль)/gi, "")
     .trim();
 
-  // Try to find model pattern (Brand Model Year or Brand Model)
   const modelMatch = cleaned.match(/^[\w\s]+?\s+((?:[\w]+\s*)+(?:\d{4})?)/i);
   if (modelMatch) {
     return modelMatch[1].trim();
   }
 
-  // Fallback: use the first few words after removing brand
   const words = cleaned.split(/\s+/).filter((w) => w.length > 1);
   if (words.length >= 2) {
     return words.slice(0, 3).join(" ");
@@ -133,10 +427,6 @@ function extractModel($: cheerio.CheerioAPI, title: string): string | null {
 function extractTrims($: cheerio.CheerioAPI, url: string): RawTrim[] {
   const trims: RawTrim[] = [];
 
-  // Look for trim/variant sections
-  // Common patterns: tables with specs, accordion sections, card layouts
-
-  // Pattern 1: Table rows with trim data
   $("table").each((_, table) => {
     const rows = $(table).find("tr");
     rows.each((_, row) => {
@@ -152,7 +442,6 @@ function extractTrims($: cheerio.CheerioAPI, url: string): RawTrim[] {
     });
   });
 
-  // Pattern 2: Card-like sections
   if (trims.length === 0) {
     $('[class*="trim"], [class*="variant"], [class*="configuration"], [class*="card"]').each((_, el) => {
       const name = $(el).find("h2, h3, h4, [class*='title'], [class*='name']").first().text().trim();
@@ -164,7 +453,6 @@ function extractTrims($: cheerio.CheerioAPI, url: string): RawTrim[] {
     });
   }
 
-  // Pattern 3: Look for price and basic specs in the main content
   if (trims.length === 0) {
     const price = $('[class*="price"]').first().text().trim();
     const specs = extractSpecsFromSection($, $("body").get(0));
@@ -188,7 +476,6 @@ function extractSpecsFromRow($: cheerio.CheerioAPI, row: any): Record<string, st
 function extractSpecsFromSection($: cheerio.CheerioAPI, section: any): Record<string, string> {
   const specs: Record<string, string> = {};
 
-  // Look for key-value pairs
   $(section).find("dt, th, [class*='label'], [class*='key']").each((_, key) => {
     const k = $(key).text().trim();
     const v = $(key).next("dd, td, [class*='value']").text().trim();
@@ -197,7 +484,6 @@ function extractSpecsFromSection($: cheerio.CheerioAPI, section: any): Record<st
     }
   });
 
-  // Look for list items
   $(section).find("li").each((_, li) => {
     const text = $(li).text().trim();
     const match = text.match(/^([^:]+):\s*(.+)$/);
@@ -206,7 +492,6 @@ function extractSpecsFromSection($: cheerio.CheerioAPI, section: any): Record<st
     }
   });
 
-  // Look for spec-like patterns in text
   const text = $(section).text();
   const patterns = [
     { regex: /(\d+[\.,]?\d*)\s*(?:кВт|kW)/i, key: "Мощность (кВт)" },
@@ -230,9 +515,7 @@ function extractSpecsFromSection($: cheerio.CheerioAPI, section: any): Record<st
 function createTrimFromSpecs(name: string, price: string | null, specs: Record<string, string>, url: string): RawTrim {
   const priceData = parsePrice(price);
 
-  // Extract image URLs
   const imageUrls: string[] = [];
-  // This would be populated from the page's img tags
 
   return {
     name,
@@ -259,7 +542,6 @@ function createTrimFromSpecs(name: string, price: string | null, specs: Record<s
 function findSpecValue(specs: Record<string, string>, keys: string[]): string | null {
   for (const key of keys) {
     if (specs[key]) return specs[key];
-    // Case-insensitive search
     for (const specKey of Object.keys(specs)) {
       if (specKey.toLowerCase() === key.toLowerCase()) {
         return specs[specKey];
@@ -282,11 +564,15 @@ function saveRawData(data: RawVehicleData): void {
 async function main() {
   console.log("🔍 TerraAuto Vehicle Scraper\n");
 
-  const urls = loadUrls();
-  console.log(`📋 Found ${urls.length} URLs to scrape\n`);
+  // Load URLs from both file and database
+  const fileUrls = loadUrls();
+  const dbUrls = await loadUrlsFromDb();
+  const urls = [...new Set([...fileUrls, ...dbUrls])];
+
+  console.log(`📋 Found ${urls.length} URLs to scrape (${fileUrls.length} from file, ${dbUrls.length} from DB)\n`);
 
   if (urls.length === 0) {
-    console.log("No URLs found in data/urls.txt. Add some URLs and try again.");
+    console.log("No URLs found. Add URLs to data/urls.txt or use the CRM import page.");
     process.exit(0);
   }
 
@@ -300,16 +586,27 @@ async function main() {
     const html = await fetchPage(url);
     if (!html) {
       errors.push(url);
+      await updateUrlStatus(url, "error", "Failed to fetch");
       continue;
     }
 
-    const data = extractVehicleData(html, url);
+    let data: RawVehicleData | null;
+
+    if (isGonzoUrl(url)) {
+      console.log("  → Detected gonzo-motors.uz, using specialized parser");
+      data = extractGonzoVehicleData(html, url);
+    } else {
+      data = extractVehicleData(html, url);
+    }
+
     if (data) {
       results.push(data);
       saveRawData(data);
       console.log(`  ✓ ${data.brand} ${data.model} (${data.trims.length} trims)`);
+      await updateUrlStatus(url, "scraped");
     } else {
       errors.push(url);
+      await updateUrlStatus(url, "error", "Could not extract vehicle data");
     }
 
     if (i < urls.length - 1) {
@@ -317,7 +614,6 @@ async function main() {
     }
   }
 
-  // Summary
   console.log("\n" + "=".repeat(50));
   console.log("📊 Scraping Summary");
   console.log("=".repeat(50));

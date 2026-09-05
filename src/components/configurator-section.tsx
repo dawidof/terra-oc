@@ -7,6 +7,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Calculator } from "lucide-react";
 
+interface ColorImage {
+  url: string;
+  alt?: string | null;
+}
+
+interface MediaImage {
+  id: string;
+  url: string;
+  alt?: string | null;
+}
+
 interface OptionGroup {
   id: string;
   type: string;
@@ -39,6 +50,8 @@ interface ConfiguratorSectionProps {
   customsCost: number | null;
   serviceFee: number | null;
   deliveryDays: number | null;
+  colorImages?: Record<string, ColorImage[]>;
+  defaultMedia?: MediaImage[];
 }
 
 export function ConfiguratorSection({
@@ -56,6 +69,8 @@ export function ConfiguratorSection({
   customsCost,
   serviceFee,
   deliveryDays,
+  colorImages = {},
+  defaultMedia = [],
 }: ConfiguratorSectionProps) {
   const [showLeadForm, setShowLeadForm] = useState(false);
   const [configuration, setConfiguration] = useState<{
@@ -73,6 +88,18 @@ export function ConfiguratorSection({
 
   const estimatedBase = estimatedTotalUsd ? Number(estimatedTotalUsd) : basePrice + 9000;
 
+  function handleColorSelect(_groupId: string, _optionId: string, images: ColorImage[]) {
+    const galleryImages = images.length > 0
+      ? images.map((img, i) => ({
+          id: `color-${i}`,
+          url: img.url,
+          alt: img.alt,
+        }))
+      : defaultMedia.map((m) => ({ id: m.id, url: m.url, alt: m.alt }));
+
+    window.dispatchEvent(new CustomEvent("colorimages:update", { detail: galleryImages }));
+  }
+
   return (
     <section className="mt-12">
       <h2 className="mb-6 text-2xl font-bold">Конфигурация и заявка</h2>
@@ -81,8 +108,9 @@ export function ConfiguratorSection({
         {/* Configurator */}
         <Configurator
           groups={optionGroups}
-          basePrice={basePrice}
+          colorImages={colorImages}
           onConfigurationChange={setConfiguration}
+          onColorSelect={handleColorSelect}
         />
 
         {/* Lead form or CTA */}

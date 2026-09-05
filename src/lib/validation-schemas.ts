@@ -28,6 +28,7 @@ export const leadSchema = z.object({
       wheels: z.string().optional(),
       options: z.array(z.string()).optional(),
       unpriced_options: z.array(z.string()).optional(),
+      totalDelta: z.number().optional(),
     })
     .optional(),
   sourcePrice: z.number().positive().optional(),
@@ -98,6 +99,27 @@ export const leadUpdateSchema = z.object({
   status: z.enum(leadStatusValues).optional(),
   assignedManagerId: z.string().uuid().nullable().optional(),
   nextFollowUpAt: z.string().datetime().nullable().optional(),
+  estimatedTotal: z.number().positive().optional(),
+  additionalCosts: z
+    .array(
+      z.object({
+        label: z.string().min(1).max(255),
+        amount: z.number(),
+      })
+    )
+    .optional(),
+  calculatorBreakdown: z
+    .object({
+      vehiclePrice: z.number(),
+      logistics: z.number(),
+      customsDuty: z.number(),
+      exciseTax: z.number(),
+      vat: z.number(),
+      certificationFees: z.number(),
+      serviceFee: z.number(),
+      total: z.number(),
+    })
+    .optional(),
 });
 
 export const reviewUpdateSchema = z.object({

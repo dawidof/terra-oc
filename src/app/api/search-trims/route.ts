@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { trims, modelVersions, carModels, brands, vehicleOffers } from "@/db/schema";
-import { eq, and, or, ilike, sql } from "drizzle-orm";
+import { trims, modelVersions, carModels, brands } from "@/db/schema";
+import { eq, and, or, ilike } from "drizzle-orm";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function GET(request: NextRequest) {
@@ -30,6 +30,11 @@ export async function GET(request: NextRequest) {
       brandName: brands.name,
       brandSlug: brands.slug,
       basePrice: trims.basePrice,
+      basePriceCurrency: trims.basePriceCurrency,
+      powertrainType: trims.powertrainType,
+      engineDisplacementCc: trims.engineDisplacementCc,
+      motorPowerKw: trims.motorPowerKw,
+      batteryCapacityKwh: trims.batteryCapacityKwh,
     })
     .from(trims)
     .innerJoin(modelVersions, eq(trims.modelVersionId, modelVersions.id))

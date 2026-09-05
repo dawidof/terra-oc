@@ -1,15 +1,40 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { CarCard } from "@/components/car-card";
+import { HomeCarGrid } from "@/components/home-car-grid";
 import { ReviewList } from "@/components/reviews/review-list";
-import { getFeaturedCars } from "@/lib/queries";
+import { getFeaturedModels, getTrimsByModel } from "@/lib/queries";
+import { getConfigurationOptions } from "@/lib/leads";
 import { getPublishedReviews } from "@/lib/content";
 
 export default async function HomePage() {
-  const [featuredCars, reviews] = await Promise.all([
-    getFeaturedCars(),
+  const [featuredModels, reviews] = await Promise.all([
+    getFeaturedModels(),
     getPublishedReviews(true),
   ]);
+
+  const trimsByModelArray = await Promise.all(
+    featuredModels.map((model) => getTrimsByModel(model.modelId))
+  );
+
+  const trimsByModel: Record<string, typeof trimsByModelArray[0]> = {};
+  featuredModels.forEach((model, i) => {
+    trimsByModel[model.modelId] = trimsByModelArray[i];
+  });
+
+  const allTrimIds = new Set<string>();
+  featuredModels.forEach((model) => {
+    allTrimIds.add(model.trimId);
+    trimsByModel[model.modelId]?.forEach((trim) => allTrimIds.add(trim.id));
+  });
+
+  const configOptionsArray = await Promise.all(
+    Array.from(allTrimIds).map((trimId) => getConfigurationOptions(trimId))
+  );
+
+  const configOptions: Record<string, typeof configOptionsArray[0]> = {};
+  Array.from(allTrimIds).forEach((trimId, i) => {
+    configOptions[trimId] = configOptionsArray[i];
+  });
 
   return (
     <div className="min-h-screen bg-white">
@@ -41,7 +66,7 @@ export default async function HomePage() {
       </section>
 
       {/* Popular cars */}
-      {featuredCars.length > 0 && (
+      {featuredModels.length > 0 && (
         <section className="border-t bg-gray-50 py-16">
           <div className="container mx-auto px-4">
             <div className="mb-8 flex items-center justify-between">
@@ -50,28 +75,11 @@ export default async function HomePage() {
                 Смотреть все →
               </Link>
             </div>
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {featuredCars.slice(0, 8).map((car) => (
-                <CarCard
-                  key={car.trimId}
-                  brandName={car.brandName}
-                  brandSlug={car.brandSlug}
-                  modelName={car.modelName}
-                  modelSlug={car.modelSlug}
-                  trimName={car.trimName}
-                  trimSlug={car.trimSlug}
-                  powertrainType={car.powertrainType}
-                  drivetrain={car.drivetrain}
-                  motorPowerKw={car.motorPowerKw}
-                  enginePowerHp={null}
-                  rangeKm={car.rangeKm}
-                  basePrice={car.basePrice}
-                  estimatedTotalUsd={car.estimatedTotalUsd}
-                  imageUrl={car.imageUrl}
-                  modelYear={null}
-                />
-              ))}
-            </div>
+            <HomeCarGrid
+              models={featuredModels}
+              trimsByModel={trimsByModel}
+              configOptions={configOptions}
+            />
           </div>
         </section>
       )}

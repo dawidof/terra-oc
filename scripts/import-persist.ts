@@ -16,6 +16,7 @@ import {
   vehicleMedia,
   specificationGroups,
   specificationDefinitions,
+  trimSpecificationValues,
 } from "../src/db/schema";
 
 const connectionString = process.env.DATABASE_URL!;
@@ -214,6 +215,7 @@ async function main() {
       const version = await ensureVersion(model.id, "2024", "Китай");
 
       // Ensure trims
+      const trimRecords = [];
       for (const trimData of vehicle.trims) {
         const trimSlug = generateSlug(`${vehicle.brand}-${vehicle.model}-${trimData.name}`);
         const trim = await ensureTrim(version.id, {
@@ -223,6 +225,67 @@ async function main() {
 
         // Ensure offer
         await ensureOffer(trim.id, trimData, "Китай");
+        trimRecords.push({ trim, trimData });
+      }
+
+      // Import specification groups, definitions, and values
+      if (vehicle.specGroups && Object.keys(vehicle.specGroups).length > 0) {
+        console.log(`    📊 Importing specifications...`);
+        let specGroupOrder = 0;
+
+        for (const [groupName, rows] of Object.entries(vehicle.specGroups)) {
+          // Ensure spec group
+          const groupSlug = generateSlug(groupName);
+          let specGroup = (await db.select().from(specificationGroups).where(eq(specificationGroups.slug, groupSlug)).limit(1))[0];
+          if (!specGroup) {
+            [specGroup] = await db.insert(specificationGroups).values({
+              name: groupName,
+              slug: groupSlug,
+              sortOrder: specGroupOrder,
+            }).returning();
+          }
+          specGroupOrder++;
+
+          // Process each spec row
+          for (const row of rows) {
+            const specName = row["__specName"];
+            if (!specName) continue;
+
+            const specSlug = generateSlug(specName);
+
+            // Ensure spec definition
+            let specDef = (await db.select().from(specificationDefinitions).where(eq(specificationDefinitions.slug, specSlug)).limit(1))[0];
+            if (!specDef) {
+              [specDef] = await db.insert(specificationDefinitions).values({
+                groupId: specGroup.id,
+                name: specName,
+                slug: specSlug,
+                dataType: "text",
+                comparisonPriority: 50,
+                filterable: false,
+              }).returning();
+            }
+
+            // Batch insert values for all trims at once
+            const valuesToInsert = [];
+            for (let i = 0; i < trimRecords.length; i++) {
+              const { trim, trimData } = trimRecords[i];
+              const value = row[trimData.name] || row[`col_${i}`] || null;
+              if (value && value !== "+" && value !== "-" && value !== "—") {
+                valuesToInsert.push({
+                  trimId: trim.id,
+                  specificationDefinitionId: specDef.id,
+                  valueText: value,
+                });
+              }
+            }
+
+            if (valuesToInsert.length > 0) {
+              await db.insert(trimSpecificationValues).values(valuesToInsert).onConflictDoNothing();
+            }
+          }
+        }
+        console.log(`    ✓ Specifications imported`);
       }
 
       // Add media placeholder if none exists
