@@ -18,9 +18,9 @@ const IMAGES_DIR = join(__dirname, "../public/images/cars");
 const CAR_PHOTOS: Record<string, { name: string; url: string; alt: string; type: string }[]> = {
   "7x": [
     { name: "zeekr-7x-front.jpg", url: "https://cnevpost.com/wp-content/uploads/2024/07/2024071202032648.jpg", alt: "Zeekr 7X — вид спереди", type: "exterior" },
-    { name: "zeekr-7x-side.jpg", url: "https://cnevpost.com/wp-content/uploads/2024/07/2024071202032648.jpg", alt: "Zeekr 7X — вид сбоку", type: "exterior" },
-    { name: "zeekr-7x-rear.jpg", url: "https://cnevpost.com/wp-content/uploads/2024/07/2024071202032648.jpg", alt: "Zeekr 7X — вид сзади", type: "exterior" },
-    { name: "zeekr-7x-interior.jpg", url: "https://cnevpost.com/wp-content/uploads/2024/07/2024071202032648.jpg", alt: "Zeekr 7X — салон", type: "interior" },
+    { name: "zeekr-7x-side.jpg", url: "https://www.datocms-assets.com/143770/1730354417-car-space-2-m.jpg?auto=format", alt: "Zeekr 7X — вид сбоку", type: "exterior" },
+    { name: "zeekr-7x-rear.jpg", url: "https://www.datocms-assets.com/143770/1730354422-car-space-4-m.jpg?auto=format", alt: "Zeekr 7X — вид сзади", type: "exterior" },
+    { name: "zeekr-7x-interior.jpg", url: "https://www.datocms-assets.com/143770/1730354419-car-space-1-m.jpg?auto=format", alt: "Zeekr 7X — салон", type: "interior" },
   ],
   "001": [
     { name: "zeekr-001-front.jpg", url: "https://www.datocms-assets.com/143770/1730354420-car-space-m.jpg?auto=format", alt: "Zeekr 001 — вид спереди", type: "exterior" },
@@ -29,22 +29,22 @@ const CAR_PHOTOS: Record<string, { name: string; url: string; alt: string; type:
     { name: "zeekr-001-interior.jpg", url: "https://www.datocms-assets.com/143770/1730354419-car-space-1-m.jpg?auto=format", alt: "Zeekr 001 — салон", type: "interior" },
   ],
   "atto-3": [
-    { name: "byd-atto3-front.jpg", url: "https://carnewschina.com/wp-content/uploads/2024/02/BYD-Tang-DM-i.jpg", alt: "BYD Atto 3 — вид спереди", type: "exterior" },
-    { name: "byd-atto3-side.jpg", url: "https://carnewschina.com/wp-content/uploads/2024/02/BYD-Tang-DM-i.jpg", alt: "BYD Atto 3 — вид сбоку", type: "exterior" },
-    { name: "byd-atto3-rear.jpg", url: "https://carnewschina.com/wp-content/uploads/2024/02/BYD-Tang-DM-i.jpg", alt: "BYD Atto 3 — вид сзади", type: "exterior" },
-    { name: "byd-atto3-interior.jpg", url: "https://carnewschina.com/wp-content/uploads/2024/02/BYD-Tang-DM-i.jpg", alt: "BYD Atto 3 — салон", type: "interior" },
+    { name: "byd-atto3-front.jpg", url: "https://paultan.org/image/2024/05/2024-BYD-Atto-3-update-Malaysia-launch-1.jpg", alt: "BYD Atto 3 — вид спереди", type: "exterior" },
+    { name: "byd-atto3-side.jpg", url: "https://paultan.org/image/2024/05/2024-BYD-Atto-3-update-Malaysia-launch-5.jpg", alt: "BYD Atto 3 — вид сбоку", type: "exterior" },
+    { name: "byd-atto3-rear.jpg", url: "https://paultan.org/image/2024/05/2024-BYD-Atto-3-update-Malaysia-launch-7.jpg", alt: "BYD Atto 3 — вид сзади", type: "exterior" },
+    { name: "byd-atto3-interior.jpg", url: "https://paultan.org/image/2024/05/2024-BYD-Atto-3-update-Malaysia-launch-22.jpg", alt: "BYD Atto 3 — салон", type: "interior" },
   ],
   "seal": [
     { name: "byd-seal-front.jpg", url: "https://carnewschina.com/wp-content/uploads/2024/08/byd_seal_ev_2025-800x450.jpg", alt: "BYD Seal — вид спереди", type: "exterior" },
-    { name: "byd-seal-side.jpg", url: "https://carnewschina.com/wp-content/uploads/2024/08/byd_seal_ev_2025-1-800x450.jpg", alt: "BYD Seal — вид сбоку", type: "exterior" },
-    { name: "byd-seal-rear.jpg", url: "https://carnewschina.com/wp-content/uploads/2024/08/byd_seal_ev_2025-2-800x450.jpg", alt: "BYD Seal — вид сзади", type: "exterior" },
+    { name: "byd-seal-side.jpg", url: "https://carnewschina.com/wp-content/uploads/2024/08/byd_seal_ev_2025-800x450.jpg", alt: "BYD Seal — вид сбоку", type: "exterior" },
+    { name: "byd-seal-rear.jpg", url: "https://carnewschina.com/wp-content/uploads/2024/08/byd_seal_ev_2025-800x450.jpg", alt: "BYD Seal — вид сзади", type: "exterior" },
     { name: "byd-seal-interior.jpg", url: "https://paultan.org/image/2024/04/2024_BYD_Seal_Premium_Performance_Malaysia-1-1200x801.jpg", alt: "BYD Seal — салон", type: "interior" },
   ],
   "han": [
-    { name: "byd-han-front.jpg", url: "https://carnewschina.com/wp-content/uploads/2024/02/BYD-Tang-DM-i.jpg", alt: "BYD Han — вид спереди", type: "exterior" },
-    { name: "byd-han-side.jpg", url: "https://carnewschina.com/wp-content/uploads/2024/02/BYD-Tang-DM-i.jpg", alt: "BYD Han — вид сбоку", type: "exterior" },
-    { name: "byd-han-rear.jpg", url: "https://carnewschina.com/wp-content/uploads/2024/02/BYD-Tang-DM-i.jpg", alt: "BYD Han — вид сзади", type: "exterior" },
-    { name: "byd-han-interior.jpg", url: "https://carnewschina.com/wp-content/uploads/2024/02/BYD-Tang-DM-i.jpg", alt: "BYD Han — салон", type: "interior" },
+    { name: "byd-han-front.jpg", url: "https://paultan.org/image/2020/05/2020-BYD-Han-EV_1-e1589421359208.jpeg", alt: "BYD Han — вид спереди", type: "exterior" },
+    { name: "byd-han-side.jpg", url: "https://paultan.org/image/2020/05/2020-BYD-Han-EV_2.jpeg", alt: "BYD Han — вид сбоку", type: "exterior" },
+    { name: "byd-han-rear.jpg", url: "https://paultan.org/image/2020/05/2020-BYD-Han-EV_3.jpeg", alt: "BYD Han — вид сзади", type: "exterior" },
+    { name: "byd-han-interior.jpg", url: "https://paultan.org/image/2020/05/2020-BYD-Han-EV_4.jpeg", alt: "BYD Han — салон", type: "interior" },
   ],
   "cs55-plus": [
     { name: "changan-cs55-front.jpg", url: "https://carnewschina.com/wp-content/uploads/2023/09/2024-Changan-CS55-Plus-800x452.jpg", alt: "Changan CS55 Plus — вид спереди", type: "exterior" },
@@ -58,10 +58,6 @@ const CAR_PHOTOS: Record<string, { name: string; url: string; alt: string; type:
     { name: "deepal-s7-rear.jpg", url: "https://carnewschina.com/wp-content/uploads/2023/06/4-3-800x481.jpg", alt: "Deepal S7 — вид сзади", type: "exterior" },
     { name: "deepal-s7-interior.jpg", url: "https://carnewschina.com/wp-content/uploads/2023/06/8-3-800x529.jpg", alt: "Deepal S7 — салон", type: "interior" },
   ],
-
-  // ═════════════════════════════════════════════════════════════════════════════
-  // BYD (new models)
-  // ═════════════════════════════════════════════════════════════════════════════
   "dolphin": [
     { name: "byd-dolphin-front.jpg", url: "https://carnewschina.com/wp-content/uploads/2025/03/byd_dolphin_update-6.jpg", alt: "BYD Dolphin — вид спереди", type: "exterior" },
     { name: "byd-dolphin-side.jpg", url: "https://carnewschina.com/wp-content/uploads/2024/02/BYD-Dolphin-Honor-Edition-launched-in-China.jpg", alt: "BYD Dolphin — вид сбоку", type: "exterior" },
@@ -86,10 +82,6 @@ const CAR_PHOTOS: Record<string, { name: string; url: string; alt: string; type:
     { name: "byd-qin-plus-rear.jpg", url: "https://carnewschina.com/wp-content/uploads/2023/02/1-31.jpg", alt: "BYD Qin Plus — вид сзади", type: "exterior" },
     { name: "byd-qin-plus-interior.jpg", url: "https://carnewschina.com/wp-content/uploads/2023/02/1-31.jpg", alt: "BYD Qin Plus — салон", type: "interior" },
   ],
-
-  // ═════════════════════════════════════════════════════════════════════════════
-  // CHERY
-  // ═════════════════════════════════════════════════════════════════════════════
   "tiggo-7-pro": [
     { name: "chery-tiggo7-front.jpg", url: "https://carnewschina.com/wp-content/uploads/2024/05/2024-Chery-Tiggo-7.jpg", alt: "Chery Tiggo 7 Pro — вид спереди", type: "exterior" },
     { name: "chery-tiggo7-side.jpg", url: "https://paultan.org/image/2024/04/2024-Chery-Tiggo-7-Pro_Ext-2-1200x800.jpg", alt: "Chery Tiggo 7 Pro — вид сбоку", type: "exterior" },
@@ -114,10 +106,6 @@ const CAR_PHOTOS: Record<string, { name: string; url: string; alt: string; type:
     { name: "chery-jaecoo7-rear.jpg", url: "https://carnewschina.com/wp-content/uploads/2024/04/2-68.jpg", alt: "Chery Jaecoo 7 — вид сзади", type: "exterior" },
     { name: "chery-jaecoo7-interior.jpg", url: "https://carnewschina.com/wp-content/uploads/2024/04/image-123-800x507.png", alt: "Chery Jaecoo 7 — салон", type: "interior" },
   ],
-
-  // ═════════════════════════════════════════════════════════════════════════════
-  // GEELY
-  // ═════════════════════════════════════════════════════════════════════════════
   "monjaro": [
     { name: "geely-monjaro-front.jpg", url: "https://carnewschina.com/wp-content/uploads/2024/05/New-Geely-Boyue-L.jpg", alt: "Geely Monjaro — вид спереди", type: "exterior" },
     { name: "geely-monjaro-side.jpg", url: "https://carnewschina.com/wp-content/uploads/2024/05/1-66-800x450.jpg", alt: "Geely Monjaro — вид сбоку", type: "exterior" },
@@ -136,10 +124,6 @@ const CAR_PHOTOS: Record<string, { name: string; url: string; alt: string; type:
     { name: "geely-emgrand-rear.jpg", url: "https://carnewschina.com/wp-content/uploads/2021/12/geely-emgrand-l-5-800x441.jpg", alt: "Geely Emgrand — вид сзади", type: "exterior" },
     { name: "geely-emgrand-interior.jpg", url: "https://carnewschina.com/wp-content/uploads/2021/12/geely-emgrand-l-12-800x441.jpg", alt: "Geely Emgrand — салон", type: "interior" },
   ],
-
-  // ═════════════════════════════════════════════════════════════════════════════
-  // HAVAL
-  // ═════════════════════════════════════════════════════════════════════════════
   "jolion": [
     { name: "haval-jolion-front.jpg", url: "https://paultan.org/image/2023/05/2023_MAS_GWM_Haval_Jolion_Ext-1-1200x801.jpg", alt: "Haval Jolion — вид спереди", type: "exterior" },
     { name: "haval-jolion-side.jpg", url: "https://paultan.org/image/2023/05/2023_MAS_GWM_Haval_Jolion_Ext-2-1200x801.jpg", alt: "Haval Jolion — вид сбоку", type: "exterior" },
@@ -158,10 +142,6 @@ const CAR_PHOTOS: Record<string, { name: string; url: string; alt: string; type:
     { name: "haval-f7-rear.jpg", url: "https://paultan.org/image/2024/10/2024-GWM-H6-HEV-Launch_Ext-32-1200x800.jpg", alt: "Haval F7 — вид сзади", type: "exterior" },
     { name: "haval-f7-interior.jpg", url: "https://paultan.org/image/2024/10/2024-GWM-H6-HEV-Launch_Int-1-630x420.jpg", alt: "Haval F7 — салон", type: "interior" },
   ],
-
-  // ═════════════════════════════════════════════════════════════════════════════
-  // MG
-  // ═════════════════════════════════════════════════════════════════════════════
   "mg4": [
     { name: "mg-mg4-front.jpg", url: "https://paultan.org/image/2024/03/2024-MG4-XPower-Malaysia_Ext-1-BM-1200x800.jpg", alt: "MG MG4 — вид спереди", type: "exterior" },
     { name: "mg-mg4-side.jpg", url: "https://paultan.org/image/2024/02/MG4-BYD-Dolphin-1200x628.jpg", alt: "MG MG4 — вид сбоку", type: "exterior" },
@@ -174,10 +154,6 @@ const CAR_PHOTOS: Record<string, { name: string; url: string; alt: string; type:
     { name: "mg-hs-rear.jpg", url: "https://paultan.org/image/2024/08/2024_MG_HS_Lux_Preview_Malaysia_Ext-1-1200x801.jpg", alt: "MG HS — вид сзади", type: "exterior" },
     { name: "mg-hs-interior.jpg", url: "https://paultan.org/image/2024/08/2024_MG_HS_Lux_Preview_Malaysia_Ext-1-1200x801.jpg", alt: "MG HS — салон", type: "interior" },
   ],
-
-  // ═════════════════════════════════════════════════════════════════════════════
-  // HYUNDAI
-  // ═════════════════════════════════════════════════════════════════════════════
   "tucson": [
     { name: "hyundai-tucson-front.jpg", url: "https://paultan.org/image/2024/05/2024_Hyundai_Tucson_16Max_Malaysia_Ext-1-1200x801.jpg", alt: "Hyundai Tucson — вид спереди", type: "exterior" },
     { name: "hyundai-tucson-side.jpg", url: "https://paultan.org/image/2023/11/PACE_2023_Hyundai_Tucson_Ext-1-1200x801.jpg", alt: "Hyundai Tucson — вид сбоку", type: "exterior" },
@@ -196,12 +172,8 @@ const CAR_PHOTOS: Record<string, { name: string; url: string; alt: string; type:
     { name: "hyundai-sonata-rear.jpg", url: "https://paultan.org/image/2020/10/Hyundai_Sonata_Cover_EN-1200x675.jpg", alt: "Hyundai Sonata — вид сзади", type: "exterior" },
     { name: "hyundai-sonata-interior.jpg", url: "https://paultan.org/image/2021/02/2020-Hyundai-Sonata-2.5-Premium-Cover-1200x675.jpg", alt: "Hyundai Sonata — салон", type: "interior" },
   ],
-
-  // ═════════════════════════════════════════════════════════════════════════════
-  // KIA
-  // ═════════════════════════════════════════════════════════════════════════════
   "sportage": [
-    { name: "kia-sportage-front.jpg", url: "https://paultan.org/image/2024/12/2024_KLIMS_Kia_Sportage-1-1200x801.jpg", alt: "Kia Sportage — вид спереди", type: "exterior" },
+    { name: "kia-sportage-front.jpg", url: "https://paultan.org/image/2025/02/2025-KIA-Sportage-2.0_Ext-10-BM.jpg", alt: "Kia Sportage — вид спереди", type: "exterior" },
     { name: "kia-sportage-side.jpg", url: "https://paultan.org/image/2025/02/2025-KIA-Sportage-2.0_Ext-10-BM.jpg", alt: "Kia Sportage — вид сбоку", type: "exterior" },
     { name: "kia-sportage-rear.jpg", url: "https://paultan.org/image/2025/02/2025-KIA-Sportage-2.0_Ext-23-BM.jpg", alt: "Kia Sportage — вид сзади", type: "exterior" },
     { name: "kia-sportage-interior.jpg", url: "https://paultan.org/image/2025/02/2025-KIA-Sportage-2.0_Ext-10-BM.jpg", alt: "Kia Sportage — салон", type: "interior" },
@@ -218,10 +190,6 @@ const CAR_PHOTOS: Record<string, { name: string; url: string; alt: string; type:
     { name: "kia-k5-rear.jpg", url: "https://paultan.org/image/2023/10/2024-Kia-K5-facelift-South-Korea-1-1200x628.jpg", alt: "Kia K5 — вид сзади", type: "exterior" },
     { name: "kia-k5-interior.jpg", url: "https://paultan.org/image/2019/11/2020-Kia-Optima-first-images-1-1200x628.jpg", alt: "Kia K5 — салон", type: "interior" },
   ],
-
-  // ═════════════════════════════════════════════════════════════════════════════
-  // TESLA
-  // ═════════════════════════════════════════════════════════════════════════════
   "model-3": [
     { name: "tesla-model3-front.jpg", url: "https://paultan.org/image/2023/10/Tesla-Model-3-Highland-Long-Range-AWD-2023-Malaysia-launch-1-1200x800.jpg", alt: "Tesla Model 3 — вид спереди", type: "exterior" },
     { name: "tesla-model3-side.jpg", url: "https://paultan.org/image/2023/10/Untitled-design-20-1200x630.png", alt: "Tesla Model 3 — вид сбоку", type: "exterior" },
