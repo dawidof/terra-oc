@@ -2,8 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { HomeCarGrid } from "@/components/home-car-grid";
 import { ReviewList } from "@/components/reviews/review-list";
-import { getFeaturedModels, getTrimsByModel } from "@/lib/queries";
-import { getConfigurationOptions } from "@/lib/leads";
+import { getFeaturedModels } from "@/lib/queries";
 import { getPublishedReviews } from "@/lib/content";
 
 export default async function HomePage() {
@@ -11,30 +10,6 @@ export default async function HomePage() {
     getFeaturedModels(),
     getPublishedReviews(true),
   ]);
-
-  const trimsByModelArray = await Promise.all(
-    featuredModels.map((model) => getTrimsByModel(model.modelId))
-  );
-
-  const trimsByModel: Record<string, typeof trimsByModelArray[0]> = {};
-  featuredModels.forEach((model, i) => {
-    trimsByModel[model.modelId] = trimsByModelArray[i];
-  });
-
-  const allTrimIds = new Set<string>();
-  featuredModels.forEach((model) => {
-    allTrimIds.add(model.trimId);
-    trimsByModel[model.modelId]?.forEach((trim) => allTrimIds.add(trim.id));
-  });
-
-  const configOptionsArray = await Promise.all(
-    Array.from(allTrimIds).map((trimId) => getConfigurationOptions(trimId))
-  );
-
-  const configOptions: Record<string, typeof configOptionsArray[0]> = {};
-  Array.from(allTrimIds).forEach((trimId, i) => {
-    configOptions[trimId] = configOptionsArray[i];
-  });
 
   return (
     <div className="min-h-screen bg-white">
@@ -77,8 +52,6 @@ export default async function HomePage() {
             </div>
             <HomeCarGrid
               models={featuredModels}
-              trimsByModel={trimsByModel}
-              configOptions={configOptions}
             />
           </div>
         </section>

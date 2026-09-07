@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getCarBySlug, getCarOffers, getCarMedia, getTrimSpecs, getAllTrims, getSimilarCars, getUsedVehicleDetails } from "@/lib/queries";
+import { getCarBySlug, getCarOffers, getCarMedia, getAllTrims, getSimilarCars, getUsedVehicleDetails } from "@/lib/queries";
 import { getComparisonSpecs } from "@/lib/compare";
 import { getConfigurationOptions, getCarColorImages } from "@/lib/leads";
 import { generateCsrfToken } from "@/lib/csrf-actions";
@@ -8,7 +8,7 @@ import { ConfiguratorSection } from "@/components/configurator-section";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ChevronRight, Zap, Fuel, Gauge, Calendar, MapPin, Truck, FileText, Shield } from "lucide-react";
+import { ChevronRight, Zap, Gauge, Calendar, MapPin, Shield } from "lucide-react";
 import { CarCard } from "@/components/car-card";
 import { TrimComparisonTable } from "@/components/trim-comparison-table";
 import { VehicleAdminBar } from "@/components/admin/vehicle-admin-bar";
@@ -50,10 +50,9 @@ export default async function CarDetailPage({ params }: Props) {
   const car = await getCarBySlug(slug);
   if (!car) notFound();
 
-  const [offers, media, specs, allTrims, optionGroups] = await Promise.all([
+  const [offers, media, allTrims, optionGroups] = await Promise.all([
     getCarOffers(car.trimId),
     getCarMedia(car.modelVersionId),
-    getTrimSpecs(car.trimId),
     getAllTrims(car.modelVersionId),
     getConfigurationOptions(car.trimId),
   ]);
@@ -91,20 +90,6 @@ export default async function CarDetailPage({ params }: Props) {
     offer ? Number(offer.estimatedTotalUsd) - 10000 : 20000,
     offer ? Number(offer.estimatedTotalUsd) + 10000 : 60000
   );
-
-  const groupedSpecs: Record<string, { name: string; value: string }[]> = {};
-  for (const spec of specs) {
-    if (!groupedSpecs[spec.groupName]) {
-      groupedSpecs[spec.groupName] = [];
-    }
-    let value = "";
-    if (spec.valueText) value = spec.valueText;
-    else if (spec.valueNumber) value = `${spec.valueNumber}${spec.unit ? ` ${spec.unit}` : ""}`;
-    else if (spec.valueBoolean !== null) value = spec.valueBoolean ? "Да" : "Нет";
-    if (value) {
-      groupedSpecs[spec.groupName].push({ name: spec.specName, value });
-    }
-  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -322,73 +307,8 @@ export default async function CarDetailPage({ params }: Props) {
           </div>
         </div>
 
-        {/* Trim selector */}
-        {allTrims.length > 1 && (
-          <section className="mt-12">
-            <h2 className="mb-6 text-2xl font-bold">Комплектации</h2>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {allTrims.map((trim) => (
-                <Link key={trim.id} href={`/cars/${trim.slug}`}>
-                  <Card className={`h-full transition-shadow hover:shadow-md ${trim.slug === slug ? "ring-2 ring-emerald-600" : ""}`}>
-                    <CardContent className="p-4">
-                      <h3 className="font-semibold mb-2">{trim.name}</h3>
-                      <div className="text-lg font-bold mb-3">{formatPrice(trim.basePrice)}</div>
-                      <div className="space-y-1 text-sm text-muted-foreground">
-                        {trim.powertrainType && <div>{powertrainLabel(trim.powertrainType)} {trim.drivetrain}</div>}
-                        {trim.motorPowerKw && <div>{trim.motorPowerKw} кВт</div>}
-                        {trim.rangeKm && <div>{trim.rangeKm} км запас хода</div>}
-                        {trim.acceleration0100 && <div>0-100: {trim.acceleration0100} сек</div>}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Trim comparison */}
-        {allTrims.length > 1 && comparisonSpecs.length > 0 && (
-          <section className="mt-12">
-            <h2 className="mb-6 text-2xl font-bold">Сравнение комплектаций</h2>
-            <Card>
-              <CardContent className="p-6">
-                <TrimComparisonTable
-                  trims={allTrims}
-                  specs={comparisonSpecs}
-                  currentSlug={slug}
-                />
-              </CardContent>
-            </Card>
-          </section>
-        )}
-
-        {/* Specifications */}
-        {Object.keys(groupedSpecs).length > 0 && (
-          <section className="mt-12">
-            <h2 className="mb-6 text-2xl font-bold">Технические характеристики</h2>
-            <div className="space-y-6">
-              {Object.entries(groupedSpecs).map(([groupName, specs]) => (
-                <Card key={groupName}>
-                  <CardContent className="p-6">
-                    <h3 className="text-lg font-semibold mb-4">{groupName}</h3>
-                    <div className="space-y-2">
-                      {specs.map((spec, i) => (
-                        <div key={i} className="flex items-center justify-between py-2 border-b border-dashed last:border-0">
-                          <span className="text-muted-foreground">{spec.name}</span>
-                          <span className="font-medium">{spec.value}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </section>
-        )}
-
         {/* Configurator + Lead */}
-        <div id="configurator">
+        <div id="configurator" className="mt-8">
           {optionGroups.length > 0 ? (
             <ConfiguratorSection
               optionGroups={optionGroups}
@@ -414,6 +334,22 @@ export default async function CarDetailPage({ params }: Props) {
             </div>
           )}
         </div>
+
+        {/* Trim comparison */}
+        {allTrims.length > 1 && comparisonSpecs.length > 0 && (
+          <section className="mt-12">
+            <h2 className="mb-6 text-2xl font-bold">Сравнение комплектаций</h2>
+            <Card>
+              <CardContent className="p-6">
+                <TrimComparisonTable
+                  trims={allTrims}
+                  specs={comparisonSpecs}
+                  currentSlug={slug}
+                />
+              </CardContent>
+            </Card>
+          </section>
+        )}
 
         {/* Similar cars */}
         {similarCars.length > 0 && (
