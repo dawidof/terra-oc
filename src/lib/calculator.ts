@@ -146,19 +146,22 @@ export async function calculate(
   // Get UZS exchange rate for display
   const uzsRate = await getExchangeRate("USD", "UZS");
 
+  // Round to 2 decimal places to avoid floating point artifacts
+  const round = (n: number) => Math.round(n * 100) / 100;
+
   return {
-    vehiclePrice: vehiclePriceUsd,
+    vehiclePrice: round(vehiclePriceUsd),
     logistics: params.logistics,
-    customsDuty,
-    exciseTax,
-    vat,
+    customsDuty: round(customsDuty),
+    exciseTax: round(exciseTax),
+    vat: round(vat),
     certificationFees: params.certificationFees,
     serviceFee: params.serviceFee,
-    total,
+    total: round(total),
     currency: "USD",
     ruleVersionId: rule.id,
     formulaVersion: rule.formulaVersion,
-    exchangeRate: uzsRate ? Number(uzsRate.rate) : 0,
+    exchangeRate: uzsRate ? round(Number(uzsRate.rate)) : 0,
     exchangeRateSource: uzsRate?.source || "",
   };
 }

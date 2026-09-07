@@ -388,8 +388,8 @@ export default async function CarDetailPage({ params }: Props) {
         )}
 
         {/* Configurator + Lead */}
-        {optionGroups.length > 0 && (
-          <div id="configurator">
+        <div id="configurator">
+          {optionGroups.length > 0 ? (
             <ConfiguratorSection
               optionGroups={optionGroups}
               basePrice={Number(car.basePrice)}
@@ -408,8 +408,12 @@ export default async function CarDetailPage({ params }: Props) {
               colorImages={colorImagesMap}
               defaultMedia={media.map((m) => ({ id: m.id, url: m.url, alt: m.alt }))}
             />
-          </div>
-        )}
+          ) : (
+            <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+              Конфигуратор недоступен для этой комплектации
+            </div>
+          )}
+        </div>
 
         {/* Similar cars */}
         {similarCars.length > 0 && (

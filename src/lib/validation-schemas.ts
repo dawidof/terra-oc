@@ -29,6 +29,16 @@ export const leadSchema = z.object({
       options: z.array(z.string()).optional(),
       unpriced_options: z.array(z.string()).optional(),
       totalDelta: z.number().optional(),
+      options_with_prices: z
+        .array(
+          z.object({
+            name: z.string(),
+            priceDelta: z.number(),
+            priceKnown: z.boolean(),
+            groupType: z.string(),
+          })
+        )
+        .optional(),
     })
     .optional(),
   sourcePrice: z.number().positive().optional(),
@@ -65,7 +75,7 @@ export const calculateSchema = z.object({
   condition: z.enum(["new", "used"]),
   purchasePrice: z.number().positive("Цена должна быть положительной"),
   currency: z.string().length(3).optional().default("USD"),
-  powertrain: z.enum(["bev", "phev", "petrol", "diesel", "hev", "reev"]),
+  powertrain: z.enum(["bev", "phev", "petrol", "diesel", "hev", "reev"]).optional(),
   engineDisplacementCc: z.number().int().positive().optional(),
   enginePowerHp: z.number().int().positive().optional(),
   motorPowerKw: z.number().positive().optional(),
@@ -119,6 +129,24 @@ export const leadUpdateSchema = z.object({
       serviceFee: z.number(),
       total: z.number(),
     })
+    .optional(),
+  optionsWithPrices: z
+    .array(
+      z.object({
+        name: z.string(),
+        priceDelta: z.number(),
+        priceKnown: z.boolean(),
+        groupType: z.string(),
+      })
+    )
+    .optional(),
+  carOptions: z
+    .array(
+      z.object({
+        label: z.string(),
+        amount: z.number(),
+      })
+    )
     .optional(),
 });
 

@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { drizzle } from "drizzle-orm/postgres-js";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import postgres from "postgres";
 import bcrypt from "bcryptjs";
 import {
@@ -153,6 +153,57 @@ async function seed() {
     return existing;
   }
 
+  // ─── Helper: add configuration options for a trim ────────────────────────
+  async function addConfigOptions(
+    trimId: string,
+    options: { type: string; name: string; required?: boolean; items: { name: string; code: string; priceDelta: string | null }[] }[],
+  ) {
+    // Check which groups already exist for this trim in one query
+    const existingGroups = await db.select().from(configurationOptionGroups)
+      .where(eq(configurationOptionGroups.trimId, trimId));
+    const existingTypes = new Set(existingGroups.map((g) => g.type));
+
+    const groupsToInsert: typeof options = [];
+    for (const group of options) {
+      if (!existingTypes.has(group.type)) {
+        groupsToInsert.push(group);
+      }
+    }
+
+    if (groupsToInsert.length === 0) return;
+
+    // Batch insert all groups at once
+    const insertedGroups = await db.insert(configurationOptionGroups)
+      .values(groupsToInsert.map((g) => ({
+        trimId,
+        type: g.type,
+        name: g.name,
+        required: g.required ?? (g.type === "exterior_color" || g.type === "interior_color"),
+      })))
+      .returning();
+
+    // Batch insert all options for all groups at once
+    const allOptions: { groupId: string; name: string; code: string; priceDelta: string | null; priceCurrency: string | null; priceKnown: boolean; available: boolean }[] = [];
+    for (let i = 0; i < groupsToInsert.length; i++) {
+      const grp = insertedGroups[i];
+      for (const item of groupsToInsert[i].items) {
+        allOptions.push({
+          groupId: grp.id,
+          name: item.name,
+          code: item.code,
+          priceDelta: item.priceDelta,
+          priceCurrency: item.priceDelta ? "USD" : null,
+          priceKnown: item.priceDelta !== null,
+          available: true,
+        });
+      }
+    }
+
+    if (allOptions.length > 0) {
+      await db.insert(configurationOptions).values(allOptions);
+    }
+  }
+
   // ═══════════════════════════════════════════════════════════════════════════
   // ZEEKR
   // ═══════════════════════════════════════════════════════════════════════════
@@ -205,7 +256,52 @@ async function seed() {
     { name: "EV AWD", slug: "byd-han-ev-awd", powertrainType: "bev", drivetrain: "AWD", motorPowerKw: 380, batteryCapacityKwh: "85.4", rangeKm: 560, acceleration0100: "3.90", basePrice: "44990" },
   ], "3000", "4500", 25);
 
-  console.log(`✓ BYD: Atto 3 (${atto3Trims.length} trims) + Seal (${sealTrims.length} trims) + Han (${hanTrims.length} trims)`);
+  const dolphin = await ensureModel(byd.id, "Dolphin", "dolphin", "hatchback", "Компактный электрический хэтчбек", true);
+  const dolphinVer = await ensureVersion(dolphin.id, "2024");
+  const dolphinTrims = await ensureTrims(dolphinVer.id, [
+    { name: "Active", slug: "byd-dolphin-active", powertrainType: "bev", drivetrain: "FWD", motorPowerKw: 70, batteryCapacityKwh: "44.9", rangeKm: 340, acceleration0100: "7.50", basePrice: "16990" },
+    { name: "Comfort", slug: "byd-dolphin-comfort", powertrainType: "bev", drivetrain: "FWD", motorPowerKw: 70, batteryCapacityKwh: "60.4", rangeKm: 427, acceleration0100: "7.50", basePrice: "19990" },
+    { name: "Design", slug: "byd-dolphin-design", powertrainType: "bev", drivetrain: "FWD", motorPowerKw: 150, batteryCapacityKwh: "60.4", rangeKm: 401, acceleration0100: "6.90", basePrice: "22990" },
+  ], "2000", "2500", 18);
+
+  const songPlus = await ensureModel(byd.id, "Song Plus DM-i", "song-plus-dm-i", "SUV", "Гибридный кроссовер с большим запасом хода", true);
+  const songPlusVer = await ensureVersion(songPlus.id, "2024");
+  const songPlusTrims = await ensureTrims(songPlusVer.id, [
+    { name: "Standard", slug: "byd-song-plus-standard", powertrainType: "phev", drivetrain: "FWD", motorPowerKw: 145, batteryCapacityKwh: "18.3", rangeKm: 110, enginePowerHp: 110, engineDisplacementCc: 1500, acceleration0100: "7.90", basePrice: "22990" },
+    { name: "Comfort", slug: "byd-song-plus-comfort", powertrainType: "phev", drivetrain: "FWD", motorPowerKw: 145, batteryCapacityKwh: "18.3", rangeKm: 110, enginePowerHp: 110, engineDisplacementCc: 1500, acceleration0100: "7.90", basePrice: "25990" },
+    { name: "Flagship", slug: "byd-song-plus-flagship", powertrainType: "phev", drivetrain: "FWD", motorPowerKw: 145, batteryCapacityKwh: "18.3", rangeKm: 110, enginePowerHp: 110, engineDisplacementCc: 1500, acceleration0100: "7.90", basePrice: "28990" },
+  ], "2500", "3500", 20);
+
+  const tang = await ensureModel(byd.id, "Tang", "tang", "SUV", "Флагманский электрический кроссовер");
+  const tangVer = await ensureVersion(tang.id, "2024");
+  const tangTrims = await ensureTrims(tangVer.id, [
+    { name: "Standard", slug: "byd-tang-standard", powertrainType: "bev", drivetrain: "FWD", motorPowerKw: 180, batteryCapacityKwh: "86.4", rangeKm: 505, acceleration0100: "8.50", basePrice: "35990" },
+    { name: "AWD", slug: "byd-tang-awd", powertrainType: "bev", drivetrain: "AWD", motorPowerKw: 380, batteryCapacityKwh: "108.8", rangeKm: 505, acceleration0100: "4.40", basePrice: "42990" },
+  ], "3000", "4500", 25);
+
+  const qinPlus = await ensureModel(byd.id, "Qin Plus", "qin-plus", "sedan", "Электрический седан для города");
+  const qinPlusVer = await ensureVersion(qinPlus.id, "2024");
+  const qinPlusTrims = await ensureTrims(qinPlusVer.id, [
+    { name: "EV Standard", slug: "byd-qin-plus-ev-standard", powertrainType: "bev", drivetrain: "FWD", motorPowerKw: 100, batteryCapacityKwh: "57.0", rangeKm: 420, acceleration0100: "7.30", basePrice: "18990" },
+    { name: "EV Long Range", slug: "byd-qin-plus-ev-long-range", powertrainType: "bev", drivetrain: "FWD", motorPowerKw: 150, batteryCapacityKwh: "71.7", rangeKm: 510, acceleration0100: "7.30", basePrice: "21990" },
+    { name: "DM-i", slug: "byd-qin-plus-dm-i", powertrainType: "phev", drivetrain: "FWD", motorPowerKw: 145, batteryCapacityKwh: "18.3", rangeKm: 120, enginePowerHp: 110, engineDisplacementCc: 1500, acceleration0100: "7.30", basePrice: "17990" },
+  ], "2000", "3000", 20);
+
+  const yuanUp = await ensureModel(byd.id, "Yuan Up", "yuan-up", "SUV", "Компактный электрический кроссовер", true);
+  const yuanUpVer = await ensureVersion(yuanUp.id, "2024");
+  const yuanUpTrims = await ensureTrims(yuanUpVer.id, [
+    { name: "Standard", slug: "byd-yuan-up-standard", powertrainType: "bev", drivetrain: "FWD", motorPowerKw: 70, batteryCapacityKwh: "45.1", rangeKm: 380, acceleration0100: "7.90", basePrice: "18990" },
+    { name: "Comfort", slug: "byd-yuan-up-comfort", powertrainType: "bev", drivetrain: "FWD", motorPowerKw: 150, batteryCapacityKwh: "60.4", rangeKm: 480, acceleration0100: "7.30", basePrice: "21990" },
+  ], "2500", "3000", 20);
+
+  const chazor = await ensureModel(byd.id, "Chazor (Destroyer 05)", "chazor", "sedan", "Электрический седан нового поколения", true);
+  const chazorVer = await ensureVersion(chazor.id, "2024");
+  const chazorTrims = await ensureTrims(chazorVer.id, [
+    { name: "Standard", slug: "byd-chazor-standard", powertrainType: "bev", drivetrain: "FWD", motorPowerKw: 150, batteryCapacityKwh: "57.0", rangeKm: 460, acceleration0100: "7.50", basePrice: "22990" },
+    { name: "Premium", slug: "byd-chazor-premium", powertrainType: "bev", drivetrain: "FWD", motorPowerKw: 200, batteryCapacityKwh: "71.7", rangeKm: 550, acceleration0100: "6.50", basePrice: "26990" },
+  ], "2500", "3500", 22);
+
+  console.log(`✓ BYD: Atto 3 (${atto3Trims.length}) + Seal (${sealTrims.length}) + Han (${hanTrims.length}) + Dolphin (${dolphinTrims.length}) + Song Plus (${songPlusTrims.length}) + Tang (${tangTrims.length}) + Qin Plus (${qinPlusTrims.length}) + Yuan Up (${yuanUpTrims.length}) + Chazor (${chazorTrims.length})`);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // CHANGAN
@@ -227,17 +323,264 @@ async function seed() {
     { name: "Long Range", slug: "deepal-s7-long-range", powertrainType: "bev", drivetrain: "RWD", motorPowerKw: 190, batteryCapacityKwh: "79.9", rangeKm: 520, acceleration0100: "6.70", basePrice: "29990" },
   ], "2500", "3500", 22);
 
-  console.log(`✓ Changan: CS55 Plus (${cs55Trims.length} trims) + Deepal S7 (${deepalS7Trims.length} trims)`);
+  console.log(`✓ Changan: CS55 Plus (${cs55Trims.length}) + Deepal S7 (${deepalS7Trims.length})`);
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CHERY
+  // ═══════════════════════════════════════════════════════════════════════════
+  const chery = await ensureBrand("Chery", "chery", "Китай", "Один из крупнейших экспортёров Китая");
+
+  const tiggo7 = await ensureModel(chery.id, "Tiggo 7 Pro", "tiggo-7-pro", "SUV", "Популярный компактный кроссовер", true);
+  const tiggo7Ver = await ensureVersion(tiggo7.id, "2024");
+  const tiggo7Trims = await ensureTrims(tiggo7Ver.id, [
+    { name: "Comfort", slug: "chery-tiggo7-comfort", powertrainType: "petrol", drivetrain: "FWD", engineDisplacementCc: 1500, enginePowerHp: 147, basePrice: "17990" },
+    { name: "Luxury", slug: "chery-tiggo7-luxury", powertrainType: "petrol", drivetrain: "FWD", engineDisplacementCc: 1500, enginePowerHp: 147, basePrice: "19990" },
+    { name: "Flagship", slug: "chery-tiggo7-flagship", powertrainType: "petrol", drivetrain: "FWD", engineDisplacementCc: 1500, enginePowerHp: 147, basePrice: "21990" },
+  ], "2000", "3000", 20);
+
+  const tiggo8 = await ensureModel(chery.id, "Tiggo 8 Pro", "tiggo-8-pro", "SUV", "Семейный 7-местный кроссовер");
+  const tiggo8Ver = await ensureVersion(tiggo8.id, "2024");
+  const tiggo8Trims = await ensureTrims(tiggo8Ver.id, [
+    { name: "Comfort", slug: "chery-tiggo8-comfort", powertrainType: "petrol", drivetrain: "FWD", engineDisplacementCc: 1600, enginePowerHp: 197, basePrice: "21990" },
+    { name: "Luxury", slug: "chery-tiggo8-luxury", powertrainType: "petrol", drivetrain: "FWD", engineDisplacementCc: 1600, enginePowerHp: 197, basePrice: "24990" },
+    { name: "Flagship", slug: "chery-tiggo8-flagship", powertrainType: "petrol", drivetrain: "AWD", engineDisplacementCc: 1600, enginePowerHp: 197, basePrice: "27990" },
+  ], "2500", "3500", 22);
+
+  const omoda5 = await ensureModel(chery.id, "Omoda 5", "omoda-5", "SUV", "Стильный компактный кроссовер", true);
+  const omoda5Ver = await ensureVersion(omoda5.id, "2024");
+  const omoda5Trims = await ensureTrims(omoda5Ver.id, [
+    { name: "Style", slug: "chery-omoda5-style", powertrainType: "petrol", drivetrain: "FWD", engineDisplacementCc: 1500, enginePowerHp: 147, basePrice: "16990" },
+    { name: "Premium", slug: "chery-omoda5-premium", powertrainType: "petrol", drivetrain: "FWD", engineDisplacementCc: 1500, enginePowerHp: 147, basePrice: "18990" },
+  ], "2000", "3000", 18);
+
+  const jaecoo7 = await ensureModel(chery.id, "Jaecoo 7", "jaecoo-7", "SUV", "Среднеразмерный кроссовер премиум-сегмента");
+  const jaecoo7Ver = await ensureVersion(jaecoo7.id, "2024");
+  const jaecoo7Trims = await ensureTrims(jaecoo7Ver.id, [
+    { name: "Comfort", slug: "chery-jaecoo7-comfort", powertrainType: "petrol", drivetrain: "FWD", engineDisplacementCc: 1600, enginePowerHp: 197, basePrice: "22990" },
+    { name: "Premium", slug: "chery-jaecoo7-premium", powertrainType: "petrol", drivetrain: "AWD", engineDisplacementCc: 1600, enginePowerHp: 197, basePrice: "26990" },
+  ], "2500", "3500", 22);
+
+  console.log(`✓ Chery: Tiggo 7 Pro (${tiggo7Trims.length}) + Tiggo 8 Pro (${tiggo8Trims.length}) + Omoda 5 (${omoda5Trims.length}) + Jaecoo 7 (${jaecoo7Trims.length})`);
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // GEELY
+  // ═══════════════════════════════════════════════════════════════════════════
+  const geely = await ensureBrand("Geely", "geely", "Китай", "Крупный китайский автопроизводитель, владелец Volvo и Zeekr");
+
+  const monjaro = await ensureModel(geely.id, "Monjaro", "monjaro", "SUV", "Флагманский полноразмерный кроссовер", true);
+  const monjaroVer = await ensureVersion(monjaro.id, "2024");
+  const monjaroTrims = await ensureTrims(monjaroVer.id, [
+    { name: "Comfort", slug: "geely-monjaro-comfort", powertrainType: "petrol", drivetrain: "FWD", engineDisplacementCc: 2000, enginePowerHp: 238, acceleration0100: "7.70", basePrice: "26990" },
+    { name: "Premium", slug: "geely-monjaro-premium", powertrainType: "petrol", drivetrain: "AWD", engineDisplacementCc: 2000, enginePowerHp: 238, acceleration0100: "7.70", basePrice: "30990" },
+    { name: "Flagship", slug: "geely-monjaro-flagship", powertrainType: "petrol", drivetrain: "AWD", engineDisplacementCc: 2000, enginePowerHp: 238, acceleration0100: "7.70", basePrice: "34990" },
+  ], "3000", "4000", 25);
+
+  const coolray = await ensureModel(geely.id, "Coolray", "coolray", "SUV", "Компактный кроссовер");
+  const coolrayVer = await ensureVersion(coolray.id, "2024");
+  const coolrayTrims = await ensureTrims(coolrayVer.id, [
+    { name: "Comfort", slug: "geely-coolray-comfort", powertrainType: "petrol", drivetrain: "FWD", engineDisplacementCc: 1500, enginePowerHp: 174, basePrice: "17990" },
+    { name: "Premium", slug: "geely-coolray-premium", powertrainType: "petrol", drivetrain: "AWD", engineDisplacementCc: 1500, enginePowerHp: 174, basePrice: "20990" },
+  ], "2000", "3000", 20);
+
+  const emgrand = await ensureModel(geely.id, "Emgrand", "emgrand", "sedan", "Бюджетный седан");
+  const emgrandVer = await ensureVersion(emgrand.id, "2024");
+  const emgrandTrims = await ensureTrims(emgrandVer.id, [
+    { name: "Standard", slug: "geely-emgrand-standard", powertrainType: "petrol", drivetrain: "FWD", engineDisplacementCc: 1500, enginePowerHp: 114, basePrice: "13990" },
+    { name: "Comfort", slug: "geely-emgrand-comfort", powertrainType: "petrol", drivetrain: "FWD", engineDisplacementCc: 1500, enginePowerHp: 114, basePrice: "15990" },
+  ], "1500", "2500", 18);
+
+  console.log(`✓ Geely: Monjaro (${monjaroTrims.length}) + Coolray (${coolrayTrims.length}) + Emgrand (${emgrandTrims.length})`);
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HAVAL
+  // ═══════════════════════════════════════════════════════════════════════════
+  const haval = await ensureBrand("Haval", "haval", "Китай", "Бренд SUV от Great Wall Motors");
+
+  const jolion = await ensureModel(haval.id, "Jolion", "jolion", "SUV", "Компактный городской кроссовер", true);
+  const jolionVer = await ensureVersion(jolion.id, "2024");
+  const jolionTrims = await ensureTrims(jolionVer.id, [
+    { name: "Standard", slug: "haval-jolion-standard", powertrainType: "petrol", drivetrain: "FWD", engineDisplacementCc: 1500, enginePowerHp: 150, basePrice: "16990" },
+    { name: "Comfort", slug: "haval-jolion-comfort", powertrainType: "petrol", drivetrain: "FWD", engineDisplacementCc: 1500, enginePowerHp: 150, basePrice: "18990" },
+    { name: "Premium", slug: "haval-jolion-premium", powertrainType: "petrol", drivetrain: "FWD", engineDisplacementCc: 1500, enginePowerHp: 150, basePrice: "20990" },
+  ], "2000", "3000", 20);
+
+  const h6 = await ensureModel(haval.id, "H6", "h6", "SUV", "Среднеразмерный кроссовер");
+  const h6Ver = await ensureVersion(h6.id, "2024");
+  const h6Trims = await ensureTrims(h6Ver.id, [
+    { name: "Comfort", slug: "haval-h6-comfort", powertrainType: "petrol", drivetrain: "FWD", engineDisplacementCc: 1500, enginePowerHp: 169, basePrice: "21990" },
+    { name: "Premium", slug: "haval-h6-premium", powertrainType: "petrol", drivetrain: "AWD", engineDisplacementCc: 2000, enginePowerHp: 211, basePrice: "25990" },
+  ], "2500", "3500", 22);
+
+  const f7 = await ensureModel(haval.id, "F7", "f7", "SUV", "Спортивный кроссовер");
+  const f7Ver = await ensureVersion(f7.id, "2024");
+  const f7Trims = await ensureTrims(f7Ver.id, [
+    { name: "Comfort", slug: "haval-f7-comfort", powertrainType: "petrol", drivetrain: "FWD", engineDisplacementCc: 1500, enginePowerHp: 169, basePrice: "20990" },
+    { name: "Premium", slug: "haval-f7-premium", powertrainType: "petrol", drivetrain: "AWD", engineDisplacementCc: 2000, enginePowerHp: 211, basePrice: "24990" },
+  ], "2500", "3500", 22);
+
+  console.log(`✓ Haval: Jolion (${jolionTrims.length}) + H6 (${h6Trims.length}) + F7 (${f7Trims.length})`);
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // MG
+  // ═══════════════════════════════════════════════════════════════════════════
+  const mg = await ensureBrand("MG", "mg", "Китай", "Британский бренд, сейчас принадлежит SAIC Motor");
+
+  const mg4 = await ensureModel(mg.id, "MG4", "mg4", "hatchback", "Электрический хэтчбек");
+  const mg4Ver = await ensureVersion(mg4.id, "2024");
+  const mg4Trims = await ensureTrims(mg4Ver.id, [
+    { name: "Standard", slug: "mg-mg4-standard", powertrainType: "bev", drivetrain: "RWD", motorPowerKw: 125, batteryCapacityKwh: "51.0", rangeKm: 350, acceleration0100: "7.70", basePrice: "19990" },
+    { name: "Long Range", slug: "mg-mg4-long-range", powertrainType: "bev", drivetrain: "RWD", motorPowerKw: 150, batteryCapacityKwh: "64.0", rangeKm: 450, acceleration0100: "7.70", basePrice: "23990" },
+    { name: "XPOWER", slug: "mg-mg4-xpower", powertrainType: "bev", drivetrain: "AWD", motorPowerKw: 330, batteryCapacityKwh: "64.0", rangeKm: 400, acceleration0100: "3.80", basePrice: "28990" },
+  ], "2500", "3500", 22);
+
+  const mgHs = await ensureModel(mg.id, "HS", "mg-hs", "SUV", "Компактный кроссовер");
+  const mgHsVer = await ensureVersion(mgHs.id, "2024");
+  const mgHsTrims = await ensureTrims(mgHsVer.id, [
+    { name: "Comfort", slug: "mg-hs-comfort", powertrainType: "petrol", drivetrain: "FWD", engineDisplacementCc: 1500, enginePowerHp: 169, basePrice: "19990" },
+    { name: "Luxury", slug: "mg-hs-luxury", powertrainType: "petrol", drivetrain: "FWD", engineDisplacementCc: 1500, enginePowerHp: 169, basePrice: "22990" },
+    { name: "PHEV", slug: "mg-hs-phev", powertrainType: "phev", drivetrain: "FWD", motorPowerKw: 120, batteryCapacityKwh: "16.5", rangeKm: 75, enginePowerHp: 169, engineDisplacementCc: 1500, basePrice: "25990" },
+  ], "2500", "3500", 22);
+
+  console.log(`✓ MG: MG4 (${mg4Trims.length}) + HS (${mgHsTrims.length})`);
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HYUNDAI
+  // ═══════════════════════════════════════════════════════════════════════════
+  const hyundai = await ensureBrand("Hyundai", "hyundai", "Корея", "Корейский автопроизводитель, популярный в Узбекистане");
+
+  const tucson = await ensureModel(hyundai.id, "Tucson", "tucson", "SUV", "Самый популярный корейский импорт в Узбекистане", true);
+  const tucsonVer = await ensureVersion(tucson.id, "2024");
+  const tucsonTrims = await ensureTrims(tucsonVer.id, [
+    { name: "Comfort", slug: "hyundai-tucson-comfort", powertrainType: "petrol", drivetrain: "FWD", engineDisplacementCc: 2000, enginePowerHp: 150, basePrice: "26990" },
+    { name: "Style", slug: "hyundai-tucson-style", powertrainType: "petrol", drivetrain: "FWD", engineDisplacementCc: 2000, enginePowerHp: 150, basePrice: "29990" },
+    { name: "Premium", slug: "hyundai-tucson-premium", powertrainType: "petrol", drivetrain: "AWD", engineDisplacementCc: 2000, enginePowerHp: 150, basePrice: "33990" },
+    { name: "Hybrid", slug: "hyundai-tucson-hybrid", powertrainType: "phev", drivetrain: "FWD", motorPowerKw: 60, batteryCapacityKwh: "1.49", rangeKm: 55, enginePowerHp: 180, engineDisplacementCc: 1600, basePrice: "35990" },
+  ], "3000", "4000", 30);
+
+  const ioniq5 = await ensureModel(hyundai.id, "Ioniq 5", "ioniq-5", "SUV", "Электрический кроссовер на платформе E-GMP", true);
+  const ioniq5Ver = await ensureVersion(ioniq5.id, "2024");
+  const ioniq5Trims = await ensureTrims(ioniq5Ver.id, [
+    { name: "Standard Range", slug: "hyundai-ioniq5-std", powertrainType: "bev", drivetrain: "RWD", motorPowerKw: 125, batteryCapacityKwh: "58.0", rangeKm: 384, acceleration0100: "8.50", basePrice: "36990" },
+    { name: "Long Range", slug: "hyundai-ioniq5-lr", powertrainType: "bev", drivetrain: "RWD", motorPowerKw: 168, batteryCapacityKwh: "80.0", rangeKm: 507, acceleration0100: "7.40", basePrice: "42990" },
+    { name: "AWD", slug: "hyundai-ioniq5-awd", powertrainType: "bev", drivetrain: "AWD", motorPowerKw: 239, batteryCapacityKwh: "80.0", rangeKm: 481, acceleration0100: "5.20", basePrice: "48990" },
+  ], "3500", "5000", 35);
+
+  const sonata = await ensureModel(hyundai.id, "Sonata", "sonata", "sedan", "Среднеразмерный седан");
+  const sonataVer = await ensureVersion(sonata.id, "2024");
+  const sonataTrims = await ensureTrims(sonataVer.id, [
+    { name: "Comfort", slug: "hyundai-sonata-comfort", powertrainType: "petrol", drivetrain: "FWD", engineDisplacementCc: 2000, enginePowerHp: 150, basePrice: "24990" },
+    { name: "Style", slug: "hyundai-sonata-style", powertrainType: "petrol", drivetrain: "FWD", engineDisplacementCc: 2500, enginePowerHp: 180, basePrice: "28990" },
+    { name: "Premium", slug: "hyundai-sonata-premium", powertrainType: "petrol", drivetrain: "FWD", engineDisplacementCc: 2500, enginePowerHp: 180, basePrice: "32990" },
+  ], "3000", "4000", 30);
+
+  const creta = await ensureModel(hyundai.id, "Creta", "creta", "SUV", "Компактный городской кроссовер", true);
+  const cretaVer = await ensureVersion(creta.id, "2024");
+  const cretaTrims = await ensureTrims(cretaVer.id, [
+    { name: "Comfort", slug: "hyundai-creta-comfort", powertrainType: "petrol", drivetrain: "FWD", engineDisplacementCc: 1500, enginePowerHp: 115, basePrice: "19990" },
+    { name: "Style", slug: "hyundai-creta-style", powertrainType: "petrol", drivetrain: "FWD", engineDisplacementCc: 1500, enginePowerHp: 115, basePrice: "21990" },
+    { name: "Premium", slug: "hyundai-creta-premium", powertrainType: "petrol", drivetrain: "FWD", engineDisplacementCc: 1500, enginePowerHp: 115, basePrice: "24990" },
+  ], "2500", "3000", 25);
+
+  console.log(`✓ Hyundai: Tucson (${tucsonTrims.length}) + Ioniq 5 (${ioniq5Trims.length}) + Sonata (${sonataTrims.length}) + Creta (${cretaTrims.length})`);
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // KIA
+  // ═══════════════════════════════════════════════════════════════════════════
+  const kia = await ensureBrand("Kia", "kia", "Корея", "Корейский автопроизводитель");
+
+  const sportage = await ensureModel(kia.id, "Sportage", "sportage", "SUV", "Популярный компактный кроссовер", true);
+  const sportageVer = await ensureVersion(sportage.id, "2024");
+  const sportageTrims = await ensureTrims(sportageVer.id, [
+    { name: "Comfort", slug: "kia-sportage-comfort", powertrainType: "petrol", drivetrain: "FWD", engineDisplacementCc: 2000, enginePowerHp: 150, basePrice: "26990" },
+    { name: "Prestige", slug: "kia-sportage-prestige", powertrainType: "petrol", drivetrain: "FWD", engineDisplacementCc: 2000, enginePowerHp: 150, basePrice: "29990" },
+    { name: "GT-Line", slug: "kia-sportage-gt-line", powertrainType: "petrol", drivetrain: "AWD", engineDisplacementCc: 2000, enginePowerHp: 150, basePrice: "33990" },
+  ], "3000", "4000", 30);
+
+  const ev6 = await ensureModel(kia.id, "EV6", "ev6", "SUV", "Электрический кроссовер на платформе E-GMP", true);
+  const ev6Ver = await ensureVersion(ev6.id, "2024");
+  const ev6Trims = await ensureTrims(ev6Ver.id, [
+    { name: "Standard", slug: "kia-ev6-standard", powertrainType: "bev", drivetrain: "RWD", motorPowerKw: 168, batteryCapacityKwh: "58.0", rangeKm: 394, acceleration0100: "7.30", basePrice: "38990" },
+    { name: "Long Range", slug: "kia-ev6-lr", powertrainType: "bev", drivetrain: "RWD", motorPowerKw: 239, batteryCapacityKwh: "77.4", rangeKm: 528, acceleration0100: "5.20", basePrice: "45990" },
+    { name: "GT-Line AWD", slug: "kia-ev6-gt-awd", powertrainType: "bev", drivetrain: "AWD", motorPowerKw: 430, batteryCapacityKwh: "77.4", rangeKm: 506, acceleration0100: "3.50", basePrice: "52990" },
+  ], "3500", "5000", 35);
+
+  const k5 = await ensureModel(kia.id, "K5", "k5", "sedan", "Спортивный среднеразмерный седан");
+  const k5Ver = await ensureVersion(k5.id, "2024");
+  const k5Trims = await ensureTrims(k5Ver.id, [
+    { name: "Comfort", slug: "kia-k5-comfort", powertrainType: "petrol", drivetrain: "FWD", engineDisplacementCc: 2000, enginePowerHp: 150, basePrice: "25990" },
+    { name: "Premium", slug: "kia-k5-premium", powertrainType: "petrol", drivetrain: "FWD", engineDisplacementCc: 2500, enginePowerHp: 190, basePrice: "30990" },
+    { name: "GT-Line", slug: "kia-k5-gt-line", powertrainType: "petrol", drivetrain: "FWD", engineDisplacementCc: 2500, enginePowerHp: 190, basePrice: "34990" },
+  ], "3000", "4000", 30);
+
+  const sonet = await ensureModel(kia.id, "Sonet", "sonet", "SUV", "Компактный городской кроссовер — бестселлер в Узбекистане", true);
+  const sonetVer = await ensureVersion(sonet.id, "2024");
+  const sonetTrims = await ensureTrims(sonetVer.id, [
+    { name: "Comfort", slug: "kia-sonet-comfort", powertrainType: "petrol", drivetrain: "FWD", engineDisplacementCc: 1500, enginePowerHp: 115, basePrice: "16990" },
+    { name: "Prestige", slug: "kia-sonet-prestige", powertrainType: "petrol", drivetrain: "FWD", engineDisplacementCc: 1500, enginePowerHp: 115, basePrice: "18990" },
+    { name: "GT-Line", slug: "kia-sonet-gt-line", powertrainType: "petrol", drivetrain: "FWD", engineDisplacementCc: 1500, enginePowerHp: 115, basePrice: "20990" },
+  ], "2000", "2500", 22);
+
+  console.log(`✓ Kia: Sportage (${sportageTrims.length}) + EV6 (${ev6Trims.length}) + K5 (${k5Trims.length}) + Sonet (${sonetTrims.length})`);
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // TESLA
+  // ═══════════════════════════════════════════════════════════════════════════
+  const tesla = await ensureBrand("Tesla", "tesla", "США", "Американский производитель электромобилей");
+
+  const model3 = await ensureModel(tesla.id, "Model 3", "model-3", "sedan", "Электрический седан");
+  const model3Ver = await ensureVersion(model3.id, "2024");
+  const model3Trims = await ensureTrims(model3Ver.id, [
+    { name: "Standard Range", slug: "tesla-model3-std", powertrainType: "bev", drivetrain: "RWD", motorPowerKw: 208, batteryCapacityKwh: "60.0", rangeKm: 438, acceleration0100: "6.10", basePrice: "38990" },
+    { name: "Long Range", slug: "tesla-model3-lr", powertrainType: "bev", drivetrain: "AWD", motorPowerKw: 366, batteryCapacityKwh: "75.0", rangeKm: 528, acceleration0100: "4.40", basePrice: "46990" },
+  ], "4000", "5500", 40);
+
+  const modelY = await ensureModel(tesla.id, "Model Y", "model-y", "SUV", "Электрический кроссовер", true);
+  const modelYVer = await ensureVersion(modelY.id, "2024");
+  const modelYTrims = await ensureTrims(modelYVer.id, [
+    { name: "Standard Range", slug: "tesla-modely-std", powertrainType: "bev", drivetrain: "RWD", motorPowerKw: 220, batteryCapacityKwh: "60.0", rangeKm: 455, acceleration0100: "5.90", basePrice: "42990" },
+    { name: "Long Range", slug: "tesla-modely-lr", powertrainType: "bev", drivetrain: "AWD", motorPowerKw: 348, batteryCapacityKwh: "75.0", rangeKm: 533, acceleration0100: "5.00", basePrice: "50990" },
+    { name: "Performance", slug: "tesla-modely-perf", powertrainType: "bev", drivetrain: "AWD", motorPowerKw: 377, batteryCapacityKwh: "75.0", rangeKm: 514, acceleration0100: "3.70", basePrice: "56990" },
+  ], "4000", "5500", 40);
+
+  console.log(`✓ Tesla: Model 3 (${model3Trims.length}) + Model Y (${modelYTrims.length})`);
 
   // ─── Vehicle Media ──────────────────────────────────────────────────────
   const mediaUrls: Record<string, { url: string; alt: string }> = {
     [zeekr7xVer.id]: { url: "/images/cars/zeekr-7x.jpg", alt: "Zeekr 7X — электрический кроссовер" },
     [zeekr001Ver.id]: { url: "/images/cars/zeekr-001.jpg", alt: "Zeekr 001 — электрический лифтбек" },
-    [atto3Ver.id]:    { url: "/images/cars/byd-atto3.jpg", alt: "BYD Atto 3 — компактный электрический кроссовер" },
-    [sealVer.id]:     { url: "/images/cars/byd-seal.jpg", alt: "BYD Seal — спортивный электрический седан" },
-    [hanVer.id]:      { url: "/images/cars/byd-han.jpg", alt: "BYD Han — флагманский электрический седан" },
-    [cs55Ver.id]:     { url: "/images/cars/changan-cs55.jpg", alt: "Changan CS55 Plus — популярный кроссовер" },
+    [atto3Ver.id]: { url: "/images/cars/byd-atto3.jpg", alt: "BYD Atto 3 — компактный электрический кроссовер" },
+    [sealVer.id]: { url: "/images/cars/byd-seal.jpg", alt: "BYD Seal — спортивный электрический седан" },
+    [hanVer.id]: { url: "/images/cars/byd-han.jpg", alt: "BYD Han — флагманский электрический седан" },
+    [dolphinVer.id]: { url: "/images/cars/byd-dolphin.jpg", alt: "BYD Dolphin — компактный электрический хэтчбек" },
+    [songPlusVer.id]: { url: "/images/cars/byd-song-plus.jpg", alt: "BYD Song Plus — гибридный кроссовер" },
+    [tangVer.id]: { url: "/images/cars/byd-tang.jpg", alt: "BYD Tang — флагманский электрический кроссовер" },
+    [qinPlusVer.id]: { url: "/images/cars/byd-qin-plus.jpg", alt: "BYD Qin Plus — электрический седан" },
+    [yuanUpVer.id]: { url: "/images/cars/byd-yuan-up.jpg", alt: "BYD Yuan Up — компактный электрический кроссовер" },
+    [chazorVer.id]: { url: "/images/cars/byd-chazor.jpg", alt: "BYD Chazor — электрический седан" },
+    [cs55Ver.id]: { url: "/images/cars/changan-cs55.jpg", alt: "Changan CS55 Plus — популярный кроссовер" },
     [deepalS7Ver.id]: { url: "/images/cars/deepal-s7.jpg", alt: "Deepal S7 — электрический кроссовер" },
+    [tiggo7Ver.id]: { url: "/images/cars/chery-tiggo7.jpg", alt: "Chery Tiggo 7 Pro — компактный кроссовер" },
+    [tiggo8Ver.id]: { url: "/images/cars/chery-tiggo8.jpg", alt: "Chery Tiggo 8 Pro — семейный кроссовер" },
+    [omoda5Ver.id]: { url: "/images/cars/chery-omoda5.jpg", alt: "Chery Omoda 5 — стильный кроссовер" },
+    [jaecoo7Ver.id]: { url: "/images/cars/chery-jaecoo7.jpg", alt: "Chery Jaecoo 7 — премиум кроссовер" },
+    [monjaroVer.id]: { url: "/images/cars/geely-monjaro.jpg", alt: "Geely Monjaro — полноразмерный кроссовер" },
+    [coolrayVer.id]: { url: "/images/cars/geely-coolray.jpg", alt: "Geely Coolray — компактный кроссовер" },
+    [emgrandVer.id]: { url: "/images/cars/geely-emgrand.jpg", alt: "Geely Emgrand — бюджетный седан" },
+    [jolionVer.id]: { url: "/images/cars/haval-jolion.jpg", alt: "Haval Jolion — городской кроссовер" },
+    [h6Ver.id]: { url: "/images/cars/haval-h6.jpg", alt: "Haval H6 — среднеразмерный кроссовер" },
+    [f7Ver.id]: { url: "/images/cars/haval-f7.jpg", alt: "Haval F7 — спортивный кроссовер" },
+    [mg4Ver.id]: { url: "/images/cars/mg-mg4.jpg", alt: "MG MG4 — электрический хэтчбек" },
+    [mgHsVer.id]: { url: "/images/cars/mg-hs.jpg", alt: "MG HS — компактный кроссовер" },
+    [tucsonVer.id]: { url: "/images/cars/hyundai-tucson.jpg", alt: "Hyundai Tucson — популярный кроссовер" },
+    [ioniq5Ver.id]: { url: "/images/cars/hyundai-ioniq5.jpg", alt: "Hyundai Ioniq 5 — электрический кроссовер" },
+    [sonataVer.id]: { url: "/images/cars/hyundai-sonata.jpg", alt: "Hyundai Sonata — среднеразмерный седан" },
+    [cretaVer.id]: { url: "/images/cars/hyundai-creta.jpg", alt: "Hyundai Creta — городской кроссовер" },
+    [sportageVer.id]: { url: "/images/cars/kia-sportage.jpg", alt: "Kia Sportage — компактный кроссовер" },
+    [ev6Ver.id]: { url: "/images/cars/kia-ev6.jpg", alt: "Kia EV6 — электрический кроссовер" },
+    [k5Ver.id]: { url: "/images/cars/kia-k5.jpg", alt: "Kia K5 — спортивный седан" },
+    [sonetVer.id]: { url: "/images/cars/kia-sonet.jpg", alt: "Kia Sonet — городской кроссовер" },
+    [model3Ver.id]: { url: "/images/cars/tesla-model3.jpg", alt: "Tesla Model 3 — электрический седан" },
+    [modelYVer.id]: { url: "/images/cars/tesla-modely.jpg", alt: "Tesla Model Y — электрический кроссовер" },
   };
   let mediaCount = (await db.select().from(vehicleMedia)).length;
   if (mediaCount === 0) {
@@ -251,123 +594,15 @@ async function seed() {
   console.log(`✓ Vehicle media: ${mediaCount} entries`);
 
   // ─── Calculation Rules ──────────────────────────────────────────────────
-  // Uzbekistan import rules for different country/powertrain combinations
   const calcRules = [
-    {
-      country: "Китай",
-      condition: "new",
-      powertrain: "bev",
-      parametersJson: {
-        logistics: 2500,
-        customsDutyPercent: 15,
-        excisePercent: 0,
-        vatPercent: 12,
-        certificationFees: 500,
-        serviceFee: 1200,
-      },
-      formulaVersion: "uz-2024-v1",
-    },
-    {
-      country: "Китай",
-      condition: "new",
-      powertrain: "petrol",
-      parametersJson: {
-        logistics: 2000,
-        customsDutyPercent: 20,
-        excisePercent: 15,
-        exciseThresholdCc: 2000,
-        vatPercent: 12,
-        certificationFees: 500,
-        serviceFee: 1200,
-      },
-      formulaVersion: "uz-2024-v1",
-    },
-    {
-      country: "Китай",
-      condition: "new",
-      powertrain: "diesel",
-      parametersJson: {
-        logistics: 2000,
-        customsDutyPercent: 20,
-        excisePercent: 15,
-        exciseThresholdCc: 2500,
-        vatPercent: 12,
-        certificationFees: 500,
-        serviceFee: 1200,
-      },
-      formulaVersion: "uz-2024-v1",
-    },
-    {
-      country: "Китай",
-      condition: "new",
-      powertrain: "phev",
-      parametersJson: {
-        logistics: 2500,
-        customsDutyPercent: 15,
-        excisePercent: 0,
-        vatPercent: 12,
-        certificationFees: 500,
-        serviceFee: 1200,
-      },
-      formulaVersion: "uz-2024-v1",
-    },
-    {
-      country: "Китай",
-      condition: "used",
-      powertrain: "bev",
-      parametersJson: {
-        logistics: 2500,
-        customsDutyPercent: 15,
-        excisePercent: 0,
-        vatPercent: 12,
-        certificationFees: 500,
-        serviceFee: 1200,
-      },
-      formulaVersion: "uz-2024-v1",
-    },
-    {
-      country: "Китай",
-      condition: "used",
-      powertrain: "petrol",
-      parametersJson: {
-        logistics: 2000,
-        customsDutyPercent: 20,
-        excisePercent: 15,
-        exciseThresholdCc: 2000,
-        vatPercent: 12,
-        certificationFees: 500,
-        serviceFee: 1200,
-      },
-      formulaVersion: "uz-2024-v1",
-    },
-    {
-      country: "Корея",
-      condition: "new",
-      powertrain: "bev",
-      parametersJson: {
-        logistics: 3000,
-        customsDutyPercent: 15,
-        excisePercent: 0,
-        vatPercent: 12,
-        certificationFees: 500,
-        serviceFee: 1200,
-      },
-      formulaVersion: "uz-2024-v1",
-    },
-    {
-      country: "ОАЭ",
-      condition: "new",
-      powertrain: "bev",
-      parametersJson: {
-        logistics: 3500,
-        customsDutyPercent: 15,
-        excisePercent: 0,
-        vatPercent: 12,
-        certificationFees: 500,
-        serviceFee: 1200,
-      },
-      formulaVersion: "uz-2024-v1",
-    },
+    { country: "Китай", condition: "new", powertrain: "bev", parametersJson: { logistics: 2500, customsDutyPercent: 15, excisePercent: 5, exciseThresholdKw: 50, vatPercent: 12, certificationFees: 500, serviceFee: 1200 }, formulaVersion: "uz-2024-v1" },
+    { country: "Китай", condition: "new", powertrain: "petrol", parametersJson: { logistics: 2000, customsDutyPercent: 20, excisePercent: 15, exciseThresholdCc: 2000, vatPercent: 12, certificationFees: 500, serviceFee: 1200 }, formulaVersion: "uz-2024-v1" },
+    { country: "Китай", condition: "new", powertrain: "diesel", parametersJson: { logistics: 2000, customsDutyPercent: 20, excisePercent: 15, exciseThresholdCc: 2500, vatPercent: 12, certificationFees: 500, serviceFee: 1200 }, formulaVersion: "uz-2024-v1" },
+    { country: "Китай", condition: "new", powertrain: "phev", parametersJson: { logistics: 2500, customsDutyPercent: 15, excisePercent: 5, exciseThresholdKw: 50, vatPercent: 12, certificationFees: 500, serviceFee: 1200 }, formulaVersion: "uz-2024-v1" },
+    { country: "Китай", condition: "used", powertrain: "bev", parametersJson: { logistics: 2500, customsDutyPercent: 15, excisePercent: 5, exciseThresholdKw: 50, vatPercent: 12, certificationFees: 500, serviceFee: 1200 }, formulaVersion: "uz-2024-v1" },
+    { country: "Китай", condition: "used", powertrain: "petrol", parametersJson: { logistics: 2000, customsDutyPercent: 20, excisePercent: 15, exciseThresholdCc: 2000, vatPercent: 12, certificationFees: 500, serviceFee: 1200 }, formulaVersion: "uz-2024-v1" },
+    { country: "Корея", condition: "new", powertrain: "bev", parametersJson: { logistics: 3000, customsDutyPercent: 15, excisePercent: 5, exciseThresholdKw: 50, vatPercent: 12, certificationFees: 500, serviceFee: 1200 }, formulaVersion: "uz-2024-v1" },
+    { country: "ОАЭ", condition: "new", powertrain: "bev", parametersJson: { logistics: 3500, customsDutyPercent: 15, excisePercent: 5, exciseThresholdKw: 50, vatPercent: 12, certificationFees: 500, serviceFee: 1200 }, formulaVersion: "uz-2024-v1" },
   ];
 
   for (const rule of calcRules) {
@@ -388,217 +623,559 @@ async function seed() {
   ]);
   console.log("✓ Exchange rates: 4 entries");
 
-  // ─── Configuration Option Groups + Options (Zeekr 7X AWD) ──────────────
-  const zeekr7xAwd = zeekr7xTrims.find((t) => t.name === "AWD");
-  if (zeekr7xAwd) {
-    // Exterior colors
-    const exteriorGroup = await db.insert(configurationOptionGroups).values({
-      trimId: zeekr7xAwd.id,
-      type: "exterior_color",
-      name: "Цвет кузова",
-      required: true,
-    }).returning();
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CONFIGURATOR OPTIONS — ALL TRIMS
+  // ═══════════════════════════════════════════════════════════════════════════
+  console.log("\n=== CONFIGURATOR OPTIONS ===");
 
-    await db.insert(configurationOptions).values([
-      { groupId: exteriorGroup[0].id, name: "Стандартный белый", code: "solid-white", priceDelta: "0", priceCurrency: "USD", priceKnown: true, available: true },
-      { groupId: exteriorGroup[0].id, name: "Матовый серый", code: "matte-grey", priceDelta: "0", priceCurrency: "USD", priceKnown: true, available: true },
-      { groupId: exteriorGroup[0].id, name: "Чёрный металлик", code: "metallic-black", priceDelta: "500", priceCurrency: "USD", priceKnown: true, available: true },
-      { groupId: exteriorGroup[0].id, name: "Синий", code: "ocean-blue", priceDelta: "500", priceCurrency: "USD", priceKnown: true, available: true },
+  const colorWhite = { name: "Белый", code: "white", priceDelta: "0" };
+  const colorGrey = { name: "Серый", code: "grey", priceDelta: "0" };
+  const colorBlack = { name: "Чёрный", code: "black", priceDelta: "0" };
+  const colorBlue = { name: "Синий", code: "blue", priceDelta: "300" };
+  const colorRed = { name: "Красный", code: "red", priceDelta: "300" };
+  const colorGreen = { name: "Зелёный", code: "green", priceDelta: "500" };
+
+  const intBlack = { name: "Чёрный", code: "black", priceDelta: "0" };
+  const intBeige = { name: "Бежевый", code: "beige", priceDelta: "0" };
+  const intRed = { name: "Красный", code: "red", priceDelta: "500" };
+
+  const wheel17 = { name: '17" стандартные', code: "17-standard", priceDelta: "0" };
+  const wheel18 = { name: '18" стандартные', code: "18-standard", priceDelta: "0" };
+  const wheel18Sport = { name: '18" спортивные', code: "18-sport", priceDelta: "500" };
+  const wheel19 = { name: '19" спортивные', code: "19-sport", priceDelta: "800" };
+  const wheel19Standard = { name: '19" стандартные', code: "19-standard", priceDelta: "0" };
+  const wheel20 = { name: '20" спортивные', code: "20-sport", priceDelta: "1200" };
+  const wheel20Standard = { name: '20" стандартные', code: "20-standard", priceDelta: "0" };
+
+  const pkgComfort = { name: "Пакет «Комфорт»", code: "comfort-package", priceDelta: "1500" };
+  const pkgPremium = { name: "Пакет «Премиум»", code: "premium-package", priceDelta: "3000" };
+  const pkgLuxury = { name: "Пакет «Люкс»", code: "luxury-package", priceDelta: "4500" };
+
+  const optPanoramicRoof = { name: "Панорамная крыша", code: "panoramic-roof", priceDelta: "1200" };
+  const optHud = { name: "Проекционный дисплей", code: "hud", priceDelta: "600" };
+  const optFridge = { name: "Холодильник в бардачке", code: "fridge", priceDelta: "400" };
+  const optSoundSystem = { name: "Аудиосистема премиум", code: "premium-sound", priceDelta: "800" };
+
+  const wheelsBev = [wheel19Standard, wheel20, wheel20Standard];
+  const wheelsPetrol = [wheel17, wheel18Sport, wheel19];
+
+  // ─── ZEEKR 7X configs ──────────────────────────────────────────────────
+  const zeekr7xBaseColors = [colorWhite, colorGrey, colorBlack, colorBlue];
+  const zeekr7xPerfColors = [...zeekr7xBaseColors, colorGreen];
+  const zeekr7xBaseInterior = [intBlack, intBeige];
+  const zeekr7xTopInterior = [...zeekr7xBaseInterior, intRed];
+
+  for (const trim of zeekr7xTrims) {
+    const isTop = trim.name === "Performance" || trim.name === "AWD";
+    await addConfigOptions(trim.id, [
+      { type: "exterior_color", name: "Цвет кузова", items: isTop ? zeekr7xPerfColors : zeekr7xBaseColors },
+      { type: "interior_color", name: "Цвет салона", items: isTop ? zeekr7xTopInterior : zeekr7xBaseInterior },
+      { type: "wheels", name: "Колёса", items: wheelsBev },
+      { type: "package", name: "Пакеты", required: false, items: isTop ? [pkgComfort, pkgPremium, pkgLuxury] : [pkgComfort, pkgPremium] },
+      { type: "standalone_option", name: "Дополнительные опции", required: false, items: isTop ? [optPanoramicRoof, optHud, optFridge] : [optPanoramicRoof, optHud] },
     ]);
-
-    // Interior colors
-    const interiorGroup = await db.insert(configurationOptionGroups).values({
-      trimId: zeekr7xAwd.id,
-      type: "interior_color",
-      name: "Цвет салона",
-      required: true,
-
-    }).returning();
-
-    await db.insert(configurationOptions).values([
-      { groupId: interiorGroup[0].id, name: "Чёрная кожа", code: "black-leather", priceDelta: "0", priceCurrency: "USD", priceKnown: true, available: true },
-      { groupId: interiorGroup[0].id, name: "Бежевая кожа", code: "beige-leather", priceDelta: "0", priceCurrency: "USD", priceKnown: true, available: true },
-      { groupId: interiorGroup[0].id, name: "Красная кожа", code: "red-leather", priceDelta: "800", priceCurrency: "USD", priceKnown: true, available: true },
-      { groupId: interiorGroup[0].id, name: "Оранжевый салон", code: "orange-interior", priceDelta: null, priceCurrency: null, priceKnown: false, available: true },
-    ]);
-
-    // Wheels
-    const wheelsGroup = await db.insert(configurationOptionGroups).values({
-      trimId: zeekr7xAwd.id,
-      type: "wheels",
-      name: "Колёса",
-      required: true,
-
-    }).returning();
-
-    await db.insert(configurationOptions).values([
-      { groupId: wheelsGroup[0].id, name: '19" стандартные', code: "19-standard", priceDelta: "0", priceCurrency: "USD", priceKnown: true, available: true },
-      { groupId: wheelsGroup[0].id, name: '20" спортивные', code: "20-sport", priceDelta: "1200", priceCurrency: "USD", priceKnown: true, available: true },
-      { groupId: wheelsGroup[0].id, name: '21" кованые', code: "21-forged", priceDelta: null, priceCurrency: null, priceKnown: false, available: true },
-    ]);
-
-    // Package options
-    const packageGroup = await db.insert(configurationOptionGroups).values({
-      trimId: zeekr7xAwd.id,
-      type: "package",
-      name: "Пакеты",
-      required: false,
-
-    }).returning();
-
-    await db.insert(configurationOptions).values([
-      { groupId: packageGroup[0].id, name: "Пакет «Комфорт»", code: "comfort-package", priceDelta: "2500", priceCurrency: "USD", priceKnown: true, available: true },
-      { groupId: packageGroup[0].id, name: "Пакет «Премиум»", code: "premium-package", priceDelta: "4500", priceCurrency: "USD", priceKnown: true, available: true },
-    ]);
-
-    // Standalone options
-    const standaloneGroup = await db.insert(configurationOptionGroups).values({
-      trimId: zeekr7xAwd.id,
-      type: "standalone_option",
-      name: "Дополнительные опции",
-      required: false,
-
-    }).returning();
-
-    await db.insert(configurationOptions).values([
-      { groupId: standaloneGroup[0].id, name: "Панорамная крыша", code: "panoramic-roof", priceDelta: "1800", priceCurrency: "USD", priceKnown: true, available: true },
-      { groupId: standaloneGroup[0].id, name: "Холодильник в бардачке", code: "fridge", priceDelta: "600", priceCurrency: "USD", priceKnown: true, available: true },
-      { groupId: standaloneGroup[0].id, name: "Проекционный дисплей", code: "hud", priceDelta: "900", priceCurrency: "USD", priceKnown: true, available: true },
-    ]);
-
-    console.log("✓ Configuration options: 5 groups, 18 options (Zeekr 7X AWD)");
   }
+  console.log("  ✓ Zeekr 7X: all trims configured");
+
+  // ─── ZEEKR 001 configs ─────────────────────────────────────────────────
+  for (const trim of zeekr001Trims) {
+    const isTop = trim.name === "Performance";
+    await addConfigOptions(trim.id, [
+      { type: "exterior_color", name: "Цвет кузова", items: isTop ? [colorWhite, colorGrey, colorBlack, colorBlue, colorGreen] : [colorWhite, colorGrey, colorBlack, colorBlue] },
+      { type: "interior_color", name: "Цвет салона", items: isTop ? zeekr7xTopInterior : zeekr7xBaseInterior },
+      { type: "wheels", name: "Колёса", items: wheelsBev },
+      { type: "package", name: "Пакеты", required: false, items: isTop ? [pkgComfort, pkgPremium, pkgLuxury] : [pkgComfort, pkgPremium] },
+      { type: "standalone_option", name: "Дополнительные опции", required: false, items: [optPanoramicRoof, optHud, optSoundSystem] },
+    ]);
+  }
+  console.log("  ✓ Zeekr 001: all trims configured");
+
+  // ─── BYD Atto 3 configs ────────────────────────────────────────────────
+  for (const trim of atto3Trims) {
+    const isTop = trim.name === "Comfort";
+    await addConfigOptions(trim.id, [
+      { type: "exterior_color", name: "Цвет кузова", items: isTop ? [colorWhite, colorGrey, colorBlue, colorRed] : [colorWhite, colorGrey, colorBlue] },
+      { type: "interior_color", name: "Цвет салона", items: [intBlack, ...(isTop ? [intBeige] : [])] },
+      { type: "wheels", name: "Колёса", items: [wheel18, wheel19] },
+      { type: "standalone_option", name: "Дополнительные опции", required: false, items: isTop ? [optPanoramicRoof, optSoundSystem] : [optPanoramicRoof] },
+    ]);
+  }
+  console.log("  ✓ BYD Atto 3: all trims configured");
+
+  // ─── BYD Seal configs ──────────────────────────────────────────────────
+  for (const trim of sealTrims) {
+    const isTop = trim.name === "AWD";
+    await addConfigOptions(trim.id, [
+      { type: "exterior_color", name: "Цвет кузова", items: isTop ? [colorWhite, colorGrey, colorBlack, colorBlue, colorRed] : [colorWhite, colorGrey, colorBlack, colorBlue] },
+      { type: "interior_color", name: "Цвет салона", items: isTop ? [intBlack, intBeige, intRed] : [intBlack, intBeige] },
+      { type: "wheels", name: "Колёса", items: wheelsBev },
+      { type: "package", name: "Пакеты", required: false, items: isTop ? [pkgComfort, pkgPremium] : [pkgComfort] },
+      { type: "standalone_option", name: "Дополнительные опции", required: false, items: [optPanoramicRoof, optHud] },
+    ]);
+  }
+  console.log("  ✓ BYD Seal: all trims configured");
+
+  // ─── BYD Han configs ───────────────────────────────────────────────────
+  for (const trim of hanTrims) {
+    const isTop = trim.name === "EV AWD";
+    await addConfigOptions(trim.id, [
+      { type: "exterior_color", name: "Цвет кузова", items: isTop ? [colorWhite, colorGrey, colorBlack, colorBlue, colorRed] : [colorWhite, colorGrey, colorBlack, colorBlue] },
+      { type: "interior_color", name: "Цвет салона", items: isTop ? [intBlack, intBeige, intRed] : [intBlack, intBeige] },
+      { type: "wheels", name: "Колёса", items: wheelsBev },
+      { type: "package", name: "Пакеты", required: false, items: [pkgPremium, pkgLuxury] },
+      { type: "standalone_option", name: "Дополнительные опции", required: false, items: [optPanoramicRoof, optHud, optSoundSystem] },
+    ]);
+  }
+  console.log("  ✓ BYD Han: all trims configured");
+
+  // ─── BYD Dolphin configs ───────────────────────────────────────────────
+  for (const trim of dolphinTrims) {
+    const isTop = trim.name === "Design";
+    await addConfigOptions(trim.id, [
+      { type: "exterior_color", name: "Цвет кузова", items: isTop ? [colorWhite, colorGrey, colorBlue, colorRed, colorGreen] : [colorWhite, colorGrey, colorBlue] },
+      { type: "interior_color", name: "Цвет салона", items: isTop ? [intBlack, intBeige, intRed] : [intBlack, intBeige] },
+      { type: "wheels", name: "Колёса", items: [wheel17, wheel18] },
+      { type: "standalone_option", name: "Дополнительные опции", required: false, items: isTop ? [optPanoramicRoof, optSoundSystem] : [optPanoramicRoof] },
+    ]);
+  }
+  console.log("  ✓ BYD Dolphin: all trims configured");
+
+  // ─── BYD Song Plus configs ─────────────────────────────────────────────
+  for (const trim of songPlusTrims) {
+    const isTop = trim.name === "Flagship";
+    await addConfigOptions(trim.id, [
+      { type: "exterior_color", name: "Цвет кузова", items: isTop ? [colorWhite, colorGrey, colorBlue, colorRed, colorGreen] : [colorWhite, colorGrey, colorBlue, colorRed] },
+      { type: "interior_color", name: "Цвет салона", items: isTop ? [intBlack, intBeige, intRed] : [intBlack, intBeige] },
+      { type: "wheels", name: "Колёса", items: [wheel18, wheel19] },
+      { type: "package", name: "Пакеты", required: false, items: isTop ? [pkgComfort, pkgPremium] : [pkgComfort] },
+      { type: "standalone_option", name: "Дополнительные опции", required: false, items: [optPanoramicRoof, optHud] },
+    ]);
+  }
+  console.log("  ✓ BYD Song Plus: all trims configured");
+
+  // ─── BYD Tang configs ──────────────────────────────────────────────────
+  for (const trim of tangTrims) {
+    const isTop = trim.name === "AWD";
+    await addConfigOptions(trim.id, [
+      { type: "exterior_color", name: "Цвет кузова", items: isTop ? [colorWhite, colorGrey, colorBlack, colorBlue, colorRed] : [colorWhite, colorGrey, colorBlack, colorBlue] },
+      { type: "interior_color", name: "Цвет салона", items: isTop ? [intBlack, intBeige, intRed] : [intBlack, intBeige] },
+      { type: "wheels", name: "Колёса", items: wheelsBev },
+      { type: "package", name: "Пакеты", required: false, items: [pkgPremium, pkgLuxury] },
+      { type: "standalone_option", name: "Дополнительные опции", required: false, items: [optPanoramicRoof, optHud, optSoundSystem] },
+    ]);
+  }
+  console.log("  ✓ BYD Tang: all trims configured");
+
+  // ─── BYD Qin Plus configs ──────────────────────────────────────────────
+  for (const trim of qinPlusTrims) {
+    const isTop = trim.name === "EV Long Range";
+    await addConfigOptions(trim.id, [
+      { type: "exterior_color", name: "Цвет кузова", items: isTop ? [colorWhite, colorGrey, colorBlue, colorRed] : [colorWhite, colorGrey, colorBlue] },
+      { type: "interior_color", name: "Цвет салона", items: [intBlack, intBeige] },
+      { type: "wheels", name: "Колёса", items: [wheel17, wheel18] },
+      { type: "standalone_option", name: "Дополнительные опции", required: false, items: isTop ? [optPanoramicRoof, optHud] : [optPanoramicRoof] },
+    ]);
+  }
+  console.log("  ✓ BYD Qin Plus: all trims configured");
+
+  // ─── BYD Yuan Up configs ───────────────────────────────────────────────
+  for (const trim of yuanUpTrims) {
+    const isTop = trim.name === "Comfort";
+    await addConfigOptions(trim.id, [
+      { type: "exterior_color", name: "Цвет кузова", items: isTop ? [colorWhite, colorGrey, colorBlue, colorRed] : [colorWhite, colorGrey, colorBlue] },
+      { type: "interior_color", name: "Цвет салона", items: [intBlack, intBeige] },
+      { type: "wheels", name: "Колёса", items: [wheel17, wheel18] },
+      { type: "standalone_option", name: "Дополнительные опции", required: false, items: isTop ? [optPanoramicRoof, optSoundSystem] : [optPanoramicRoof] },
+    ]);
+  }
+  console.log("  ✓ BYD Yuan Up: all trims configured");
+
+  // ─── BYD Chazor configs ────────────────────────────────────────────────
+  for (const trim of chazorTrims) {
+    const isTop = trim.name === "Premium";
+    await addConfigOptions(trim.id, [
+      { type: "exterior_color", name: "Цвет кузова", items: isTop ? [colorWhite, colorGrey, colorBlack, colorBlue, colorRed] : [colorWhite, colorGrey, colorBlue] },
+      { type: "interior_color", name: "Цвет салона", items: isTop ? [intBlack, intBeige, intRed] : [intBlack, intBeige] },
+      { type: "wheels", name: "Колёса", items: wheelsBev },
+      { type: "package", name: "Пакеты", required: false, items: isTop ? [pkgPremium] : [] },
+      { type: "standalone_option", name: "Дополнительные опции", required: false, items: [optPanoramicRoof, optHud] },
+    ]);
+  }
+  console.log("  ✓ BYD Chazor: all trims configured");
+
+  // ─── Changan CS55 Plus configs ─────────────────────────────────────────
+  for (const trim of cs55Trims) {
+    const isTop = trim.name === "Flagship";
+    await addConfigOptions(trim.id, [
+      { type: "exterior_color", name: "Цвет кузова", items: isTop ? [colorWhite, colorGrey, colorBlack, colorRed] : [colorWhite, colorGrey, colorBlack] },
+      { type: "interior_color", name: "Цвет салона", items: [intBlack, intBeige] },
+      { type: "wheels", name: "Колёса", items: wheelsPetrol },
+      { type: "standalone_option", name: "Дополнительные опции", required: false, items: isTop ? [optPanoramicRoof, optHud] : [optPanoramicRoof] },
+    ]);
+  }
+  console.log("  ✓ Changan CS55 Plus: all trims configured");
+
+  // ─── Deepal S7 configs ─────────────────────────────────────────────────
+  for (const trim of deepalS7Trims) {
+    const isTop = trim.name === "Long Range";
+    await addConfigOptions(trim.id, [
+      { type: "exterior_color", name: "Цвет кузова", items: isTop ? [colorWhite, colorGrey, colorBlue, colorRed] : [colorWhite, colorGrey, colorBlue] },
+      { type: "interior_color", name: "Цвет салона", items: [intBlack, intBeige] },
+      { type: "wheels", name: "Колёса", items: wheelsBev },
+      { type: "standalone_option", name: "Дополнительные опции", required: false, items: isTop ? [optPanoramicRoof, optHud, optSoundSystem] : [optPanoramicRoof] },
+    ]);
+  }
+  console.log("  ✓ Deepal S7: all trims configured");
+
+  // ─── Chery Tiggo 7 Pro configs ────────────────────────────────────────
+  for (const trim of tiggo7Trims) {
+    const isTop = trim.name === "Flagship";
+    await addConfigOptions(trim.id, [
+      { type: "exterior_color", name: "Цвет кузова", items: isTop ? [colorWhite, colorGrey, colorBlack, colorRed, colorBlue] : [colorWhite, colorGrey, colorBlack, colorRed] },
+      { type: "interior_color", name: "Цвет салона", items: [intBlack, intBeige] },
+      { type: "wheels", name: "Колёса", items: wheelsPetrol },
+      { type: "package", name: "Пакеты", required: false, items: isTop ? [pkgPremium] : [] },
+      { type: "standalone_option", name: "Дополнительные опции", required: false, items: isTop ? [optPanoramicRoof, optHud] : [optPanoramicRoof] },
+    ]);
+  }
+  console.log("  ✓ Chery Tiggo 7 Pro: all trims configured");
+
+  // ─── Chery Tiggo 8 Pro configs ────────────────────────────────────────
+  for (const trim of tiggo8Trims) {
+    const isTop = trim.name === "Flagship";
+    await addConfigOptions(trim.id, [
+      { type: "exterior_color", name: "Цвет кузова", items: isTop ? [colorWhite, colorGrey, colorBlack, colorRed, colorBlue] : [colorWhite, colorGrey, colorBlack, colorRed] },
+      { type: "interior_color", name: "Цвет салона", items: [intBlack, intBeige] },
+      { type: "wheels", name: "Колёса", items: wheelsPetrol },
+      { type: "package", name: "Пакеты", required: false, items: isTop ? [pkgPremium] : [] },
+      { type: "standalone_option", name: "Дополнительные опции", required: false, items: isTop ? [optPanoramicRoof, optHud, optSoundSystem] : [optPanoramicRoof, optHud] },
+    ]);
+  }
+  console.log("  ✓ Chery Tiggo 8 Pro: all trims configured");
+
+  // ─── Chery Omoda 5 configs ────────────────────────────────────────────
+  for (const trim of omoda5Trims) {
+    const isTop = trim.name === "Premium";
+    await addConfigOptions(trim.id, [
+      { type: "exterior_color", name: "Цвет кузова", items: isTop ? [colorWhite, colorGrey, colorBlack, colorRed, colorBlue] : [colorWhite, colorGrey, colorBlack] },
+      { type: "interior_color", name: "Цвет салона", items: [intBlack, intBeige] },
+      { type: "wheels", name: "Колёса", items: [wheel17, wheel18, wheel18Sport] },
+      { type: "standalone_option", name: "Дополнительные опции", required: false, items: isTop ? [optPanoramicRoof, optSoundSystem] : [optPanoramicRoof] },
+    ]);
+  }
+  console.log("  ✓ Chery Omoda 5: all trims configured");
+
+  // ─── Chery Jaecoo 7 configs ───────────────────────────────────────────
+  for (const trim of jaecoo7Trims) {
+    const isTop = trim.name === "Premium";
+    await addConfigOptions(trim.id, [
+      { type: "exterior_color", name: "Цвет кузова", items: isTop ? [colorWhite, colorGrey, colorBlack, colorRed, colorBlue] : [colorWhite, colorGrey, colorBlack, colorRed] },
+      { type: "interior_color", name: "Цвет салона", items: [intBlack, intBeige] },
+      { type: "wheels", name: "Колёса", items: wheelsPetrol },
+      { type: "package", name: "Пакеты", required: false, items: isTop ? [pkgPremium] : [] },
+      { type: "standalone_option", name: "Дополнительные опции", required: false, items: [optPanoramicRoof, optHud, optSoundSystem] },
+    ]);
+  }
+  console.log("  ✓ Chery Jaecoo 7: all trims configured");
+
+  // ─── Geely Monjaro configs ────────────────────────────────────────────
+  for (const trim of monjaroTrims) {
+    const isTop = trim.name === "Flagship";
+    await addConfigOptions(trim.id, [
+      { type: "exterior_color", name: "Цвет кузова", items: isTop ? [colorWhite, colorGrey, colorBlack, colorBlue, colorRed] : [colorWhite, colorGrey, colorBlack, colorBlue] },
+      { type: "interior_color", name: "Цвет салона", items: isTop ? [intBlack, intBeige, intRed] : [intBlack, intBeige] },
+      { type: "wheels", name: "Колёса", items: wheelsPetrol },
+      { type: "package", name: "Пакеты", required: false, items: isTop ? [pkgPremium, pkgLuxury] : [pkgPremium] },
+      { type: "standalone_option", name: "Дополнительные опции", required: false, items: [optPanoramicRoof, optHud, optSoundSystem] },
+    ]);
+  }
+  console.log("  ✓ Geely Monjaro: all trims configured");
+
+  // ─── Geely Coolray configs ────────────────────────────────────────────
+  for (const trim of coolrayTrims) {
+    const isTop = trim.name === "Premium";
+    await addConfigOptions(trim.id, [
+      { type: "exterior_color", name: "Цвет кузова", items: isTop ? [colorWhite, colorGrey, colorBlack, colorBlue, colorRed] : [colorWhite, colorGrey, colorBlack] },
+      { type: "interior_color", name: "Цвет салона", items: [intBlack, intBeige] },
+      { type: "wheels", name: "Колёса", items: [wheel17, wheel18, wheel18Sport] },
+      { type: "standalone_option", name: "Дополнительные опции", required: false, items: isTop ? [optPanoramicRoof, optHud] : [optPanoramicRoof] },
+    ]);
+  }
+  console.log("  ✓ Geely Coolray: all trims configured");
+
+  // ─── Geely Emgrand configs ────────────────────────────────────────────
+  for (const trim of emgrandTrims) {
+    const isTop = trim.name === "Comfort";
+    await addConfigOptions(trim.id, [
+      { type: "exterior_color", name: "Цвет кузова", items: isTop ? [colorWhite, colorGrey, colorBlack, colorBlue] : [colorWhite, colorGrey, colorBlack] },
+      { type: "interior_color", name: "Цвет салона", items: [intBlack, intBeige] },
+      { type: "wheels", name: "Колёса", items: [wheel17, wheel18] },
+      { type: "standalone_option", name: "Дополнительные опции", required: false, items: isTop ? [optPanoramicRoof] : [] },
+    ]);
+  }
+  console.log("  ✓ Geely Emgrand: all trims configured");
+
+  // ─── Haval Jolion configs ─────────────────────────────────────────────
+  for (const trim of jolionTrims) {
+    const isTop = trim.name === "Premium";
+    await addConfigOptions(trim.id, [
+      { type: "exterior_color", name: "Цвет кузова", items: isTop ? [colorWhite, colorBlack, colorGrey, colorBlue, colorRed] : [colorWhite, colorBlack, colorGrey, colorBlue] },
+      { type: "interior_color", name: "Цвет салона", items: [intBlack, intBeige] },
+      { type: "wheels", name: "Колёса", items: [wheel17, wheel18, wheel18Sport] },
+      { type: "package", name: "Пакеты", required: false, items: isTop ? [pkgPremium] : [] },
+      { type: "standalone_option", name: "Дополнительные опции", required: false, items: isTop ? [optPanoramicRoof, optHud] : [optPanoramicRoof] },
+    ]);
+  }
+  console.log("  ✓ Haval Jolion: all trims configured");
+
+  // ─── Haval H6 configs ─────────────────────────────────────────────────
+  for (const trim of h6Trims) {
+    const isTop = trim.name === "Premium";
+    await addConfigOptions(trim.id, [
+      { type: "exterior_color", name: "Цвет кузова", items: isTop ? [colorWhite, colorBlack, colorGrey, colorBlue, colorRed] : [colorWhite, colorBlack, colorGrey, colorBlue] },
+      { type: "interior_color", name: "Цвет салона", items: isTop ? [intBlack, intBeige, intRed] : [intBlack, intBeige] },
+      { type: "wheels", name: "Колёса", items: [wheel18, wheel19, wheel19Standard] },
+      { type: "package", name: "Пакеты", required: false, items: isTop ? [pkgPremium] : [] },
+      { type: "standalone_option", name: "Дополнительные опции", required: false, items: [optPanoramicRoof, optHud, optSoundSystem] },
+    ]);
+  }
+  console.log("  ✓ Haval H6: all trims configured");
+
+  // ─── Haval F7 configs ─────────────────────────────────────────────────
+  for (const trim of f7Trims) {
+    const isTop = trim.name === "Premium";
+    await addConfigOptions(trim.id, [
+      { type: "exterior_color", name: "Цвет кузова", items: isTop ? [colorWhite, colorBlack, colorGrey, colorBlue, colorRed] : [colorWhite, colorBlack, colorGrey] },
+      { type: "interior_color", name: "Цвет салона", items: isTop ? [intBlack, intBeige, intRed] : [intBlack, intBeige] },
+      { type: "wheels", name: "Колёса", items: [wheel18, wheel19, wheel19Standard] },
+      { type: "package", name: "Пакеты", required: false, items: isTop ? [pkgPremium] : [] },
+      { type: "standalone_option", name: "Дополнительные опции", required: false, items: [optPanoramicRoof, optHud, optSoundSystem] },
+    ]);
+  }
+  console.log("  ✓ Haval F7: all trims configured");
+
+  // ─── MG MG4 configs ───────────────────────────────────────────────────
+  for (const trim of mg4Trims) {
+    const isTop = trim.name === "XPOWER";
+    await addConfigOptions(trim.id, [
+      { type: "exterior_color", name: "Цвет кузова", items: isTop ? [colorWhite, colorGrey, colorBlue, colorRed, colorGreen] : [colorWhite, colorGrey, colorBlue, colorRed] },
+      { type: "interior_color", name: "Цвет салона", items: isTop ? [intBlack, intRed] : [intBlack] },
+      { type: "wheels", name: "Колёса", items: wheelsBev },
+      { type: "standalone_option", name: "Дополнительные опции", required: false, items: isTop ? [optPanoramicRoof, optSoundSystem] : [optPanoramicRoof] },
+    ]);
+  }
+  console.log("  ✓ MG MG4: all trims configured");
+
+  // ─── MG HS configs ────────────────────────────────────────────────────
+  for (const trim of mgHsTrims) {
+    const isTop = trim.name === "PHEV";
+    await addConfigOptions(trim.id, [
+      { type: "exterior_color", name: "Цвет кузова", items: isTop ? [colorWhite, colorGrey, colorBlue, colorRed, colorBlack] : [colorWhite, colorGrey, colorBlue, colorRed] },
+      { type: "interior_color", name: "Цвет салона", items: [intBlack, intBeige] },
+      { type: "wheels", name: "Колёса", items: [wheel18, wheel19] },
+      { type: "package", name: "Пакеты", required: false, items: isTop ? [pkgPremium] : [] },
+      { type: "standalone_option", name: "Дополнительные опции", required: false, items: [optPanoramicRoof, optHud] },
+    ]);
+  }
+  console.log("  ✓ MG HS: all trims configured");
+
+  // ─── Hyundai Tucson configs ───────────────────────────────────────────
+  for (const trim of tucsonTrims) {
+    const isTop = trim.name === "Premium" || trim.name === "Hybrid";
+    await addConfigOptions(trim.id, [
+      { type: "exterior_color", name: "Цвет кузова", items: isTop
+        ? [{ name: "Белый перламутр", code: "pearl-white", priceDelta: "0" }, { name: "Серый металлик", code: "grey-metallic", priceDelta: "0" }, colorBlack, { name: "Океанский синий", code: "ocean-blue", priceDelta: "400" }, { name: "Огненный красный", code: "fiery-red", priceDelta: "400" }]
+        : [{ name: "Белый перламутр", code: "pearl-white", priceDelta: "0" }, { name: "Серый металлик", code: "grey-metallic", priceDelta: "0" }, colorBlack, { name: "Океанский синий", code: "ocean-blue", priceDelta: "400" }] },
+      { type: "interior_color", name: "Цвет салона", items: isTop
+        ? [{ name: "Чёрная ткань", code: "black-cloth", priceDelta: "0" }, { name: "Серая кожа", code: "grey-leather", priceDelta: "800" }, { name: "Бежевая кожа", code: "beige-leather", priceDelta: "800" }]
+        : [{ name: "Чёрная ткань", code: "black-cloth", priceDelta: "0" }, { name: "Серая кожа", code: "grey-leather", priceDelta: "800" }] },
+      { type: "wheels", name: "Колёса", items: [wheel18, wheel19, wheel19Standard] },
+      { type: "package", name: "Пакеты", required: false, items: isTop ? [pkgPremium] : [] },
+      { type: "standalone_option", name: "Дополнительные опции", required: false, items: isTop ? [optPanoramicRoof, optHud, optSoundSystem] : [optPanoramicRoof, optHud] },
+    ]);
+  }
+  console.log("  ✓ Hyundai Tucson: all trims configured");
+
+  // ─── Hyundai Ioniq 5 configs ──────────────────────────────────────────
+  for (const trim of ioniq5Trims) {
+    const isTop = trim.name === "AWD";
+    await addConfigOptions(trim.id, [
+      { type: "exterior_color", name: "Цвет кузова", items: isTop
+        ? [{ name: "Белый перламутр", code: "pearl-white", priceDelta: "0" }, { name: "Серый металлик", code: "grey-metallic", priceDelta: "0" }, colorBlack, { name: "Океанский синий", code: "ocean-blue", priceDelta: "500" }, { name: "Зелёный матовый", code: "matte-green", priceDelta: "800" }]
+        : [{ name: "Белый перламутр", code: "pearl-white", priceDelta: "0" }, { name: "Серый металлик", code: "grey-metallic", priceDelta: "0" }, colorBlack, { name: "Океанский синий", code: "ocean-blue", priceDelta: "500" }] },
+      { type: "interior_color", name: "Цвет салона", items: isTop
+        ? [{ name: "Чёрная ткань", code: "black-cloth", priceDelta: "0" }, { name: "Серая кожа", code: "grey-leather", priceDelta: "800" }, { name: "Бежевая кожа", code: "beige-leather", priceDelta: "800" }]
+        : [{ name: "Чёрная ткань", code: "black-cloth", priceDelta: "0" }, { name: "Серая кожа", code: "grey-leather", priceDelta: "800" }] },
+      { type: "wheels", name: "Колёса", items: wheelsBev },
+      { type: "package", name: "Пакеты", required: false, items: isTop ? [pkgPremium] : [] },
+      { type: "standalone_option", name: "Дополнительные опции", required: false, items: [optPanoramicRoof, optHud, optSoundSystem] },
+    ]);
+  }
+  console.log("  ✓ Hyundai Ioniq 5: all trims configured");
+
+  // ─── Hyundai Sonata configs ───────────────────────────────────────────
+  for (const trim of sonataTrims) {
+    const isTop = trim.name === "Premium";
+    await addConfigOptions(trim.id, [
+      { type: "exterior_color", name: "Цвет кузова", items: isTop
+        ? [{ name: "Белый перламутр", code: "pearl-white", priceDelta: "0" }, { name: "Серый металлик", code: "grey-metallic", priceDelta: "0" }, colorBlack, { name: "Океанский синий", code: "ocean-blue", priceDelta: "400" }, { name: "Огненный красный", code: "fiery-red", priceDelta: "400" }]
+        : [{ name: "Белый перламутр", code: "pearl-white", priceDelta: "0" }, { name: "Серый металлик", code: "grey-metallic", priceDelta: "0" }, colorBlack, { name: "Океанский синий", code: "ocean-blue", priceDelta: "400" }] },
+      { type: "interior_color", name: "Цвет салона", items: isTop
+        ? [{ name: "Чёрная ткань", code: "black-cloth", priceDelta: "0" }, { name: "Серая кожа", code: "grey-leather", priceDelta: "800" }, { name: "Бежевая кожа", code: "beige-leather", priceDelta: "800" }]
+        : [{ name: "Чёрная ткань", code: "black-cloth", priceDelta: "0" }, { name: "Серая кожа", code: "grey-leather", priceDelta: "800" }] },
+      { type: "wheels", name: "Колёса", items: [wheel17, wheel18, wheel18Sport] },
+      { type: "package", name: "Пакеты", required: false, items: isTop ? [pkgPremium] : [] },
+      { type: "standalone_option", name: "Дополнительные опции", required: false, items: isTop ? [optPanoramicRoof, optHud, optSoundSystem] : [optPanoramicRoof, optHud] },
+    ]);
+  }
+  console.log("  ✓ Hyundai Sonata: all trims configured");
+
+  // ─── Hyundai Creta configs ────────────────────────────────────────────
+  for (const trim of cretaTrims) {
+    const isTop = trim.name === "Premium";
+    await addConfigOptions(trim.id, [
+      { type: "exterior_color", name: "Цвет кузова", items: isTop
+        ? [{ name: "Белый перламутр", code: "pearl-white", priceDelta: "0" }, { name: "Серый металлик", code: "grey-metallic", priceDelta: "0" }, colorBlack, { name: "Океанский синий", code: "ocean-blue", priceDelta: "400" }]
+        : [{ name: "Белый перламутр", code: "pearl-white", priceDelta: "0" }, { name: "Серый металлик", code: "grey-metallic", priceDelta: "0" }, colorBlack] },
+      { type: "interior_color", name: "Цвет салона", items: [{ name: "Чёрная ткань", code: "black-cloth", priceDelta: "0" }, { name: "Бежевая ткань", code: "beige-cloth", priceDelta: "0" }] },
+      { type: "wheels", name: "Колёса", items: [wheel17, wheel18] },
+      { type: "standalone_option", name: "Дополнительные опции", required: false, items: isTop ? [optPanoramicRoof, optSoundSystem] : [optPanoramicRoof] },
+    ]);
+  }
+  console.log("  ✓ Hyundai Creta: all trims configured");
+
+  // ─── Kia Sportage configs ─────────────────────────────────────────────
+  for (const trim of sportageTrims) {
+    const isTop = trim.name === "GT-Line";
+    await addConfigOptions(trim.id, [
+      { type: "exterior_color", name: "Цвет кузова", items: isTop
+        ? [{ name: "Гравийный серый", code: "gravel-grey", priceDelta: "0" }, { name: "Снежный белый", code: "snow-white", priceDelta: "0" }, { name: "Звёздный синий", code: "starry-blue", priceDelta: "500" }, { name: "Огненный красный", code: "fire-red", priceDelta: "500" }]
+        : [{ name: "Гравийный серый", code: "gravel-grey", priceDelta: "0" }, { name: "Снежный белый", code: "snow-white", priceDelta: "0" }, { name: "Звёздный синий", code: "starry-blue", priceDelta: "500" }] },
+      { type: "interior_color", name: "Цвет салона", items: [{ name: "Чёрная кожа", code: "black-leather", priceDelta: "0" }, { name: "Серая кожа", code: "grey-leather", priceDelta: "0" }] },
+      { type: "wheels", name: "Колёса", items: [wheel18, wheel19, wheel19Standard] },
+      { type: "package", name: "Пакеты", required: false, items: isTop ? [pkgPremium] : [] },
+      { type: "standalone_option", name: "Дополнительные опции", required: false, items: isTop ? [optPanoramicRoof, optHud, optSoundSystem] : [optPanoramicRoof, optHud] },
+    ]);
+  }
+  console.log("  ✓ Kia Sportage: all trims configured");
+
+  // ─── Kia EV6 configs ──────────────────────────────────────────────────
+  for (const trim of ev6Trims) {
+    const isTop = trim.name === "GT-Line AWD";
+    await addConfigOptions(trim.id, [
+      { type: "exterior_color", name: "Цвет кузова", items: isTop
+        ? [{ name: "Гравийный серый", code: "gravel-grey", priceDelta: "0" }, { name: "Снежный белый", code: "snow-white", priceDelta: "0" }, { name: "Звёздный синий", code: "starry-blue", priceDelta: "500" }, { name: "Огненный красный", code: "fire-red", priceDelta: "500" }, { name: "Зелёный матовый", code: "matte-green", priceDelta: "800" }]
+        : [{ name: "Гравийный серый", code: "gravel-grey", priceDelta: "0" }, { name: "Снежный белый", code: "snow-white", priceDelta: "0" }, { name: "Звёздный синий", code: "starry-blue", priceDelta: "500" }, { name: "Огненный красный", code: "fire-red", priceDelta: "500" }] },
+      { type: "interior_color", name: "Цвет салона", items: isTop ? [{ name: "Чёрная кожа", code: "black-leather", priceDelta: "0" }, { name: "Серая кожа", code: "grey-leather", priceDelta: "0" }, { name: "Бежевая кожа", code: "beige-leather", priceDelta: "0" }] : [{ name: "Чёрная кожа", code: "black-leather", priceDelta: "0" }, { name: "Серая кожа", code: "grey-leather", priceDelta: "0" }] },
+      { type: "wheels", name: "Колёса", items: wheelsBev },
+      { type: "package", name: "Пакеты", required: false, items: isTop ? [pkgPremium] : [] },
+      { type: "standalone_option", name: "Дополнительные опции", required: false, items: [optPanoramicRoof, optHud, optSoundSystem] },
+    ]);
+  }
+  console.log("  ✓ Kia EV6: all trims configured");
+
+  // ─── Kia K5 configs ───────────────────────────────────────────────────
+  for (const trim of k5Trims) {
+    const isTop = trim.name === "GT-Line";
+    await addConfigOptions(trim.id, [
+      { type: "exterior_color", name: "Цвет кузова", items: isTop
+        ? [{ name: "Гравийный серый", code: "gravel-grey", priceDelta: "0" }, { name: "Снежный белый", code: "snow-white", priceDelta: "0" }, { name: "Звёздный синий", code: "starry-blue", priceDelta: "500" }, { name: "Огненный красный", code: "fire-red", priceDelta: "500" }]
+        : [{ name: "Гравийный серый", code: "gravel-grey", priceDelta: "0" }, { name: "Снежный белый", code: "snow-white", priceDelta: "0" }, { name: "Звёздный синий", code: "starry-blue", priceDelta: "500" }] },
+      { type: "interior_color", name: "Цвет салона", items: [{ name: "Чёрная кожа", code: "black-leather", priceDelta: "0" }, { name: "Серая кожа", code: "grey-leather", priceDelta: "0" }] },
+      { type: "wheels", name: "Колёса", items: [wheel17, wheel18, wheel18Sport] },
+      { type: "package", name: "Пакеты", required: false, items: isTop ? [pkgPremium] : [] },
+      { type: "standalone_option", name: "Дополнительные опции", required: false, items: isTop ? [optPanoramicRoof, optHud, optSoundSystem] : [optPanoramicRoof, optHud] },
+    ]);
+  }
+  console.log("  ✓ Kia K5: all trims configured");
+
+  // ─── Kia Sonet configs ────────────────────────────────────────────────
+  for (const trim of sonetTrims) {
+    const isTop = trim.name === "GT-Line";
+    await addConfigOptions(trim.id, [
+      { type: "exterior_color", name: "Цвет кузова", items: isTop
+        ? [{ name: "Гравийный серый", code: "gravel-grey", priceDelta: "0" }, { name: "Снежный белый", code: "snow-white", priceDelta: "0" }, { name: "Звёздный синий", code: "starry-blue", priceDelta: "400" }, { name: "Огненный красный", code: "fire-red", priceDelta: "400" }]
+        : [{ name: "Гравийный серый", code: "gravel-grey", priceDelta: "0" }, { name: "Снежный белый", code: "snow-white", priceDelta: "0" }, { name: "Звёздный синий", code: "starry-blue", priceDelta: "400" }] },
+      { type: "interior_color", name: "Цвет салона", items: [{ name: "Чёрная ткань", code: "black-cloth", priceDelta: "0" }, { name: "Серая ткань", code: "grey-cloth", priceDelta: "0" }] },
+      { type: "wheels", name: "Колёса", items: [wheel17, wheel18] },
+      { type: "standalone_option", name: "Дополнительные опции", required: false, items: isTop ? [optPanoramicRoof, optSoundSystem] : [optPanoramicRoof] },
+    ]);
+  }
+  console.log("  ✓ Kia Sonet: all trims configured");
+
+  // ─── Tesla Model 3 configs ────────────────────────────────────────────
+  for (const trim of model3Trims) {
+    const isTop = trim.name === "Long Range";
+    await addConfigOptions(trim.id, [
+      { type: "exterior_color", name: "Цвет кузова", items: isTop
+        ? [colorWhite, colorBlack, { name: "Серый", code: "grey", priceDelta: "1000" }, { name: "Красный", code: "red", priceDelta: "1000" }, { name: "Синий", code: "blue", priceDelta: "1000" }]
+        : [colorWhite, colorBlack, { name: "Серый", code: "grey", priceDelta: "1000" }] },
+      { type: "interior_color", name: "Цвет салона", items: [intBlack, { name: "Белый", code: "white", priceDelta: "1000" }] },
+      { type: "wheels", name: "Колёса", items: [{ name: '19" Aero', code: "19-aero", priceDelta: "0" }, { name: '20" Sport', code: "20-sport", priceDelta: "1500" }] },
+      { type: "standalone_option", name: "Дополнительные опции", required: false, items: [{ name: "Автопилот", code: "autopilot", priceDelta: "3000" }, ...(isTop ? [{ name: "Полный автопilot (FSD)", code: "fsd", priceDelta: "8000" }] : [])] },
+    ]);
+  }
+  console.log("  ✓ Tesla Model 3: all trims configured");
+
+  // ─── Tesla Model Y configs ────────────────────────────────────────────
+  for (const trim of modelYTrims) {
+    const isTop = trim.name === "Performance";
+    await addConfigOptions(trim.id, [
+      { type: "exterior_color", name: "Цвет кузова", items: [colorWhite, colorBlack, { name: "Серый", code: "grey", priceDelta: "1000" }, { name: "Красный", code: "red", priceDelta: "1000" }, { name: "Синий", code: "blue", priceDelta: "1000" }] },
+      { type: "interior_color", name: "Цвет салона", items: [intBlack, { name: "Белый", code: "white", priceDelta: "1000" }] },
+      { type: "wheels", name: "Колёса", items: [{ name: '19" Gemini', code: "19-gemini", priceDelta: "0" }, { name: '20" Induction', code: "20-induction", priceDelta: "2000" }, ...(isTop ? [{ name: '21" Überturbine', code: "21-uberturbine", priceDelta: "3500" }] : [])] },
+      { type: "standalone_option", name: "Дополнительные опции", required: false, items: [{ name: "Автопилот", code: "autopilot", priceDelta: "3000" }, ...(isTop ? [{ name: "Полный автопilot (FSD)", code: "fsd", priceDelta: "8000" }] : [])] },
+    ]);
+  }
+  console.log("  ✓ Tesla Model Y: all trims configured");
 
   // ─── Reviews ────────────────────────────────────────────────────────────
   await db.insert(reviews).values([
-    {
-      name: "Артём Ким",
-      city: "Ташкент",
-      rating: 5,
-      vehicleLabel: "Zeekr 7X AWD",
-      text: "Отличный сервис! Машина приехала в идеальном состоянии. Менеджер всё объяснил, помог с выбором. Доставка заняла 22 дня.",
-      published: true,
-      featured: true,
-      sortOrder: 1,
-    },
-    {
-      name: "Дилшод Рустамов",
-      city: "Самарканд",
-      rating: 5,
-      vehicleLabel: "BYD Seal",
-      text: "Долго выбирал между BYD и Zeekr. В итоге взял Seal — отличная машина для города. Калькулятор на сайте показал точную сумму.",
-      published: true,
-      featured: true,
-      sortOrder: 2,
-    },
-    {
-      name: "Алексей Петров",
-      city: "Ташкент",
-      rating: 4,
-      vehicleLabel: "Changan CS55 Plus",
-      text: "Хороший кроссовер за свои деньги. Единственное — пришлось подождать чуть дольше обещанного срока. Но в целом доволен.",
-      published: true,
-      featured: true,
-      sortOrder: 3,
-    },
-    {
-      name: "Нодирбек Турсунов",
-      city: "Бухара",
-      rating: 5,
-      vehicleLabel: "Zeekr 001 Performance",
-      text: "Мечтал о мощном электромобиле. 001 превзошёл ожидания — разгон бешеный, запас хода отличный. Спасибо TerraAuto за подбор!",
-      published: true,
-      featured: true,
-      sortOrder: 4,
-    },
-    {
-      name: "Мария Сидорова",
-      city: "Ташкент",
-      rating: 5,
-      vehicleLabel: "BYD Atto 3",
-      text: "Выбрали Atto 3 для жены — компактный, удобный, экономичный. Ребята помогли с документами, всё быстро оформили.",
-      published: true,
-      featured: false,
-      sortOrder: 5,
-    },
+    { name: "Артём Ким", city: "Ташкент", rating: 5, vehicleLabel: "Zeekr 7X AWD", text: "Отличный сервис! Машина приехала в идеальном состоянии. Менеджер всё объяснил, помог с выбором. Доставка заняла 22 дня.", published: true, featured: true, sortOrder: 1 },
+    { name: "Дилшод Рустамов", city: "Самарканд", rating: 5, vehicleLabel: "BYD Seal", text: "Долго выбирал между BYD и Zeekr. В итоге взял Seal — отличная машина для города. Калькулятор на сайте показал точную сумму.", published: true, featured: true, sortOrder: 2 },
+    { name: "Алексей Петров", city: "Ташкент", rating: 4, vehicleLabel: "Changan CS55 Plus", text: "Хороший кроссовер за свои деньги. Единственное — пришлось подождать чуть дольше обещанного срока. Но в целом доволен.", published: true, featured: true, sortOrder: 3 },
+    { name: "Нодирбек Турсунов", city: "Бухара", rating: 5, vehicleLabel: "Zeekr 001 Performance", text: "Мечтал о мощном электромобиле. 001 превзошёл ожидания — разгон бешеный, запас хода отличный. Спасибо TerraAuto за подбор!", published: true, featured: true, sortOrder: 4 },
+    { name: "Мария Сидорова", city: "Ташкент", rating: 5, vehicleLabel: "BYD Atto 3", text: "Выбрали Atto 3 для жены — компактный, удобный, экономичный. Ребята помогли с документами, всё быстро оформили.", published: true, featured: false, sortOrder: 5 },
   ]);
   console.log("✓ Reviews: 5 entries");
 
   // ─── Content Pages ──────────────────────────────────────────────────────
   await db.insert(contentPages).values([
     {
-      slug: "how-it-works",
-      title: "Как купить автомобиль",
-      contentHtml: `
+      slug: "how-it-works", title: "Как купить автомобиль", contentHtml: `
         <h2>Процесс покупки автомобиля через TerraAuto</h2>
         <p>Мы сделали процесс покупки автомобиля из-за рубежа максимально простым и прозрачным.</p>
-
-        <h3>1. Выбор автомобиля</h3>
-        <p>Просмотрите наш каталог или воспользуйтесь подборщиком. Мы предлагаем автомобили из Китая, Кореи, США и Дубая с полной информацией о комплектации и характеристиках.</p>
-
-        <h3>2. Расчёт стоимости</h3>
-        <p>Калькулятор покажет полную стоимость автомобиля с доставкой: цена автомобиля, логистика, таможенные пошлины и сервисный сбор.</p>
-
-        <h3>3. Оформление и доставка</h3>
-        <p>После согласования мы организуем покупку, проверку, таможенное оформление и доставку автомобиля в Узбекистан.</p>
-
-        <h3>4. Получение в Ташкенте</h3>
-        <p>Получите готовый автомобиль в нашем офисе в Ташкенте. Мы поможем с регистрацией и предоставим все документы.</p>
-      `,
+        <h3>1. Выбор автомобиля</h3><p>Просмотрите наш каталог или воспользуйтесь подборщиком.</p>
+        <h3>2. Расчёт стоимости</h3><p>Калькулятор покажет полную стоимость автомобиля с доставкой.</p>
+        <h3>3. Оформление и доставка</h3><p>После согласования мы организуем покупку, проверку, таможенное оформление и доставку.</p>
+        <h3>4. Получение в Ташкенте</h3><p>Получите готовый автомобиль в нашем офисе.</p>`,
       seoTitle: "Как купить автомобиль из Китая — Пошаговая инструкция",
-      seoDescription: "Подробная инструкция по покупке автомобиля из Китая через TerraAuto: выбор, расчёт, оформление, доставка.",
+      seoDescription: "Подробная инструкция по покупке автомобиля из Китая через TerraAuto.",
       published: true,
     },
     {
-      slug: "about",
-      title: "О компании TerraAuto",
-      contentHtml: `
+      slug: "about", title: "О компании TerraAuto", contentHtml: `
         <h2>О компании TerraAuto</h2>
-        <p>Мы помогаем людям в Узбекистане получить доступ к качественным автомобилям из Китая, Кореи, США и Дубая по прозрачным ценам и с полным сервисом.</p>
-
-        <h3>Наша миссия</h3>
-        <p>TerraAuto создана для того, чтобы сделать покупку автомобиля из-за рубежа простой, прозрачной и безопасной. Мы берём на себя весь процесс: от выбора автомобиля до его регистрации в Ташкенте.</p>
-
+        <p>Мы помогаем людям в Узбекистане получить доступ к качественным автомобилям из Китая, Кореи, США и Дубая.</p>
         <h3>Наши преимущества</h3>
-        <ul>
-          <li>Проверка автомобиля перед покупкой</li>
-          <li>Доставка под ключ</li>
-          <li>Прозрачные сроки</li>
-          <li>Поддержка 24/7</li>
-        </ul>
-      `,
+        <ul><li>Проверка автомобиля перед покупкой</li><li>Доставка под ключ</li><li>Прозрачные сроки</li><li>Поддержка 24/7</li></ul>`,
       seoTitle: "О компании TerraAuto — Автомобили из Китая",
       seoDescription: "Узнайте больше о компании TerraAuto: наша миссия, преимущества и опыт работы.",
       published: true,
     },
     {
-      slug: "contacts",
-      title: "Контакты",
-      contentHtml: `
+      slug: "contacts", title: "Контакты", contentHtml: `
         <h2>Свяжитесь с нами</h2>
-        <p>Мы всегда на связи и готовы помочь с выбором автомобиля.</p>
-
-        <h3>Телефон</h3>
-        <p>+998 90 123 45 67</p>
-
-        <h3>Telegram</h3>
-        <p>@terraauto</p>
-
-        <h3>Email</h3>
-        <p>info@terraauto.uz</p>
-
-        <h3>Адрес офиса</h3>
-        <p>г. Ташкент, ул. Амира Темура, 108</p>
-
-        <h3>Часы работы</h3>
-        <p>Пн–Пт: 9:00–18:00, Сб: 10:00–15:00</p>
-      `,
+        <h3>Телефон</h3><p>+998 90 123 45 67</p>
+        <h3>Telegram</h3><p>@terraauto</p>
+        <h3>Email</h3><p>info@terraauto.uz</p>
+        <h3>Адрес офиса</h3><p>г. Ташкент, ул. Амира Темура, 108</p>`,
       seoTitle: "Контакты TerraAuto — Свяжитесь с нами",
       seoDescription: "Контактная информация TerraAuto: телефон, Telegram, адрес офиса в Ташкенте.",
       published: true,
     },
-  ]);
-  console.log("✓ Content pages: 3 entries (how-it-works, about, contacts)");
+  ]).onConflictDoNothing({ target: contentPages.slug });
+  console.log("✓ Content pages: 3 entries");
 
   // ─── Site Settings ──────────────────────────────────────────────────────
   await db.insert(siteSettings).values([
@@ -610,12 +1187,27 @@ async function seed() {
   ]).onConflictDoNothing();
   console.log("✓ Site settings: 5 entries");
 
-  const totalTrims = zeekr7xTrims.length + zeekr001Trims.length + atto3Trims.length + sealTrims.length + hanTrims.length + cs55Trims.length + deepalS7Trims.length;
+  const allTrimArrays = [
+    zeekr7xTrims, zeekr001Trims, atto3Trims, sealTrims, hanTrims,
+    dolphinTrims, songPlusTrims, tangTrims, qinPlusTrims, yuanUpTrims, chazorTrims,
+    cs55Trims, deepalS7Trims,
+    tiggo7Trims, tiggo8Trims, omoda5Trims, jaecoo7Trims,
+    monjaroTrims, coolrayTrims, emgrandTrims,
+    jolionTrims, h6Trims, f7Trims,
+    mg4Trims, mgHsTrims,
+    tucsonTrims, ioniq5Trims, sonataTrims, cretaTrims,
+    sportageTrims, ev6Trims, k5Trims, sonetTrims,
+    model3Trims, modelYTrims,
+  ];
+  const totalTrims = allTrimArrays.reduce((sum, arr) => sum + arr.length, 0);
+  const totalModels = allTrimArrays.length;
+
   console.log("\n✅ Seed completed!");
   console.log("\nLogin credentials:");
   console.log("  Admin:   admin@terraauto.uz / admin123");
   console.log("  Manager: manager@terraauto.uz / manager123");
-  console.log(`\nVehicles: 7 models, ${totalTrims} trims`);
+  console.log(`\nVehicles: ${totalModels} models, ${totalTrims} trims`);
+  console.log(`Brands: Zeekr, BYD, Changan, Chery, Geely, Haval, MG, Hyundai, Kia, Tesla`);
   console.log(`Calculation rules: ${calcRules.length}`);
   console.log("Exchange rates: 4");
 

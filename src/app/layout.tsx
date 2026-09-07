@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { auth } from "@/lib/auth";
 import { Providers } from "@/components/providers";
+import { ScrollToTop } from "@/components/scroll-to-top";
 import { SiteHeader, SiteFooter } from "@/components/site-header";
 import { Analytics } from "@/components/analytics";
 import "./globals.css";
@@ -54,6 +55,7 @@ export default async function RootLayout({
       <body className={inter.className}>
         <Analytics />
         <Providers userRole={userRole}>
+          <ScrollToTop />
           <SiteHeader />
           <main>{children}</main>
           <SiteFooter />

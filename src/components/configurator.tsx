@@ -38,6 +38,12 @@ interface ConfiguratorProps {
     options: string[];
     unpriced_options: string[];
     totalDelta: number;
+    options_with_prices: {
+      name: string;
+      priceDelta: number;
+      priceKnown: boolean;
+      groupType: string;
+    }[];
   }) => void;
   onColorSelect?: (groupId: string, optionId: string, images: ColorImage[]) => void;
 }
@@ -92,6 +98,12 @@ export function Configurator({
     let totalDelta = 0;
     const unpricedOptions: string[] = [];
     const config: Record<string, string> = {};
+    const optionsWithPrices: {
+      name: string;
+      priceDelta: number;
+      priceKnown: boolean;
+      groupType: string;
+    }[] = [];
 
     for (const group of groups) {
       const selectedOptionId = currentSelections[group.id];
@@ -104,6 +116,13 @@ export function Configurator({
       if (group.type === "interior_color") config.interior_color = option.name;
       if (group.type === "wheels") config.wheels = option.name;
 
+      optionsWithPrices.push({
+        name: option.name,
+        priceDelta: option.priceDelta ? Number(option.priceDelta) : 0,
+        priceKnown: option.priceKnown,
+        groupType: group.type,
+      });
+
       if (option.priceKnown && option.priceDelta) {
         totalDelta += Number(option.priceDelta);
       } else if (!option.priceKnown) {
@@ -115,6 +134,13 @@ export function Configurator({
       for (const group of groups) {
         const option = group.options.find((o) => o.id === optionId);
         if (option) {
+          optionsWithPrices.push({
+            name: option.name,
+            priceDelta: option.priceDelta ? Number(option.priceDelta) : 0,
+            priceKnown: option.priceKnown,
+            groupType: group.type,
+          });
+
           if (option.priceKnown && option.priceDelta) {
             totalDelta += Number(option.priceDelta);
           } else if (!option.priceKnown) {
@@ -137,6 +163,7 @@ export function Configurator({
       }),
       unpriced_options: unpricedOptions,
       totalDelta,
+      options_with_prices: optionsWithPrices,
     });
   }
 

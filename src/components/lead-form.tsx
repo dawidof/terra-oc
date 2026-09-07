@@ -26,6 +26,12 @@ interface LeadFormProps {
     options: string[];
     unpriced_options: string[];
     totalDelta: number;
+    options_with_prices: {
+      name: string;
+      priceDelta: number;
+      priceKnown: boolean;
+      groupType: string;
+    }[];
   };
   trimId: string;
   brandName: string;

@@ -42,7 +42,14 @@ interface ConfigJson {
   options?: string[];
   unpriced_options?: string[];
   totalDelta?: number;
+  options_with_prices?: {
+    name: string;
+    priceDelta: number;
+    priceKnown: boolean;
+    groupType: string;
+  }[];
   additional_costs?: { label: string; amount: number }[];
+  car_options?: { label: string; amount: number }[];
   calculatorBreakdown?: {
     vehiclePrice: number;
     logistics: number;
@@ -85,6 +92,7 @@ export default async function LeadDetailPage({ params }: Props) {
   const config = lead.configuration;
   const configJson = config?.configurationJson as ConfigJson | null;
   const computedBreakdown = lead.computedBreakdown;
+  const optionsWithPrices = configJson?.options_with_prices || lead.resolvedOptionsWithPrices || [];
   const sourceInfo = SOURCE_LABELS[lead.source || ""] || null;
   const SourceIcon = sourceInfo?.icon || Car;
 
@@ -280,7 +288,12 @@ export default async function LeadDetailPage({ params }: Props) {
                     fallbackServiceFee={config.serviceFee ? Number(config.serviceFee) : null}
                     fallbackTotal={config.estimatedTotal ? Number(config.estimatedTotal) : null}
                     existingAdditionalCosts={configJson?.additional_costs || []}
+                    existingCarOptions={configJson?.car_options || []}
                     configOptionsTotal={configJson?.totalDelta || 0}
+                    optionsWithPrices={optionsWithPrices}
+                    sourceCountry={config.sourceCountry || "Китай"}
+                    condition={config.condition || "new"}
+                    trimId={lead.trimId || undefined}
                   />
                 </CardContent>
               </Card>

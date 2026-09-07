@@ -41,13 +41,15 @@ export async function PATCH(
       await setFollowUp(id, data.nextFollowUpAt ?? null);
     }
 
-    if (data.estimatedTotal !== undefined || data.additionalCosts !== undefined || data.calculatorBreakdown !== undefined) {
+    if (data.estimatedTotal !== undefined || data.additionalCosts !== undefined || data.calculatorBreakdown !== undefined || data.optionsWithPrices !== undefined || data.carOptions !== undefined) {
       await updateLeadEstimate(
         id,
         data.estimatedTotal ?? null,
         data.additionalCosts ?? null,
         userId,
-        data.calculatorBreakdown ?? null
+        data.calculatorBreakdown ?? null,
+        data.optionsWithPrices ?? null,
+        data.carOptions ?? null
       );
     }
 

@@ -9,6 +9,8 @@ import {
   leadActivities,
   vehicleOffers,
   trims,
+  configurationOptionGroups,
+  configurationOptions,
 } from "@/db/schema";
 import { calculate, type CalculatorInput } from "@/lib/calculator";
 
@@ -190,10 +192,19 @@ export async function getLeadById(id: string) {
     .orderBy(desc(leadActivities.createdAt));
 
   let computedBreakdown = null;
+  let resolvedOptionsWithPrices: {
+    name: string;
+    priceDelta: number;
+    priceKnown: boolean;
+    groupType: string;
+  }[] | null = null;
+
   if (config) {
     const configJson = config.configurationJson as Record<string, unknown> | null;
     const hasBreakdown = configJson?.calculatorBreakdown;
+    const hasOptionsWithPrices = configJson?.options_with_prices;
 
+    // Compute breakdown if missing
     if (!hasBreakdown && lead.estimatedTotalUsd && lead.trimId) {
       const [trim] = await db
         .select()
@@ -229,12 +240,76 @@ export async function getLeadById(id: string) {
         }
       }
     }
+
+    // Look up per-option prices from DB if not stored in configurationJson
+    if (!hasOptionsWithPrices && lead.trimId) {
+      const optionNames = (configJson?.options as string[]) || [];
+      const extColor = configJson?.exterior_color as string | undefined;
+      const intColor = configJson?.interior_color as string | undefined;
+      const wheels = configJson?.wheels as string | undefined;
+      const allNames = [
+        ...(extColor ? [extColor] : []),
+        ...(intColor ? [intColor] : []),
+        ...(wheels ? [wheels] : []),
+        ...optionNames,
+      ];
+
+      if (allNames.length > 0) {
+        const groups = await db
+          .select()
+          .from(configurationOptionGroups)
+          .where(eq(configurationOptionGroups.trimId, lead.trimId));
+
+        const groupIds = groups.map((g) => g.id);
+        const groupTypeMap = new Map(groups.map((g) => [g.id, g.type]));
+
+        if (groupIds.length > 0) {
+          const allOptions = await db
+            .select()
+            .from(configurationOptions)
+            .where(
+              groupIds.length === 1
+                ? eq(configurationOptions.groupId, groupIds[0])
+                : sql`${configurationOptions.groupId} IN (${sql.join(
+                    groupIds.map((id) => sql`${id}`),
+                    sql`, `
+                  )})`
+            );
+
+          const optionsByName = new Map(allOptions.map((o) => [o.name, o]));
+          const resolved: {
+            name: string;
+            priceDelta: number;
+            priceKnown: boolean;
+            groupType: string;
+          }[] = [];
+
+          for (const name of allNames) {
+            const opt = optionsByName.get(name);
+            if (opt) {
+              const groupType = groupTypeMap.get(opt.groupId) || "standalone_option";
+              resolved.push({
+                name: opt.name,
+                priceDelta: opt.priceDelta ? Number(opt.priceDelta) : 0,
+                priceKnown: opt.priceKnown,
+                groupType,
+              });
+            }
+          }
+
+          if (resolved.length > 0) {
+            resolvedOptionsWithPrices = resolved;
+          }
+        }
+      }
+    }
   }
 
   return {
     ...lead,
     configuration: config || null,
     computedBreakdown,
+    resolvedOptionsWithPrices,
     notes,
     activities,
   };
@@ -296,7 +371,9 @@ export async function updateLeadEstimate(
   estimatedTotal: number | null,
   additionalCosts: { label: string; amount: number }[] | null,
   userId: string,
-  calculatorBreakdown?: Record<string, number> | null
+  calculatorBreakdown?: Record<string, number> | null,
+  optionsWithPrices?: { name: string; priceDelta: number; priceKnown: boolean; groupType: string }[] | null,
+  carOptions?: { label: string; amount: number }[] | null
 ) {
   if (estimatedTotal !== null) {
     await db
@@ -321,6 +398,8 @@ export async function updateLeadEstimate(
           ...currentConfig,
           ...(additionalCosts != null ? { additional_costs: additionalCosts } : {}),
           ...(calculatorBreakdown != null ? { calculatorBreakdown } : {}),
+          ...(optionsWithPrices != null ? { options_with_prices: optionsWithPrices } : {}),
+          ...(carOptions != null ? { car_options: carOptions } : {}),
         },
       })
       .where(eq(leadConfigurations.leadId, leadId));

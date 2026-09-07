@@ -68,20 +68,19 @@ export function CrmClient({
     <div className="min-h-screen bg-gray-50">
       <header className="border-b bg-white">
         <div className="container mx-auto flex items-center justify-between px-4 py-4">
-          <Link href="/" className="text-2xl font-bold text-emerald-600">
-            TerraAuto
-          </Link>
           <div className="flex items-center gap-4">
             <Link href="/cars">
               <Button variant="ghost" size="sm">
                 Каталог
               </Button>
             </Link>
-            <Link href="/crm">
-              <Button variant="outline" size="sm">CRM</Button>
-            </Link>
             <Link href="/crm/import">
               <Button variant="ghost" size="sm">Импорт</Button>
+            </Link>
+          </div>
+          <div className="flex items-center gap-4">
+            <Link href="/crm">
+              <Button variant="outline" size="sm">CRM</Button>
             </Link>
             <form action={logout}>
               <Button variant="outline" size="sm" type="submit">
