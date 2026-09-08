@@ -111,7 +111,7 @@ export async function getLeads(filters: LeadFilters = {}) {
     .offset(offset);
 
   return {
-    leads: results,
+    leads: results.map((r) => ({ ...r, statusOrder: 0 })),
     total,
     page,
     pageSize,

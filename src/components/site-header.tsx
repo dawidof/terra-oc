@@ -7,6 +7,7 @@ import { AdminToggle } from "@/components/admin/admin-toggle";
 import { SettingsDrawer } from "@/components/admin/settings-drawer";
 import { useAdmin } from "@/contexts/admin-context";
 import { Menu, X } from "lucide-react";
+import { AutocompleteSearch } from "@/components/autocomplete-search";
 
 export function SiteHeader() {
   const { isAdmin, is_admin_user } = useAdmin();
@@ -21,6 +22,7 @@ export function SiteHeader() {
 
         {/* Desktop nav */}
         <nav className="hidden items-center gap-4 md:flex">
+          <AutocompleteSearch className="w-64" />
           <Link href="/cars" className="text-sm text-muted-foreground hover:text-foreground">
             Автомобили
           </Link>
@@ -126,7 +128,16 @@ export function SiteFooter() {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><Link href="/contacts" className="hover:text-foreground">Связаться с нами</Link></li>
               <li><a href="tel:+998901234567" className="hover:text-foreground">+998 90 123 45 67</a></li>
-              <li><a href="https://t.me/terraauto" className="hover:text-foreground" target="_blank" rel="noopener noreferrer">Telegram</a></li>
+              <li>
+                <a href="https://wa.me/998901234567" className="hover:text-foreground" target="_blank" rel="noopener noreferrer">
+                  WhatsApp
+                </a>
+              </li>
+              <li>
+                <a href="https://t.me/terraauto" className="hover:text-foreground" target="_blank" rel="noopener noreferrer">
+                  Telegram
+                </a>
+              </li>
             </ul>
           </div>
         </div>

@@ -27,6 +27,21 @@ export const leadStatusEnum = pgEnum("lead_status", [
   "lost",
 ]);
 
+export const inventoryStatusEnum = pgEnum("inventory_status", [
+  "in_stock",
+  "in_transit",
+  "on_order",
+  "reserved",
+  "sold",
+]);
+
+export const quoteStatusEnum = pgEnum("quote_status", [
+  "draft",
+  "sent",
+  "accepted",
+  "expired",
+]);
+
 // ─── Users ───────────────────────────────────────────────────────────────────
 
 export const users = pgTable("users", {
@@ -399,6 +414,7 @@ export const leads = pgTable("leads", {
     .references(() => customers.id),
   assignedManagerId: uuid("assigned_manager_id").references(() => users.id),
   status: leadStatusEnum("status").notNull().default("new"),
+  statusOrder: integer("status_order").notNull().default(0),
   source: varchar("source", { length: 100 }),
   trimId: uuid("trim_id").references(() => trims.id),
   estimatedTotalUsd: numeric("estimated_total_usd", { precision: 12, scale: 2 }),
@@ -512,4 +528,44 @@ export const importUrls = pgTable("import_urls", {
     .notNull()
     .defaultNow()
     .$onUpdate(() => new Date()),
+});
+
+// ─── Vehicle Inventory ─────────────────────────────────────────────────────
+
+export const vehicleInventory = pgTable("vehicle_inventory", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  trimId: uuid("trim_id")
+    .notNull()
+    .references(() => trims.id),
+  status: inventoryStatusEnum("status").notNull().default("on_order"),
+  location: varchar("location", { length: 255 }),
+  vin: varchar("vin", { length: 50 }),
+  expectedDate: timestamp("expected_date", { withTimezone: true }),
+  reservedBy: uuid("reserved_by").references(() => leads.id),
+  reservedAt: timestamp("reserved_at", { withTimezone: true }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+});
+
+// ─── Quotes ────────────────────────────────────────────────────────────────
+
+export const quotes = pgTable("quotes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  leadId: uuid("lead_id")
+    .notNull()
+    .references(() => leads.id),
+  configurationJson: jsonb("configuration_json"),
+  pdfUrl: varchar("pdf_url", { length: 500 }),
+  status: quoteStatusEnum("status").notNull().default("draft"),
+  validUntil: timestamp("valid_until", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  sentAt: timestamp("sent_at", { withTimezone: true }),
 });

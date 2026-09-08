@@ -6,6 +6,7 @@ import { LeadForm } from "@/components/lead-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Calculator } from "lucide-react";
+import { ContactButtons } from "@/components/contact-buttons";
 
 interface ColorImage {
   url: string;
@@ -160,6 +161,15 @@ export function ConfiguratorSection({
                 <Button size="lg" onClick={() => setShowLeadForm(true)}>
                   Получить точный расчёт
                 </Button>
+                <div className="mt-4">
+                  <ContactButtons
+                    brandName={brandName}
+                    modelName={modelName}
+                    trimName={trimName}
+                    estimatedTotal={estimatedBase + configuration.totalDelta}
+                    variant="inline"
+                  />
+                </div>
               </CardContent>
             </Card>
           )}

@@ -8,6 +8,13 @@
       "when": 1788551970576,
       "tag": "0000_open_valeria_richards",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788867247430,
+      "tag": "0001_flat_agent_brand",
+      "breakpoints": true
     }
   ]
 }

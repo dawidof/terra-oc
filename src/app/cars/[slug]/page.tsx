@@ -13,6 +13,7 @@ import { CarCard } from "@/components/car-card";
 import { TrimComparisonTable } from "@/components/trim-comparison-table";
 import { VehicleAdminBar } from "@/components/admin/vehicle-admin-bar";
 import { CarGallery } from "@/components/car-gallery";
+import { ContactButtons } from "@/components/contact-buttons";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -303,6 +304,17 @@ export default async function CarDetailPage({ params }: Props) {
                   Выбрать комплектацию
                 </Button>
               </a>
+            </div>
+
+            {/* Contact buttons */}
+            <div className="mt-4">
+              <ContactButtons
+                brandName={car.brandName}
+                modelName={car.modelName}
+                trimName={car.trimName}
+                estimatedTotal={offer?.estimatedTotalUsd ? Number(offer.estimatedTotalUsd) : undefined}
+                variant="inline"
+              />
             </div>
           </div>
         </div>

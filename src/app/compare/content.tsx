@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { X, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { ShareComparison } from "@/components/share-comparison";
 
 interface Vehicle {
   trimId: string;
@@ -138,7 +139,12 @@ export default function CompareContent() {
   return (
     <div className="min-h-screen bg-white">
       <div className="container mx-auto px-4 py-8">
-        <h1 className="mb-6 text-3xl font-bold">Сравнение автомобилей</h1>
+        <div className="mb-6 flex items-center justify-between">
+          <h1 className="text-3xl font-bold">Сравнение автомобилей</h1>
+          {carSlugs.length > 0 && (
+            <ShareComparison slugs={carSlugs} />
+          )}
+        </div>
 
         {carSlugs.length === 0 ? (
           <div className="py-16 text-center">

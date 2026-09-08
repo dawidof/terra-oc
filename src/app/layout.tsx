@@ -5,6 +5,7 @@ import { Providers } from "@/components/providers";
 import { ScrollToTop } from "@/components/scroll-to-top";
 import { SiteHeader, SiteFooter } from "@/components/site-header";
 import { Analytics } from "@/components/analytics";
+import { ContactButtons } from "@/components/contact-buttons";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -59,6 +60,7 @@ export default async function RootLayout({
           <SiteHeader />
           <main>{children}</main>
           <SiteFooter />
+          <ContactButtons variant="floating" />
         </Providers>
       </body>
     </html>
