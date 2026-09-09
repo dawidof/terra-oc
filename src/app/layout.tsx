@@ -6,6 +6,7 @@ import { ScrollToTop } from "@/components/scroll-to-top";
 import { SiteHeader, SiteFooter } from "@/components/site-header";
 import { Analytics } from "@/components/analytics";
 import { ContactButtons } from "@/components/contact-buttons";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -61,6 +62,7 @@ export default async function RootLayout({
           <main>{children}</main>
           <SiteFooter />
           <ContactButtons variant="floating" />
+          <Toaster position="bottom-right" richColors closeButton />
         </Providers>
       </body>
     </html>

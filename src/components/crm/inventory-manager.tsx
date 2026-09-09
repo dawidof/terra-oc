@@ -2,11 +2,22 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { toast } from "sonner";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { AvailabilityBadge } from "@/components/availability-badge";
-import { Package, Plus, Edit2, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Package, Plus, Trash2 } from "lucide-react";
 
 interface InventoryItem {
   id: string;
@@ -42,7 +53,6 @@ export function InventoryManager() {
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<string>("");
-  const [showAddModal, setShowAddModal] = useState(false);
 
   useEffect(() => {
     fetchItems();
@@ -75,11 +85,29 @@ export function InventoryManager() {
       });
 
       if (res.ok) {
+        toast.success("Статус инвентаря обновлён");
         fetchItems();
         router.refresh();
+      } else {
+        toast.error("Не удалось обновить статус");
       }
-    } catch (error) {
-      console.error("Failed to update inventory:", error);
+    } catch {
+      toast.error("Ошибка сети при обновлении статуса");
+    }
+  }
+
+  async function handleDelete(id: string) {
+    try {
+      const res = await fetch(`/api/admin/inventory?id=${id}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Позиция удалена");
+        fetchItems();
+        router.refresh();
+      } else {
+        toast.error("Не удалось удалить позицию");
+      }
+    } catch {
+      toast.error("Ошибка сети при удалении");
     }
   }
 
@@ -92,7 +120,7 @@ export function InventoryManager() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold">Инвентарь</h2>
-        <Button onClick={() => setShowAddModal(true)}>
+        <Button onClick={() => toast.info("Функция добавления в разработке")}>
           <Plus className="mr-2 h-4 w-4" />
           Добавить
         </Button>
@@ -185,6 +213,25 @@ export function InventoryManager() {
                       </option>
                     ))}
                   </select>
+                  <AlertDialog>
+                    <AlertDialogTrigger render={<Button variant="ghost" size="sm" className="h-7 px-2 text-muted-foreground hover:text-red-600" />}>
+                      <Trash2 className="h-3 w-3" />
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Удалить позицию?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          {item.brandName} {item.modelName} — {item.trimName}. Это действие нельзя отменить.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Отмена</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleDelete(item.id)} className="bg-red-600 hover:bg-red-700">
+                          Удалить
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
 
                 {item.notes && (

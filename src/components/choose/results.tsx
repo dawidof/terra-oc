@@ -26,11 +26,17 @@ interface Recommendation {
 
 interface WizardAnswers {
   budget?: string;
+  budgetFallback?: string;
   bodyType?: string;
+  bodyTypeFallback?: string;
   powertrain?: string;
+  powertrainFallback?: string;
   seats?: string;
+  seatsFallback?: string;
   priority?: string;
+  priorityFallback?: string;
   usage?: string;
+  usageFallback?: string;
 }
 
 interface ResultsProps {
@@ -123,11 +129,17 @@ export function Results({ answers, recommendations, onReset, onLeadForm, onSofte
   const [selectedCars, setSelectedCars] = useState<Set<string>>(new Set());
 
   const chosenOptions = Object.entries(answers)
-    .filter(([, value]) => value && value !== "any")
-    .map(([key, value]) => ({
-      title: ANSWER_TITLES[key] || key,
-      label: ANSWER_LABELS[key]?.[value!] || value!,
-    }));
+    .filter(([key, value]) => value && value !== "any" && !key.endsWith("Fallback"))
+    .map(([key, value]) => {
+      const fallbackKey = `${key}Fallback` as keyof WizardAnswers;
+      const fallback = answers[fallbackKey];
+      const fallbackLabel = fallback && fallback !== "any" ? ANSWER_LABELS[key]?.[fallback] : null;
+      return {
+        title: ANSWER_TITLES[key] || key,
+        label: ANSWER_LABELS[key]?.[value as string] || (value as string),
+        fallbackLabel,
+      };
+    });
 
   function handleToggleSelect(trimSlug: string) {
     setSelectedCars((prev) => {
@@ -174,6 +186,9 @@ export function Results({ answers, recommendations, onReset, onLeadForm, onSofte
               {chosenOptions.map((opt) => (
                 <Badge key={opt.title} variant="secondary" className="text-xs">
                   {opt.title}: {opt.label}
+                  {opt.fallbackLabel && (
+                    <span className="ml-1 text-muted-foreground"> / {opt.fallbackLabel}</span>
+                  )}
                 </Badge>
               ))}
             </div>
@@ -186,27 +201,34 @@ export function Results({ answers, recommendations, onReset, onLeadForm, onSofte
           <ResultCard
             key={rec.trimId}
             rec={rec}
-            onLeadForm={onLeadForm}
             selected={selectedCars.has(rec.trimSlug)}
             onToggleSelect={handleToggleSelect}
           />
         ))}
       </div>
 
-      {/* Floating compare button */}
-      {selectedCars.size >= 2 && (
+      {/* Floating compare bar */}
+      {selectedCars.size >= 1 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
           <Card className="shadow-lg">
             <CardContent className="flex items-center gap-4 p-4">
-              <span className="text-sm text-muted-foreground">
-                Выбрано: {selectedCars.size} авто
-              </span>
-              <Link href={`/compare?cars=${Array.from(selectedCars).join(",")}`}>
-                <Button>
-                  <GitCompareArrows className="mr-2 h-4 w-4" />
-                  Сравнить ({selectedCars.size})
-                </Button>
-              </Link>
+              <GitCompareArrows className="h-4 w-4 text-emerald-600" />
+              {selectedCars.size >= 2 ? (
+                <>
+                  <span className="text-sm text-muted-foreground">
+                    Выбрано: {selectedCars.size} авто
+                  </span>
+                  <Link href={`/compare?cars=${Array.from(selectedCars).join(",")}`}>
+                    <Button>
+                      Сравнить ({selectedCars.size})
+                    </Button>
+                  </Link>
+                </>
+              ) : (
+                <span className="text-sm text-muted-foreground">
+                  Выберите ещё авто для сравнения
+                </span>
+              )}
             </CardContent>
           </Card>
         </div>

@@ -4,6 +4,8 @@ import { trims, modelVersions, carModels, brands } from "@/db/schema";
 import { eq, and, or, ilike } from "drizzle-orm";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
+export const revalidate = 120;
+
 export async function GET(request: NextRequest) {
   const ip = getClientIp(request);
   const rl = rateLimit(`search-trims:${ip}`, { windowMs: 60_000, maxRequests: 30 });

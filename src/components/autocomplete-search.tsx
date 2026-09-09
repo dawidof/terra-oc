@@ -75,8 +75,8 @@ export function AutocompleteSearch({
       return;
     }
 
-    setLoading(true);
     debounceRef.current = setTimeout(async () => {
+      setLoading(true);
       try {
         const res = await fetch(`/api/search-trims?q=${encodeURIComponent(query)}`);
         const data = await res.json();

@@ -103,6 +103,9 @@ export function CalculatorForm({
   const [leadPreferredContact, setLeadPreferredContact] = useState("phone");
   const [leadComment, setLeadComment] = useState("");
 
+  // Exchange rate state
+  const [exchangeRate, setExchangeRate] = useState<{ rate: number; source: string; recordedAt: string } | null>(null);
+
   const isEv = EV_POWERTRAINS.includes(powertrain);
 
   // Close dropdown on outside click
@@ -115,6 +118,27 @@ export function CalculatorForm({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Fetch live exchange rate when result is displayed
+  useEffect(() => {
+    if (result && result.exchangeRate > 0) {
+      void (async () => {
+        try {
+          const res = await fetch("/api/exchange-rate");
+          if (res.ok) {
+            const data = await res.json();
+            setExchangeRate({
+              rate: data.rate,
+              source: data.source,
+              recordedAt: data.recordedAt,
+            });
+          }
+        } catch {
+          // Silently fail - exchange rate is optional
+        }
+      })();
+    }
+  }, [result]);
 
   const searchCatalog = useCallback(async (query: string) => {
     if (query.length < 2) {
@@ -636,6 +660,17 @@ export function CalculatorForm({
                 {result.exchangeRate > 0 && (
                   <div className="text-sm text-muted-foreground">
                     ≈ {(result.total * result.exchangeRate).toLocaleString("uz-UZ")} UZS
+                  </div>
+                )}
+                {exchangeRate && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-green-500" />
+                    <span>
+                      Курс: 1 USD = {exchangeRate.rate.toLocaleString("uz-UZ")} UZS
+                    </span>
+                    <span className="text-muted-foreground/60">
+                      ({exchangeRate.source})
+                    </span>
                   </div>
                 )}
               </CardContent>

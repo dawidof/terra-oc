@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { KanbanColumn } from "./kanban-column";
 
 interface KanbanLead {
@@ -64,15 +65,15 @@ export function KanbanBoard({ leads }: KanbanBoardProps) {
       });
 
       if (!res.ok) {
-        // Revert on failure
         setOptimisticLeads(leads);
-        console.error("Failed to update lead status");
+        toast.error("Не удалось обновить статус заявки");
       } else {
+        toast.success("Статус заявки обновлён");
         router.refresh();
       }
     } catch {
       setOptimisticLeads(leads);
-      console.error("Failed to update lead status");
+      toast.error("Ошибка сети при обновлении статуса");
     }
   }
 

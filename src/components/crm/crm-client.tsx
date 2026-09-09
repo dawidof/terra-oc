@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { LayoutGrid, Table, BarChart3 } from "lucide-react";
 import { AnalyticsDashboard } from "@/components/crm/analytics-dashboard";
+import { FollowUpSettings } from "@/components/crm/follow-up-settings";
 
 interface Manager {
   id: string;
@@ -30,7 +31,6 @@ interface Lead {
   brandName: string | null;
   modelName: string | null;
   trimName: string | null;
-  statusOrder: number;
 }
 
 interface DashboardData {
@@ -74,6 +74,7 @@ export function CrmClient({
 
   const kanbanLeads = leads.map((lead) => ({
     ...lead,
+    statusOrder: 0,
     customerName: lead.customerName,
     managerName: lead.assignedManagerName,
     createdAt: lead.createdAt instanceof Date ? lead.createdAt.toISOString() : String(lead.createdAt),
@@ -159,8 +160,13 @@ export function CrmClient({
         </div>
 
         {/* Dashboard */}
-        <div className="mb-8">
-          <DashboardStats data={dashboard} />
+        <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <DashboardStats data={dashboard} />
+          </div>
+          <div>
+            <FollowUpSettings />
+          </div>
         </div>
 
         {/* Filters */}

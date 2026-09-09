@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Bell, Clock } from "lucide-react";
+import { Bell, Clock, Loader2 } from "lucide-react";
 
 interface FollowUpStats {
   overdue: number;
@@ -16,22 +17,20 @@ export function FollowUpSettings() {
   const [loading, setLoading] = useState(true);
   const [checking, setChecking] = useState(false);
 
-  async function fetchStats() {
-    try {
-      const res = await fetch("/api/admin/follow-up");
-      if (res.ok) {
-        const data = await res.json();
-        setStats(data);
-      }
-    } catch (error) {
-      console.error("Failed to fetch follow-up stats:", error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
   useEffect(() => {
-    fetchStats();
+    void (async () => {
+      try {
+        const res = await fetch("/api/admin/follow-up");
+        if (res.ok) {
+          const data = await res.json();
+          setStats(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch follow-up stats:", error);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
   async function handleCheckNow() {
@@ -41,9 +40,12 @@ export function FollowUpSettings() {
       if (res.ok) {
         const data = await res.json();
         setStats(data.stats);
+        toast.success("Напоминания обновлены");
+      } else {
+        toast.error("Не удалось проверить напоминания");
       }
-    } catch (error) {
-      console.error("Failed to check follow-ups:", error);
+    } catch {
+      toast.error("Ошибка сети при проверке напоминаний");
     } finally {
       setChecking(false);
     }
@@ -110,13 +112,11 @@ export function FollowUpSettings() {
           className="w-full"
         >
           {checking ? (
-            "Проверка..."
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
-            <>
-              <Bell className="mr-2 h-4 w-4" />
-              Проверить сейчас
-            </>
+            <Bell className="mr-2 h-4 w-4" />
           )}
+          {checking ? "Проверка..." : "Проверить сейчас"}
         </Button>
       </CardContent>
     </Card>

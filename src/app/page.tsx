@@ -5,6 +5,8 @@ import { ReviewList } from "@/components/reviews/review-list";
 import { getFeaturedModels } from "@/lib/queries";
 import { getPublishedReviews } from "@/lib/content";
 
+export const revalidate = 60;
+
 export default async function HomePage() {
   const [featuredModels, reviews] = await Promise.all([
     getFeaturedModels(),

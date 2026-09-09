@@ -20,6 +20,9 @@ import {
   configurationOptions,
   reviews,
   contentPages,
+  customers,
+  leads,
+  leadConfigurations,
 } from "../src/db/schema";
 
 const connectionString = process.env.DATABASE_URL!;
@@ -1186,6 +1189,85 @@ async function seed() {
     { key: "contact_address", valueJson: "г. Ташкент, ул. Амира Темура, 108" },
   ]).onConflictDoNothing();
   console.log("✓ Site settings: 5 entries");
+
+  // ─── Demo Customers ────────────────────────────────────────────────────
+  const [adminUser] = await db.select().from(users).where(eq(users.email, "admin@terraauto.uz"));
+  const [managerUser] = await db.select().from(users).where(eq(users.email, "manager@terraauto.uz"));
+
+  const demoCustomers = await db.insert(customers).values([
+    { name: "Алексей Ким", phone: "+998 90 111 22 33", telegram: "@alexey_kim", whatsapp: "+998901112233", preferredContactMethod: "telegram" },
+    { name: "Иrina Пак", phone: "+998 91 222 33 44", telegram: "@irina_pak", whatsapp: "+998912223344", preferredContactMethod: "phone" },
+    { name: "Дмитрий Чой", phone: "+998 93 333 44 55", telegram: "@dchoi", preferredContactMethod: "whatsapp" },
+    { name: "Наталья Ли", phone: "+998 94 444 55 66", telegram: "@natalia_li", preferredContactMethod: "telegram" },
+    { name: "Сергей Ван", phone: "+998 90 555 66 77", whatsapp: "+998905556677", preferredContactMethod: "phone" },
+    { name: "Анна Цой", phone: "+998 91 666 77 88", telegram: "@anna_choi", preferredContactMethod: "telegram" },
+    { name: "Михаил Рю", phone: "+998 93 777 88 99", preferredContactMethod: "phone" },
+    { name: "Елена Сон", phone: "+998 94 888 99 00", telegram: "@elena_son", whatsapp: "+998948889900", preferredContactMethod: "whatsapp" },
+    { name: "Олег Хан", phone: "+998 90 999 00 11", preferredContactMethod: "phone" },
+    { name: "Татьяна Нам", phone: "+998 91 000 11 22", telegram: "@t_nam", preferredContactMethod: "telegram" },
+  ]).returning();
+  console.log(`✓ Demo customers: ${demoCustomers.length}`);
+
+  // ─── Demo Leads ────────────────────────────────────────────────────────
+  const customerIds = demoCustomers.map((c) => c.id);
+  const managerId = managerUser?.id || adminUser?.id;
+
+  // Get some trim IDs for leads
+  const [zeekr7xTrim] = await db.select().from(trims).where(eq(trims.slug, "7x-standard")).limit(1);
+  const [bydAtto3Trim] = await db.select().from(trims).where(eq(trims.slug, "atto-3-base")).limit(1);
+  const [teslaModelYTrim] = await db.select().from(trims).where(eq(trims.slug, "model-y-standard")).limit(1);
+  const [kiaEv6Trim] = await db.select().from(trims).where(eq(trims.slug, "ev6-standard")).limit(1);
+  const [hyundaiIoniq5Trim] = await db.select().from(trims).where(eq(trims.slug, "ioniq-5-standard")).limit(1);
+  const [bydDolphinTrim] = await db.select().from(trims).where(eq(trims.slug, "dolphin-base")).limit(1);
+  const [changanDeepalTrim] = await db.select().from(trims).where(eq(trims.slug, "deepal-s7-standard")).limit(1);
+  const [havalH6Trim] = await db.select().from(trims).where(eq(trims.slug, "h6-base")).limit(1);
+
+  const demoLeads = await db.insert(leads).values([
+    { customerId: customerIds[0], assignedManagerId: managerId, status: "new", source: "calculator", estimatedTotalUsd: "42500", comment: "Интересуется электромобилем для семьи" },
+    { customerId: customerIds[1], assignedManagerId: managerId, status: "new", source: "website", estimatedTotalUsd: "35000" },
+    { customerId: customerIds[2], assignedManagerId: managerId, status: "assigned", source: "whatsapp", estimatedTotalUsd: "38000", comment: "Хочет crossover с большими колёсами" },
+    { customerId: customerIds[3], assignedManagerId: managerId, status: "assigned", source: "telegram", estimatedTotalUsd: "52000" },
+    { customerId: customerIds[4], assignedManagerId: managerId, status: "contacted", source: "calculator", estimatedTotalUsd: "31000", lastContactAt: new Date() },
+    { customerId: customerIds[5], assignedManagerId: managerId, status: "contacted", source: "website", estimatedTotalUsd: "45000", lastContactAt: new Date() },
+    { customerId: customerIds[6], assignedManagerId: managerId, status: "qualified", source: "phone", estimatedTotalUsd: "55000", lastContactAt: new Date(), nextFollowUpAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000) },
+    { customerId: customerIds[7], assignedManagerId: managerId, status: "qualified", source: "whatsapp", estimatedTotalUsd: "28000", lastContactAt: new Date() },
+    { customerId: customerIds[8], assignedManagerId: adminUser?.id, status: "quote_sent", source: "calculator", estimatedTotalUsd: "48000", lastContactAt: new Date(), nextFollowUpAt: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000) },
+    { customerId: customerIds[9], assignedManagerId: adminUser?.id, status: "negotiation", source: "website", estimatedTotalUsd: "62000", lastContactAt: new Date() },
+    { customerId: customerIds[0], assignedManagerId: managerId, status: "won", source: "calculator", estimatedTotalUsd: "42500", lastContactAt: new Date() },
+    { customerId: customerIds[3], assignedManagerId: managerId, status: "lost", source: "telegram", estimatedTotalUsd: "52000", comment: "Выбрал другого поставщика" },
+  ]).returning();
+  console.log(`✓ Demo leads: ${demoLeads.length}`);
+
+  // ─── Lead Configurations ──────────────────────────────────────────────
+  const trimAssignments = [
+    { leadIdx: 0, trim: zeekr7xTrim, country: "Китай", condition: "new" },
+    { leadIdx: 1, trim: bydAtto3Trim, country: "Китай", condition: "new" },
+    { leadIdx: 2, trim: changanDeepalTrim, country: "Китай", condition: "new" },
+    { leadIdx: 3, trim: teslaModelYTrim, country: "Корея", condition: "new" },
+    { leadIdx: 4, trim: bydDolphinTrim, country: "Китай", condition: "new" },
+    { leadIdx: 5, trim: hyundaiIoniq5Trim, country: "Корея", condition: "used" },
+    { leadIdx: 6, trim: kiaEv6Trim, country: "Корея", condition: "new" },
+    { leadIdx: 7, trim: bydAtto3Trim, country: "Китай", condition: "new" },
+    { leadIdx: 8, trim: zeekr7xTrim, country: "Китай", condition: "new" },
+    { leadIdx: 9, trim: teslaModelYTrim, country: "США", condition: "used" },
+    { leadIdx: 10, trim: zeekr7xTrim, country: "Китай", condition: "new" },
+    { leadIdx: 11, trim: havalH6Trim, country: "Китай", condition: "new" },
+  ];
+
+  for (const assignment of trimAssignments) {
+    if (assignment.trim) {
+      await db.insert(leadConfigurations).values({
+        leadId: demoLeads[assignment.leadIdx].id,
+        trimId: assignment.trim.id,
+        brandName: assignment.trim.slug.includes("zeekr") ? "Zeekr" : assignment.trim.slug.includes("byd") ? "BYD" : assignment.trim.slug.includes("tesla") ? "Tesla" : assignment.trim.slug.includes("kia") ? "Kia" : assignment.trim.slug.includes("hyundai") ? "Hyundai" : assignment.trim.slug.includes("changan") ? "Changan" : "Haval",
+        modelName: assignment.trim.slug.includes("7x") ? "7X" : assignment.trim.slug.includes("atto") ? "Atto 3" : assignment.trim.slug.includes("dolphin") ? "Dolphin" : assignment.trim.slug.includes("model-y") ? "Model Y" : assignment.trim.slug.includes("ev6") ? "EV6" : assignment.trim.slug.includes("ioniq") ? "Ioniq 5" : assignment.trim.slug.includes("deepal") ? "Deepal S7" : "H6",
+        trimName: assignment.trim.name,
+        sourceCountry: assignment.country,
+        condition: assignment.condition,
+      });
+    }
+  }
+  console.log(`✓ Lead configurations: ${trimAssignments.length}`);
 
   const allTrimArrays = [
     zeekr7xTrims, zeekr001Trims, atto3Trims, sealTrims, hanTrims,

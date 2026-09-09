@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -11,10 +12,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getStatusOptions, getStatusLabel } from "./status-badge";
-import { Save, UserPlus, Clock } from "lucide-react";
+import { getStatusOptions } from "./status-badge";
+import { Save, UserPlus, Clock, Trash2, Loader2 } from "lucide-react";
 
 interface Manager {
   id: string;
@@ -47,16 +59,14 @@ export function LeadDetailActions({
       : ""
   );
   const [loading, setLoading] = useState(false);
-  const [saved, setSaved] = useState(false);
 
   const statusOptions = getStatusOptions();
 
   async function handleSave() {
     setLoading(true);
-    setSaved(false);
 
     try {
-      const updates: any = {};
+      const updates: Record<string, unknown> = {};
 
       if (status !== currentStatus) {
         updates.status = status;
@@ -82,14 +92,29 @@ export function LeadDetailActions({
       });
 
       if (res.ok) {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
+        toast.success("Заявка обновлена");
         router.refresh();
+      } else {
+        toast.error("Не удалось обновить заявку");
       }
-    } catch (err) {
-      console.error("Failed to update lead:", err);
+    } catch {
+      toast.error("Ошибка сети при сохранении");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleDelete() {
+    try {
+      const res = await fetch(`/api/leads/${leadId}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Заявка удалена");
+        router.push("/crm");
+      } else {
+        toast.error("Не удалось удалить заявку");
+      }
+    } catch {
+      toast.error("Ошибка сети при удалении");
     }
   }
 
@@ -162,16 +187,33 @@ export function LeadDetailActions({
 
         <Button onClick={handleSave} disabled={loading} className="w-full">
           {loading ? (
-            "Сохранение..."
-          ) : saved ? (
-            "Сохранено"
+            <Loader2 className="mr-1 h-4 w-4 animate-spin" />
           ) : (
-            <>
-              <Save className="mr-1 h-4 w-4" />
-              Сохранить
-            </>
+            <Save className="mr-1 h-4 w-4" />
           )}
+          {loading ? "Сохранение..." : "Сохранить"}
         </Button>
+
+        <AlertDialog>
+          <AlertDialogTrigger render={<Button variant="destructive" className="w-full" />}>
+            <Trash2 className="mr-1 h-4 w-4" />
+            Удалить заявку
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Удалить заявку?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Это действие нельзя отменить. Заявка и все связанные данные будут удалены.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Отмена</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                Удалить
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardContent>
     </Card>
   );

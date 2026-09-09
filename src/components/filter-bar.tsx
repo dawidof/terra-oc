@@ -11,16 +11,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search } from "lucide-react";
+import { Search, SlidersHorizontal } from "lucide-react";
 
 interface FilterBarProps {
   brands: { name: string; slug: string }[];
+  total: number;
 }
 
-export function FilterBar({ brands }: FilterBarProps) {
+export function FilterBar({ brands, total }: FilterBarProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(searchParams.get("search") || "");
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const createQueryString = useCallback(
     (name: string, value: string) => {
@@ -45,20 +47,37 @@ export function FilterBar({ brands }: FilterBarProps) {
     router.push(`/cars?${createQueryString(name, value || "")}`);
   };
 
+  const handleNumberFilter = (name: string, value: string) => {
+    const num = Number(value);
+    if (value && (!Number.isFinite(num) || num <= 0)) return;
+    router.push(`/cars?${createQueryString(name, value || "")}`);
+  };
+
   return (
     <div className="space-y-4">
-      <form onSubmit={handleSearch} className="flex gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Марка или модель"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-        <Button type="submit">Найти</Button>
-      </form>
+      <div className="flex items-center justify-between">
+        <form onSubmit={handleSearch} className="flex gap-2 flex-1">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Марка или модель"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Button type="submit">Найти</Button>
+        </form>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="ml-2"
+        >
+          <SlidersHorizontal className="mr-1 h-4 w-4" />
+          <span className="hidden sm:inline">Фильтры</span>
+        </Button>
+      </div>
 
       <div className="flex flex-wrap gap-2">
         <Select
@@ -147,6 +166,87 @@ export function FilterBar({ brands }: FilterBarProps) {
             <SelectItem value="range" label="Запас хода">Запас хода</SelectItem>
           </SelectContent>
         </Select>
+      </div>
+
+      {showAdvanced && (
+        <div className="grid grid-cols-2 gap-3 rounded-lg border bg-muted/30 p-4 sm:grid-cols-4">
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">Цена от ($)</label>
+            <Input
+              type="number"
+              placeholder="0"
+              min="0"
+              defaultValue={searchParams.get("priceFrom") || ""}
+              onChange={(e) => handleNumberFilter("priceFrom", e.target.value)}
+              className="h-8"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">Цена до ($)</label>
+            <Input
+              type="number"
+              placeholder="∞"
+              min="0"
+              defaultValue={searchParams.get("priceTo") || ""}
+              onChange={(e) => handleNumberFilter("priceTo", e.target.value)}
+              className="h-8"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">Год от</label>
+            <Input
+              type="number"
+              placeholder="1990"
+              min="1990"
+              max="2030"
+              defaultValue={searchParams.get("yearFrom") || ""}
+              onChange={(e) => handleNumberFilter("yearFrom", e.target.value)}
+              className="h-8"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">Год до</label>
+            <Input
+              type="number"
+              placeholder="2030"
+              min="1990"
+              max="2030"
+              defaultValue={searchParams.get("yearTo") || ""}
+              onChange={(e) => handleNumberFilter("yearTo", e.target.value)}
+              className="h-8"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">Места</label>
+            <Select
+              value={searchParams.get("seats") || ""}
+              onValueChange={(v) => handleFilterChange("seats", v || null)}
+            >
+              <SelectTrigger className="h-8">
+                <SelectValue placeholder="Любые" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" label="Любые">Любые</SelectItem>
+                <SelectItem value="5" label="5 мест" />
+                <SelectItem value="7" label="7 мест" />
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">Страна</label>
+            <Input
+              placeholder="Китай, Корея..."
+              defaultValue={searchParams.get("sourceCountry") || ""}
+              onChange={(e) => handleFilterChange("sourceCountry", e.target.value || null)}
+              className="h-8"
+            />
+          </div>
+        </div>
+      )}
+
+      <div className="text-sm text-muted-foreground">
+        Найдено: <span className="font-medium text-foreground">{total}</span>{" "}
+        {total === 1 ? "автомобиль" : total < 5 ? "автомобиля" : "автомобилей"}
       </div>
     </div>
   );

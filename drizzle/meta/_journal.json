@@ -15,6 +15,13 @@
       "when": 1788867247430,
       "tag": "0001_flat_agent_brand",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788896659086,
+      "tag": "0002_yielding_rawhide_kid",
+      "breakpoints": true
     }
   ]
 }

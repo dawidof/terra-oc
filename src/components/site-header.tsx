@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { AdminToggle } from "@/components/admin/admin-toggle";
@@ -12,10 +12,17 @@ import { AutocompleteSearch } from "@/components/autocomplete-search";
 export function SiteHeader() {
   const { isAdmin, is_admin_user } = useAdmin();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 10);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
-    <header className="border-b">
-      <div className="container mx-auto flex items-center justify-between px-4 py-4">
+    <header className={`border-b transition-shadow duration-200 ${scrolled ? "shadow-sm" : ""}`}>
+      <div className="sticky top-0 z-50 container mx-auto flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4">
         <Link href="/" className="text-2xl font-bold text-emerald-600">
           TerraAuto
         </Link>
@@ -60,7 +67,7 @@ export function SiteHeader() {
 
       {/* Mobile nav */}
       {mobileOpen && (
-        <nav className="container mx-auto flex flex-col gap-2 border-t px-4 py-4 md:hidden">
+        <nav className="container mx-auto flex flex-col gap-3 border-t px-4 py-4 sm:gap-4 md:hidden">
           <Link href="/cars" className="py-2 text-sm" onClick={() => setMobileOpen(false)}>
             Автомобили
           </Link>

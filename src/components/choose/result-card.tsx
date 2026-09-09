@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Car, Zap, Gauge, MapPin, ArrowRight } from "lucide-react";
+import { GitCompareArrows, Gauge, MapPin, ArrowRight } from "lucide-react";
 
 interface Recommendation {
   trimId: string;
@@ -43,12 +43,10 @@ function scoreColor(score: number): string {
 
 export function ResultCard({
   rec,
-  onLeadForm,
   selected = false,
   onToggleSelect,
 }: {
   rec: Recommendation;
-  onLeadForm: () => void;
   selected?: boolean;
   onToggleSelect?: (trimSlug: string) => void;
 }) {
@@ -58,11 +56,27 @@ export function ResultCard({
         <div className="flex gap-5">
           {/* Selection checkbox */}
           <div className="flex flex-col items-center gap-2">
-            <Checkbox
-              checked={selected}
-              onCheckedChange={() => onToggleSelect?.(rec.trimSlug)}
-              aria-label={`Выбрать ${rec.brandName} ${rec.modelName}`}
-            />
+            <label
+              className={`flex cursor-pointer flex-col items-center gap-1 rounded-lg border p-2 transition-all ${
+                selected
+                  ? "border-emerald-600 bg-emerald-50 text-emerald-700"
+                  : "border-transparent text-muted-foreground hover:bg-muted"
+              }`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleSelect?.(rec.trimSlug);
+              }}
+            >
+              <Checkbox
+                checked={selected}
+                onCheckedChange={() => onToggleSelect?.(rec.trimSlug)}
+                aria-label={`Сравнить ${rec.brandName} ${rec.modelName}`}
+              />
+              <span className="flex items-center gap-1 text-xs font-medium">
+                <GitCompareArrows className="h-3 w-3" />
+                Сравнить
+              </span>
+            </label>
             {/* Car image */}
             {rec.imageUrl && (
               <div className="relative h-40 w-56 flex-shrink-0 overflow-hidden rounded-lg bg-muted">

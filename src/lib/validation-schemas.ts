@@ -86,11 +86,17 @@ export const calculateSchema = z.object({
 
 export const chooseSchema = z.object({
   budget: z.string().optional(),
+  budgetFallback: z.string().optional(),
   bodyType: z.string().optional(),
+  bodyTypeFallback: z.string().optional(),
   powertrain: z.string().optional(),
+  powertrainFallback: z.string().optional(),
   seats: z.string().optional(),
+  seatsFallback: z.string().optional(),
   priority: z.string().optional(),
+  priorityFallback: z.string().optional(),
   usage: z.string().optional(),
+  usageFallback: z.string().optional(),
 });
 
 const leadStatusValues = [

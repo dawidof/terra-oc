@@ -151,3 +151,53 @@ describe("Scoring: Body Type", () => {
     expect(result.score).toBe(0);
   });
 });
+
+describe("Scoring: Fallback logic", () => {
+  it("takes higher score between primary and fallback for budget", () => {
+    const primary = scoreBudget(30000, "under_35k");
+    const fallback = scoreBudget(30000, "35k_45k");
+    const best = primary.score >= fallback.score ? primary : fallback;
+    expect(best.score).toBe(30);
+  });
+
+  it("falls back to secondary when primary mismatches for powertrain", () => {
+    const primary = scorePowertrain("bev", "phev");
+    const fallback = scorePowertrain("bev", "bev");
+    const best = primary.score >= fallback.score ? primary : fallback;
+    expect(best.score).toBe(20);
+    expect(best.reason).toContain("bev");
+  });
+
+  it("falls back to secondary when primary excludes for seats", () => {
+    const primary = scoreSeats(5, "7");
+    const fallback = scoreSeats(5, "5");
+    let result = primary;
+    if (primary.exclude && !fallback.exclude) {
+      result = fallback;
+    }
+    expect(result.exclude).toBe(false);
+    expect(result.score).toBe(15);
+  });
+
+  it("still excludes when both primary and fallback exclude", () => {
+    const primary = scoreSeats(4, "7");
+    const fallback = scoreSeats(4, "5");
+    const bothExclude = primary.exclude && fallback.exclude;
+    expect(bothExclude).toBe(true);
+  });
+
+  it("takes higher score between primary and fallback for body type", () => {
+    const primary = scoreBodyType("sedan", "suv");
+    const fallback = scoreBodyType("sedan", "sedan");
+    const best = primary.score >= fallback.score ? primary : fallback;
+    expect(best.score).toBe(15);
+  });
+
+  it("primary wins when both match", () => {
+    const primary = scoreBudget(40000, "35k_45k");
+    const fallback = scoreBudget(40000, "under_35k");
+    const best = primary.score >= fallback.score ? primary : fallback;
+    expect(best.score).toBe(30);
+    expect(best.reason).toContain("бюджет");
+  });
+});

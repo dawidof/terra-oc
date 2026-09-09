@@ -202,6 +202,30 @@ const CAR_PHOTOS: Record<string, { name: string; url: string; alt: string; type:
     { name: "tesla-modely-rear.jpg", url: "https://paultan.org/image/2024/02/2024-Tesla-Model-Y-Performance-Malaysia_Ext-12.jpg", alt: "Tesla Model Y — вид сзади", type: "exterior" },
     { name: "tesla-modely-interior.jpg", url: "https://paultan.org/image/2024/02/2024-Tesla-Model-Y-Performance-Malaysia_Ext-10.jpg", alt: "Tesla Model Y — салон", type: "interior" },
   ],
+  "chazor": [
+    { name: "byd-chazor-front.jpg", url: "https://carnewschina.com/wp-content/uploads/2024/02/Destroyer-05-800x419.png", alt: "BYD Chazor — вид спереди", type: "exterior" },
+    { name: "byd-chazor-side.jpg", url: "https://carnewschina.com/wp-content/uploads/2024/02/side-view-800x503.png", alt: "BYD Chazor — вид сбоку", type: "exterior" },
+    { name: "byd-chazor-rear.jpg", url: "https://carnewschina.com/wp-content/uploads/2021/12/1488x0_1_autohomecar__ChwFkWGSGw-800x600.jpg", alt: "BYD Chazor — вид сзади", type: "exterior" },
+    { name: "byd-chazor-interior.jpg", url: "https://carnewschina.com/wp-content/uploads/2021/12/2021_1226_4b6ef641p00r4q9hb00k6c000ov00nsc-800x765.png", alt: "BYD Chazor — салон", type: "interior" },
+  ],
+  "yuan-up": [
+    { name: "byd-yuan-up-front.jpg", url: "https://cnevpost.com/wp-content/uploads/2024/02/2024020107420732.jpg", alt: "BYD Yuan Up — вид спереди", type: "exterior" },
+    { name: "byd-yuan-up-side.jpg", url: "https://cnevpost.com/wp-content/uploads/2024/02/2024020107421085.jpg", alt: "BYD Yuan Up — вид сбоку", type: "exterior" },
+    { name: "byd-yuan-up-rear.jpg", url: "https://cnevpost.com/wp-content/uploads/2024/02/2024020107421695.jpg", alt: "BYD Yuan Up — вид сзади", type: "exterior" },
+    { name: "byd-yuan-up-interior.jpg", url: "https://cnevpost.com/wp-content/uploads/2024/02/2024020107421912.jpg", alt: "BYD Yuan Up — салон", type: "interior" },
+  ],
+  "creta": [
+    { name: "hyundai-creta-front.jpg", url: "https://paultan.org/image/2023/04/2023_Hyundai_Creta_Launch_Malaysia_Ext-1-1200x675.jpg", alt: "Hyundai Creta — вид спереди", type: "exterior" },
+    { name: "hyundai-creta-side.jpg", url: "https://paultan.org/image/2023/04/2023_Hyundai_Creta_Launch_Malaysia_Ext-6-1200x675.jpg", alt: "Hyundai Creta — вид сбоку", type: "exterior" },
+    { name: "hyundai-creta-rear.jpg", url: "https://images.hindustantimes.com/auto/img/2024/01/10/600x338/Hyundai_Creta_991_1704862015471_1704862021906.jpg", alt: "Hyundai Creta — вид сзади", type: "exterior" },
+    { name: "hyundai-creta-interior.jpg", url: "https://paultan.org/cdn-img/?url=/research/data/aistudio/796/c99d9113df0e6c91c9682f47a71ef9e0b70d5e56.jpg&w=1200&h=630&fit=cover&gravity=auto&format=auto&q=85", alt: "Hyundai Creta — салон", type: "interior" },
+  ],
+  "sonet": [
+    { name: "kia-sonet-front.jpg", url: "https://paultan.org/image/2020/11/2020-Kia-Sonet-in-Indonesia-2-630x330.jpg", alt: "Kia Sonet — вид спереди", type: "exterior" },
+    { name: "kia-sonet-side.jpg", url: "https://paultan.org/image/2020/11/2020-Kia-Sonet-in-Indonesia-3-630x330.jpg", alt: "Kia Sonet — вид сбоку", type: "exterior" },
+    { name: "kia-sonet-rear.jpg", url: "https://paultan.org/image/2020/11/2020-Kia-Sonet-in-Indonesia-10.jpg", alt: "Kia Sonet — вид сзади", type: "exterior" },
+    { name: "kia-sonet-interior.jpg", url: "https://paultan.org/image/2020/11/2020-Kia-Sonet-in-Indonesia-10.jpg", alt: "Kia Sonet — салон", type: "interior" },
+  ],
 };
 
 function downloadFile(url: string, dest: string): Promise<boolean> {

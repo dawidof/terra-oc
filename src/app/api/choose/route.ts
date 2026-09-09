@@ -30,11 +30,17 @@ export async function POST(request: NextRequest) {
     const data = parsed.data;
     const answers: WizardAnswers = {
       budget: data.budget,
+      budgetFallback: data.budgetFallback,
       bodyType: data.bodyType,
+      bodyTypeFallback: data.bodyTypeFallback,
       powertrain: data.powertrain,
+      powertrainFallback: data.powertrainFallback,
       seats: data.seats,
+      seatsFallback: data.seatsFallback,
       priority: data.priority,
+      priorityFallback: data.priorityFallback,
       usage: data.usage,
+      usageFallback: data.usageFallback,
     };
 
     const recommendations = await getRecommendations(answers);

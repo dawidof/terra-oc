@@ -1,14 +1,20 @@
 import { db } from "@/db";
 import { trims, vehicleOffers, carModels, brands, modelVersions, vehicleMedia } from "@/db/schema";
-import { eq, and, gte, lte, desc } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 export interface WizardAnswers {
   budget?: string;
+  budgetFallback?: string;
   bodyType?: string;
+  bodyTypeFallback?: string;
   powertrain?: string;
+  powertrainFallback?: string;
   seats?: string;
+  seatsFallback?: string;
   priority?: string;
+  priorityFallback?: string;
   usage?: string;
+  usageFallback?: string;
 }
 
 export interface ScoredTrim {
@@ -254,34 +260,50 @@ export async function getRecommendations(answers: WizardAnswers): Promise<Scored
     const reasons: string[] = [];
     let totalScore = 0;
 
-    // Budget
-    const budgetResult = scoreBudget(price, answers.budget || "any");
+    // Budget — check primary, then fallback, take higher score
+    const budgetPrimary = scoreBudget(price, answers.budget || "any");
+    const budgetFallback = scoreBudget(price, answers.budgetFallback || "any");
+    const budgetResult = budgetPrimary.score >= budgetFallback.score ? budgetPrimary : budgetFallback;
     totalScore += budgetResult.score;
     if (budgetResult.reason) reasons.push(budgetResult.reason);
 
     // Powertrain
-    const powertrainResult = scorePowertrain(trim.powertrainType, answers.powertrain || "any");
+    const ptPrimary = scorePowertrain(trim.powertrainType, answers.powertrain || "any");
+    const ptFallback = scorePowertrain(trim.powertrainType, answers.powertrainFallback || "any");
+    const powertrainResult = ptPrimary.score >= ptFallback.score ? ptPrimary : ptFallback;
     totalScore += powertrainResult.score;
     if (powertrainResult.reason) reasons.push(powertrainResult.reason);
 
-    // Seats
-    const seatsResult = scoreSeats(trim.seats, answers.seats || "any");
-    if (seatsResult.exclude) continue;
+    // Seats — if primary excludes but fallback doesn't, use fallback
+    const seatsPrimary = scoreSeats(trim.seats, answers.seats || "any");
+    const seatsFallback = scoreSeats(trim.seats, answers.seatsFallback || "any");
+    let seatsResult = seatsPrimary;
+    if (seatsPrimary.exclude && !seatsFallback.exclude) {
+      seatsResult = seatsFallback;
+    } else if (seatsPrimary.exclude && seatsFallback.exclude) {
+      continue;
+    }
     totalScore += seatsResult.score;
     if (seatsResult.reason) reasons.push(seatsResult.reason);
 
     // Body type
-    const bodyResult = scoreBodyType(trim.bodyType, answers.bodyType || "any");
+    const bodyPrimary = scoreBodyType(trim.bodyType, answers.bodyType || "any");
+    const bodyFallback = scoreBodyType(trim.bodyType, answers.bodyTypeFallback || "any");
+    const bodyResult = bodyPrimary.score >= bodyFallback.score ? bodyPrimary : bodyFallback;
     totalScore += bodyResult.score;
     if (bodyResult.reason) reasons.push(bodyResult.reason);
 
     // Priority
-    const priorityResult = scorePriority(trim, answers.priority || "", prices, ranges, accels);
+    const prioPrimary = scorePriority(trim, answers.priority || "", prices, ranges, accels);
+    const prioFallback = scorePriority(trim, answers.priorityFallback || "", prices, ranges, accels);
+    const priorityResult = prioPrimary.score >= prioFallback.score ? prioPrimary : prioFallback;
     totalScore += priorityResult.score;
     if (priorityResult.reason) reasons.push(priorityResult.reason);
 
     // Usage
-    const usageResult = scoreUsage(trim, answers.usage || "", trim.seats);
+    const usagePrimary = scoreUsage(trim, answers.usage || "", trim.seats);
+    const usageFallback = scoreUsage(trim, answers.usageFallback || "", trim.seats);
+    const usageResult = usagePrimary.score >= usageFallback.score ? usagePrimary : usageFallback;
     totalScore += usageResult.score;
     if (usageResult.reason) reasons.push(usageResult.reason);
 
@@ -311,5 +333,16 @@ export async function getRecommendations(answers: WizardAnswers): Promise<Scored
   }
 
   scored.sort((a, b) => b.score - a.score);
-  return scored.slice(0, 5);
+
+  // Deduplicate: keep only the best-scoring trim per model
+  const seen = new Set<string>();
+  const unique: ScoredTrim[] = [];
+  for (const trim of scored) {
+    if (!seen.has(trim.modelSlug)) {
+      seen.add(trim.modelSlug);
+      unique.push(trim);
+    }
+  }
+
+  return unique.slice(0, 8);
 }

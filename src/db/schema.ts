@@ -414,7 +414,6 @@ export const leads = pgTable("leads", {
     .references(() => customers.id),
   assignedManagerId: uuid("assigned_manager_id").references(() => users.id),
   status: leadStatusEnum("status").notNull().default("new"),
-  statusOrder: integer("status_order").notNull().default(0),
   source: varchar("source", { length: 100 }),
   trimId: uuid("trim_id").references(() => trims.id),
   estimatedTotalUsd: numeric("estimated_total_usd", { precision: 12, scale: 2 }),
