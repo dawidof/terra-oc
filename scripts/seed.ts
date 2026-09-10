@@ -109,10 +109,12 @@ async function seed() {
   console.log(`✓ Specification definitions: ${specDefs.length}`);
 
   // ─── Helper: get or create brand ─────────────────────────────────────────
-  async function ensureBrand(name: string, slug: string, country: string, description: string) {
+  async function ensureBrand(name: string, slug: string, country: string, description: string, logoUrl?: string) {
     let brand = (await db.select().from(brands).where(eq(brands.slug, slug)).limit(1))[0];
     if (!brand) {
-      [brand] = await db.insert(brands).values({ name, slug, country, description }).returning();
+      [brand] = await db.insert(brands).values({ name, slug, country, description, logoUrl }).returning();
+    } else if (logoUrl && !brand.logoUrl) {
+      [brand] = await db.update(brands).set({ logoUrl }).where(eq(brands.slug, slug)).returning();
     }
     return brand;
   }
@@ -210,7 +212,7 @@ async function seed() {
   // ═══════════════════════════════════════════════════════════════════════════
   // ZEEKR
   // ═══════════════════════════════════════════════════════════════════════════
-  const zeekr = await ensureBrand("Zeekr", "zeekr", "Китай", "Электромобили премиум-класса от Geely");
+  const zeekr = await ensureBrand("Zeekr", "zeekr", "Китай", "Электромобили премиум-класса от Geely", "/brands/zeekr.png");
 
   const zeekr7x = await ensureModel(zeekr.id, "7X", "7x", "SUV", "Электрический кроссовер премиум-класса", true);
   const zeekr7xVer = await ensureVersion(zeekr7x.id, "2024");
@@ -234,7 +236,7 @@ async function seed() {
   // ═══════════════════════════════════════════════════════════════════════════
   // BYD
   // ═══════════════════════════════════════════════════════════════════════════
-  const byd = await ensureBrand("BYD", "byd", "Китай", "Крупнейший производитель электромобилей в мире");
+  const byd = await ensureBrand("BYD", "byd", "Китай", "Крупнейший производитель электромобилей в мире", "/brands/byd.png");
 
   const atto3 = await ensureModel(byd.id, "Atto 3", "atto-3", "SUV", "Компактный электрический кроссовер", true);
   const atto3Ver = await ensureVersion(atto3.id, "2024");
@@ -309,7 +311,7 @@ async function seed() {
   // ═══════════════════════════════════════════════════════════════════════════
   // CHANGAN
   // ═══════════════════════════════════════════════════════════════════════════
-  const changan = await ensureBrand("Changan", "changan", "Китай", "Один из крупнейших автопроизводителей Китая");
+  const changan = await ensureBrand("Changan", "changan", "Китай", "Один из крупнейших автопроизводителей Китая", "/brands/changan.png");
 
   const cs55 = await ensureModel(changan.id, "CS55 Plus", "cs55-plus", "SUV", "Популярный кроссовер с бензиновым двигателем");
   const cs55Ver = await ensureVersion(cs55.id, "2024");
@@ -331,7 +333,7 @@ async function seed() {
   // ═══════════════════════════════════════════════════════════════════════════
   // CHERY
   // ═══════════════════════════════════════════════════════════════════════════
-  const chery = await ensureBrand("Chery", "chery", "Китай", "Один из крупнейших экспортёров Китая");
+  const chery = await ensureBrand("Chery", "chery", "Китай", "Один из крупнейших экспортёров Китая", "/brands/chery.png");
 
   const tiggo7 = await ensureModel(chery.id, "Tiggo 7 Pro", "tiggo-7-pro", "SUV", "Популярный компактный кроссовер", true);
   const tiggo7Ver = await ensureVersion(tiggo7.id, "2024");
@@ -368,7 +370,7 @@ async function seed() {
   // ═══════════════════════════════════════════════════════════════════════════
   // GEELY
   // ═══════════════════════════════════════════════════════════════════════════
-  const geely = await ensureBrand("Geely", "geely", "Китай", "Крупный китайский автопроизводитель, владелец Volvo и Zeekr");
+  const geely = await ensureBrand("Geely", "geely", "Китай", "Крупный китайский автопроизводитель, владелец Volvo и Zeekr", "/brands/geely.png");
 
   const monjaro = await ensureModel(geely.id, "Monjaro", "monjaro", "SUV", "Флагманский полноразмерный кроссовер", true);
   const monjaroVer = await ensureVersion(monjaro.id, "2024");
@@ -397,7 +399,7 @@ async function seed() {
   // ═══════════════════════════════════════════════════════════════════════════
   // HAVAL
   // ═══════════════════════════════════════════════════════════════════════════
-  const haval = await ensureBrand("Haval", "haval", "Китай", "Бренд SUV от Great Wall Motors");
+  const haval = await ensureBrand("Haval", "haval", "Китай", "Бренд SUV от Great Wall Motors", "/brands/haval.png");
 
   const jolion = await ensureModel(haval.id, "Jolion", "jolion", "SUV", "Компактный городской кроссовер", true);
   const jolionVer = await ensureVersion(jolion.id, "2024");
@@ -426,7 +428,7 @@ async function seed() {
   // ═══════════════════════════════════════════════════════════════════════════
   // MG
   // ═══════════════════════════════════════════════════════════════════════════
-  const mg = await ensureBrand("MG", "mg", "Китай", "Британский бренд, сейчас принадлежит SAIC Motor");
+  const mg = await ensureBrand("MG", "mg", "Китай", "Британский бренд, сейчас принадлежит SAIC Motor", "/brands/mg.png");
 
   const mg4 = await ensureModel(mg.id, "MG4", "mg4", "hatchback", "Электрический хэтчбек");
   const mg4Ver = await ensureVersion(mg4.id, "2024");
@@ -449,7 +451,7 @@ async function seed() {
   // ═══════════════════════════════════════════════════════════════════════════
   // HYUNDAI
   // ═══════════════════════════════════════════════════════════════════════════
-  const hyundai = await ensureBrand("Hyundai", "hyundai", "Корея", "Корейский автопроизводитель, популярный в Узбекистане");
+  const hyundai = await ensureBrand("Hyundai", "hyundai", "Корея", "Корейский автопроизводитель, популярный в Узбекистане", "/brands/hyundai.png");
 
   const tucson = await ensureModel(hyundai.id, "Tucson", "tucson", "SUV", "Самый популярный корейский импорт в Узбекистане", true);
   const tucsonVer = await ensureVersion(tucson.id, "2024");
@@ -489,7 +491,7 @@ async function seed() {
   // ═══════════════════════════════════════════════════════════════════════════
   // KIA
   // ═══════════════════════════════════════════════════════════════════════════
-  const kia = await ensureBrand("Kia", "kia", "Корея", "Корейский автопроизводитель");
+  const kia = await ensureBrand("Kia", "kia", "Корея", "Корейский автопроизводитель", "/brands/kia.png");
 
   const sportage = await ensureModel(kia.id, "Sportage", "sportage", "SUV", "Популярный компактный кроссовер", true);
   const sportageVer = await ensureVersion(sportage.id, "2024");
@@ -528,7 +530,7 @@ async function seed() {
   // ═══════════════════════════════════════════════════════════════════════════
   // TESLA
   // ═══════════════════════════════════════════════════════════════════════════
-  const tesla = await ensureBrand("Tesla", "tesla", "США", "Американский производитель электромобилей");
+  const tesla = await ensureBrand("Tesla", "tesla", "США", "Американский производитель электромобилей", "/brands/tesla.png");
 
   const model3 = await ensureModel(tesla.id, "Model 3", "model-3", "sedan", "Электрический седан");
   const model3Ver = await ensureVersion(model3.id, "2024");

@@ -32,14 +32,16 @@ export function BrandLogos({ brands }: { brands: Brand[] }) {
             )}
           >
             {brand.logoUrl ? (
-              <Image
-                src={brand.logoUrl}
-                alt={brand.name}
-                width={80}
-                height={32}
-                sizes="80px"
-                className="h-8 w-auto object-contain opacity-70 grayscale transition-all group-hover:opacity-100 group-hover:grayscale-0"
-              />
+              <div className="flex h-10 w-24 items-center justify-center">
+                <Image
+                  src={brand.logoUrl}
+                  alt={brand.name}
+                  width={96}
+                  height={40}
+                  sizes="96px"
+                  className="max-h-10 w-auto object-contain opacity-70 grayscale transition-all group-hover:opacity-100 group-hover:grayscale-0"
+                />
+              </div>
             ) : (
               <span className="text-sm font-medium tracking-wide text-muted-foreground transition-colors group-hover:text-foreground">
                 {brand.name}
