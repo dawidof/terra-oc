@@ -17,10 +17,10 @@ const plates = [
 
 export function HomeSavings() {
   return (
-    <Section id="savings" divide>
+    <Section id="savings" background="accent">
       <div className="grid gap-10 lg:grid-cols-12 lg:items-center">
         <div className="lg:col-span-5">
-          <p className="text-5xl font-bold tracking-tight tabular-nums text-foreground sm:text-6xl">
+          <p className="text-6xl font-bold tracking-tight tabular-nums text-brand sm:text-7xl">
             500 000 ₽
           </p>
           <p className="mt-3 text-lg leading-relaxed text-muted-foreground">
@@ -32,10 +32,10 @@ export function HomeSavings() {
           {plates.map(({ icon: Icon, title, desc }) => (
             <div
               key={title}
-              className="rounded-xl bg-card p-6 shadow-soft"
+              className="rounded-xl bg-card p-6 shadow-soft transition duration-200 hover:-translate-y-1 hover:shadow-soft-lg"
             >
-              <span className="flex size-10 items-center justify-center rounded-lg bg-muted">
-                <Icon className="size-5 text-brand" aria-hidden />
+              <span className="flex size-10 items-center justify-center rounded-lg bg-brand shadow-sm">
+                <Icon className="size-5 text-white" aria-hidden />
               </span>
               <h3 className="mt-5 text-base font-semibold tracking-tight">
                 {title}

@@ -9,8 +9,8 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Eyebrow, Heading, Tag } from "@/components/ui/section";
-import { formatUsd, powerLabel, powertrainLabel } from "@/lib/format";
+import { Eyebrow, Heading } from "@/components/ui/section";
+import { formatUsd } from "@/lib/format";
 import type { FeaturedModel } from "@/lib/queries";
 
 const trustPoints = [
@@ -21,23 +21,23 @@ const trustPoints = [
 ];
 
 interface HomeHeroProps {
-  featuredCar?: FeaturedModel | null;
+  cars?: FeaturedModel[];
 }
 
-export function HomeHero({ featuredCar }: HomeHeroProps) {
+export function HomeHero({ cars = [] }: HomeHeroProps) {
   return (
-    <section aria-label="Главная — TerraAuto" className="border-b border-border">
+    <section aria-label="Главная — TerraAuto" className="bg-surface-dark">
       <div className="container mx-auto px-4 sm:px-6">
-        <div className="grid gap-12 py-14 sm:py-20 lg:grid-cols-12 lg:gap-8 lg:py-24">
-          <div className="flex flex-col justify-center lg:col-span-6">
-            <Eyebrow tone="brand">Прямой импорт · Ташкент</Eyebrow>
+        <div className="grid gap-12 py-14 sm:py-20 lg:grid-cols-12 lg:items-center lg:gap-10 lg:py-24">
+          <div className="lg:col-span-7">
+            <Eyebrow tone="light">Прямой импорт · Ташкент</Eyebrow>
 
-            <Heading as="h1" size="2xl" className="mt-5">
-              Автомобили под заказ из Кореи, Китая и Японии — до 35% дешевле
-              рынка
+            <Heading as="h1" size="3xl" tone="inverse" className="mt-5">
+              Автомобили под заказ из Кореи, Китая и Японии —{" "}
+              <span className="text-brand">до 35% дешевле</span> рынка
             </Heading>
 
-            <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
+            <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/70">
               Подберём, выкупим и доставим авто в ваш город за 3 недели. По
               договору, с гарантией и под ключ.
             </p>
@@ -45,7 +45,7 @@ export function HomeHero({ featuredCar }: HomeHeroProps) {
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
               <Button
                 size="lg"
-                className="h-12 px-7"
+                className="h-12 bg-brand px-7 text-brand-foreground shadow-sm hover:bg-brand-deep hover:shadow-md"
                 render={<Link href="/cars" />}
                 nativeButton={false}
               >
@@ -55,7 +55,7 @@ export function HomeHero({ featuredCar }: HomeHeroProps) {
               <Button
                 size="lg"
                 variant="outline"
-                className="h-12 px-7"
+                className="h-12 border-white/20 bg-transparent px-7 text-white hover:bg-white/10 hover:text-white"
                 render={<Link href="/calculator" />}
                 nativeButton={false}
               >
@@ -64,20 +64,18 @@ export function HomeHero({ featuredCar }: HomeHeroProps) {
             </div>
           </div>
 
-          <div className="lg:col-span-5 lg:col-start-8">
-            {featuredCar ? (
-              <HeroCarCard car={featuredCar} />
-            ) : (
-              <HeroFallbackCard />
-            )}
+          <div className="lg:col-span-5">
+            {cars.length > 0 ? <HeroCarStack cars={cars} /> : <HeroFallback />}
           </div>
         </div>
 
-        <ul className="grid grid-cols-2 gap-x-8 gap-y-5 border-t border-border py-8 sm:grid-cols-4">
+        <ul className="grid grid-cols-2 gap-x-8 gap-y-5 border-t border-white/10 py-8 sm:grid-cols-4">
           {trustPoints.map(({ icon: Icon, label }) => (
             <li key={label} className="flex items-center gap-2.5">
-              <Icon className="size-4 shrink-0 text-brand" aria-hidden />
-              <span className="text-sm text-muted-foreground">{label}</span>
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-white/10">
+                <Icon className="size-4 text-brand" aria-hidden />
+              </span>
+              <span className="text-sm text-white/75">{label}</span>
             </li>
           ))}
         </ul>
@@ -86,98 +84,75 @@ export function HomeHero({ featuredCar }: HomeHeroProps) {
   );
 }
 
-function HeroCarCard({ car }: { car: FeaturedModel }) {
-  const power = powerLabel(car.motorPowerKw);
-  const range = car.rangeKm ? `${car.rangeKm} км` : null;
-
+function HeroCarStack({ cars }: { cars: FeaturedModel[] }) {
   return (
-    <Link
-      href={`/cars/${car.trimSlug}`}
-      className="group block overflow-hidden rounded-xl bg-card shadow-soft transition duration-300 hover:-translate-y-0.5 hover:shadow-soft-lg"
-    >
-      <div className="relative aspect-[16/10] bg-muted">
-        {car.imageUrl ? (
-          <Image
-            src={car.imageUrl}
-            alt={`${car.brandName} ${car.modelName}`}
-            fill
-            priority
-            sizes="(max-width: 1024px) 100vw, 40vw"
-            className="object-cover"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-            Фото скоро
-          </div>
-        )}
-        <div className="absolute top-3 left-3 flex gap-1.5">
-          {car.powertrainType && (
-            <Tag variant="solid">{powertrainLabel(car.powertrainType)}</Tag>
-          )}
-          {car.drivetrain && (
-            <Tag className="bg-white/90 text-foreground backdrop-blur-sm">
-              {car.drivetrain}
-            </Tag>
-          )}
-        </div>
-      </div>
-
-      <div className="p-5 sm:p-6">
-        <p className="text-xs tracking-wide text-muted-foreground uppercase">
-          {car.brandName}
-        </p>
-        <h2 className="mt-1.5 text-xl font-bold tracking-tight text-foreground text-balance">
-          {car.modelName}{" "}
-          <span className="font-normal text-muted-foreground">
-            {car.trimName}
-          </span>
-        </h2>
-
-        {(power || range) && (
-          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-            {power && <span>{power}</span>}
-            {range && <span>Запас хода {range}</span>}
-          </div>
-        )}
-
-        <div className="mt-5 flex items-end justify-between border-t border-border pt-5">
-          <div>
-            <p className="text-xs text-muted-foreground">Цена авто от</p>
-            <p className="mt-0.5 text-2xl font-bold tracking-[-0.02em] tabular-nums text-foreground">
-              {formatUsd(car.basePrice)}
-            </p>
-          </div>
-          {car.estimatedTotalUsd && (
-            <div className="text-right">
-              <p className="text-xs text-muted-foreground">Под ключ</p>
-              <p className="mt-0.5 text-lg font-bold tabular-nums text-brand">
-                {formatUsd(car.estimatedTotalUsd)}
-              </p>
+    <div className="relative">
+      <div
+        aria-hidden
+        className="absolute -inset-3 rounded-3xl bg-white/5 sm:-inset-4"
+      />
+      <div className="relative flex flex-col gap-4">
+        {cars.map((car) => (
+          <Link
+            key={car.modelId}
+            href={`/cars/${car.trimSlug}`}
+            className="group flex items-center gap-4 rounded-xl bg-card p-3 shadow-soft transition duration-200 hover:-translate-y-0.5 hover:shadow-soft-lg"
+          >
+            <div className="relative h-24 w-36 shrink-0 overflow-hidden rounded-lg bg-muted">
+              {car.imageUrl && (
+                <Image
+                  src={car.imageUrl}
+                  alt={`${car.brandName} ${car.modelName}`}
+                  fill
+                  priority
+                  sizes="144px"
+                  className="object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+              )}
             </div>
-          )}
-        </div>
-
-        <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-brand">
-          Смотреть комплектацию
-          <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
-        </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs tracking-wide text-muted-foreground uppercase">
+                {car.brandName}
+              </p>
+              <p className="mt-0.5 truncate text-sm font-bold tracking-tight text-foreground">
+                {car.modelName}{" "}
+                <span className="font-normal text-muted-foreground">
+                  {car.trimName}
+                </span>
+              </p>
+              <div className="mt-2 flex flex-wrap items-baseline gap-x-3">
+                <span className="text-base font-bold tracking-[-0.02em] tabular-nums text-foreground">
+                  {formatUsd(car.basePrice)}
+                </span>
+                {car.estimatedTotalUsd && (
+                  <span className="text-xs font-semibold tabular-nums text-brand">
+                    {formatUsd(car.estimatedTotalUsd)} под ключ
+                  </span>
+                )}
+              </div>
+            </div>
+            <ArrowRight className="size-4 shrink-0 text-brand transition-transform group-hover:translate-x-0.5" />
+          </Link>
+        ))}
       </div>
-    </Link>
+    </div>
   );
 }
 
-function HeroFallbackCard() {
+function HeroFallback() {
   return (
-    <div className="flex h-full flex-col justify-center rounded-xl bg-muted p-8 shadow-soft">
-      <Heading size="sm">Не знаете, с чего начать?</Heading>
-      <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+    <div className="flex h-full flex-col justify-center rounded-2xl border border-white/10 bg-white/5 p-8 sm:p-10">
+      <Heading size="sm" tone="inverse">
+        Не знаете, с чего начать?
+      </Heading>
+      <p className="mt-3 max-w-md text-sm leading-relaxed text-white/70">
         Ответьте на пять вопросов — подберём автомобиль под ваш бюджет и задачи
         и покажем ориентировочную стоимость под ключ.
       </p>
       <div className="mt-6 flex flex-col gap-3 sm:flex-row">
         <Button
           size="lg"
-          className="h-11 px-6"
+          className="h-11 bg-brand px-6 text-brand-foreground hover:bg-brand-deep"
           render={<Link href="/choose" />}
           nativeButton={false}
         >
@@ -186,7 +161,7 @@ function HeroFallbackCard() {
         <Button
           size="lg"
           variant="outline"
-          className="h-11 px-6"
+          className="h-11 border-white/20 bg-transparent px-6 text-white hover:bg-white/10 hover:text-white"
           render={<Link href="/compare" />}
           nativeButton={false}
         >

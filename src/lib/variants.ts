@@ -11,7 +11,7 @@ export const sectionVariants = cva("container mx-auto px-4 sm:px-6", {
     },
     background: {
       default: "",
-      muted: "bg-muted",
+      muted: "bg-muted-section",
       accent: "bg-brand-muted",
       card: "bg-card",
       dark: "bg-surface-dark text-surface-dark-foreground",
@@ -56,13 +56,13 @@ export const headingVariants = cva(
 });
 
 export const eyebrowVariants = cva(
-  "inline-flex items-center gap-2 text-xs font-semibold tracking-[0.12em] uppercase",
+  "inline-flex w-fit items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold tracking-[0.12em] uppercase",
   {
     variants: {
       tone: {
-        default: "text-muted-foreground",
-        brand: "text-brand-muted-foreground",
-        light: "text-white/60",
+        default: "bg-muted text-muted-foreground",
+        brand: "bg-brand-muted text-brand-muted-foreground",
+        light: "bg-white/10 text-white/70",
       },
     },
     defaultVariants: {

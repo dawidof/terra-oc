@@ -27,8 +27,8 @@ export function BrandLogos({ brands }: { brands: Brand[] }) {
             key={brand.id}
             href={`/cars?brand=${brand.slug}`}
             className={cn(
-              "group flex items-center gap-3 rounded-xl border border-border px-5 py-3",
-              "transition-all duration-200 hover:border-foreground/15 hover:shadow-sm"
+              "group flex items-center gap-3 rounded-xl border border-border bg-card px-5 py-3",
+              "transition-all duration-200 hover:border-brand/40 hover:shadow-md"
             )}
           >
             {brand.logoUrl ? (

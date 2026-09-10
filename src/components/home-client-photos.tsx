@@ -13,10 +13,10 @@ const clientPhotos = [
 
 export function HomeClientPhotos() {
   return (
-    <Section id="client-photos" divide>
+    <Section id="client-photos">
       <div>
         <Eyebrow>Наши клиенты</Eyebrow>
-        <Heading size="lg" className="mt-3">
+        <Heading size="xl" className="mt-3">
           Фото наших клиентов
         </Heading>
       </div>
@@ -25,7 +25,7 @@ export function HomeClientPhotos() {
         {clientPhotos.map((photo, i) => (
           <div
             key={i}
-            className="group relative aspect-square overflow-hidden rounded-xl bg-muted shadow-soft transition duration-200 hover:-translate-y-0.5 hover:shadow-soft-lg"
+            className="group relative aspect-square overflow-hidden rounded-xl bg-muted shadow-soft transition duration-200 hover:-translate-y-1 hover:shadow-soft-lg"
           >
             <Image
               src={photo.url}
@@ -34,7 +34,7 @@ export function HomeClientPhotos() {
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"
               className="object-cover transition-transform duration-300 group-hover:scale-110"
             />
-            <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/10" />
+            <div className="absolute inset-0 bg-brand/0 transition-colors group-hover:bg-brand/20" />
           </div>
         ))}
       </div>

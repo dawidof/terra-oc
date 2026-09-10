@@ -87,9 +87,6 @@ const faq = [
   },
 ];
 
-const sectionLink =
-  "group inline-flex items-center gap-1.5 text-sm font-semibold text-foreground transition-colors hover:text-brand";
-
 const avatarMap: Record<string, string> = {
   "Артём Ким": "/avatars/avatar1.jpg",
   "Дилшод Рустамов": "/avatars/avatar2.jpg",
@@ -173,18 +170,21 @@ export default async function HomePage() {
         }}
       />
 
-      <HomeHero featuredCar={featuredModels[0] ?? null} />
+      <HomeHero cars={featuredModels.slice(0, 2)} />
 
       {featuredModels.length > 0 && (
         <Section id="popular">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <Eyebrow>Каталог</Eyebrow>
-              <Heading size="lg" className="mt-3">
+              <Heading size="xl" className="mt-3">
                 Популярные автомобили
               </Heading>
             </div>
-            <Link href="/cars" className={sectionLink}>
+            <Link
+              href="/cars"
+              className="group inline-flex items-center gap-1.5 rounded-full bg-brand-muted px-4 py-2 text-sm font-semibold text-brand-muted-foreground transition-colors hover:bg-brand hover:text-brand-foreground"
+            >
               Каталог
               <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
@@ -193,10 +193,10 @@ export default async function HomePage() {
         </Section>
       )}
 
-      <Section id="process" background="muted" divide>
+      <Section id="process" background="muted">
         <div className="max-w-2xl">
-          <Eyebrow>Процесс</Eyebrow>
-          <Heading size="lg" className="mt-3">
+          <Eyebrow tone="brand">Процесс</Eyebrow>
+          <Heading size="xl" className="mt-3">
             Как мы работаем
           </Heading>
           <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
@@ -208,10 +208,10 @@ export default async function HomePage() {
         <ol className="mt-12 grid grid-cols-1 gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
           {steps.map((item) => (
             <li key={item.step} className="border-t border-border pt-5">
-              <span className="flex size-10 items-center justify-center rounded-lg bg-brand text-sm font-bold text-white">
+              <span className="text-5xl font-bold tracking-tighter tabular-nums text-brand">
                 {item.step}
               </span>
-              <h3 className="mt-4 text-lg font-bold tracking-tight">
+              <h3 className="mt-3 text-lg font-bold tracking-tight">
                 {item.title}
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
@@ -222,18 +222,21 @@ export default async function HomePage() {
         </ol>
 
         <div className="mt-12">
-          <Link href="/how-it-works" className={sectionLink}>
+          <Link
+            href="/how-it-works"
+            className="group inline-flex items-center gap-1.5 text-sm font-semibold text-foreground transition-colors hover:text-brand"
+          >
             Подробнее о процессе
             <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
           </Link>
         </div>
       </Section>
 
-      <Section id="why" divide>
+      <Section id="why">
         <div className="grid gap-10 lg:grid-cols-12 lg:gap-12">
           <div className="lg:col-span-4">
             <Eyebrow>Преимущества</Eyebrow>
-            <Heading size="lg" className="mt-3">
+            <Heading size="xl" className="mt-3">
               Почему TerraAuto
             </Heading>
             <p className="mt-4 leading-relaxed text-muted-foreground">
@@ -256,10 +259,10 @@ export default async function HomePage() {
             {advantages.map(({ icon: Icon, title, desc }) => (
               <div
                 key={title}
-                className="group rounded-xl bg-card p-6 shadow-soft transition duration-200 hover:-translate-y-0.5 hover:shadow-soft-lg"
+                className="group rounded-xl border-t-4 border-brand bg-card p-6 shadow-soft transition duration-200 hover:-translate-y-1 hover:shadow-soft-lg"
               >
-                <span className="flex size-10 items-center justify-center rounded-lg bg-brand-muted transition-colors group-hover:bg-brand group-hover:text-white">
-                  <Icon className="size-5 text-brand group-hover:text-white transition-colors" aria-hidden />
+                <span className="flex size-11 items-center justify-center rounded-xl bg-brand shadow-sm">
+                  <Icon className="size-5 text-white" aria-hidden />
                 </span>
                 <h3 className="mt-5 text-base font-bold tracking-tight">
                   {title}
@@ -277,14 +280,14 @@ export default async function HomePage() {
 
       <BrandLogos brands={allBrands} />
 
-      <Section id="choose" background="muted" divide>
+      <Section id="choose" background="dark">
         <div className="grid gap-8 lg:grid-cols-12 lg:items-center">
           <div className="lg:col-span-7">
-            <Eyebrow tone="brand">Подбор</Eyebrow>
-            <Heading size="lg" className="mt-3">
+            <Eyebrow tone="light">Подбор</Eyebrow>
+            <Heading size="xl" tone="inverse" className="mt-3">
               Не знаете, какую машину выбрать?
             </Heading>
-            <p className="mt-4 max-w-xl text-lg leading-relaxed text-muted-foreground">
+            <p className="mt-4 max-w-xl text-lg leading-relaxed text-white/70">
               Пройдите короткий опрос — подберём автомобиль под ваш бюджет и
               задачи, покажем варианты и ориентировочную стоимость под ключ.
             </p>
@@ -292,7 +295,7 @@ export default async function HomePage() {
           <div className="flex lg:col-span-5 lg:justify-end">
             <Button
               size="lg"
-              className="h-12 px-7"
+              className="h-12 bg-brand px-7 text-brand-foreground shadow-sm hover:bg-brand-deep hover:shadow-md"
               render={<Link href="/choose" />}
               nativeButton={false}
             >
@@ -303,19 +306,22 @@ export default async function HomePage() {
         </div>
       </Section>
 
-      <Section id="faq" background="muted" divide>
+      <Section id="faq">
         <div className="max-w-2xl">
           <Eyebrow>Вопросы</Eyebrow>
-          <Heading size="lg" className="mt-3">
+          <Heading size="xl" className="mt-3">
             Часто спрашивают
           </Heading>
         </div>
         <div className="mt-10 max-w-2xl divide-y divide-border">
           {faq.map((item) => (
-            <details key={item.q} className="group py-5">
-              <summary className="flex cursor-pointer items-center justify-between gap-4 text-base font-medium text-foreground marker:hidden">
+            <details
+              key={item.q}
+              className="group border-l-2 border-transparent py-5 pl-4 transition-colors group-open:border-brand"
+            >
+              <summary className="flex cursor-pointer items-center justify-between gap-4 text-lg font-semibold text-foreground marker:hidden">
                 {item.q}
-                <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-90" />
+                <ChevronRight className="size-5 shrink-0 text-brand transition-transform group-open:rotate-90" />
               </summary>
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
                 {item.a}
@@ -329,19 +335,19 @@ export default async function HomePage() {
 
       <HomeClientPhotos />
 
-      <Section id="cta" background="muted" padding="spacious">
+      <Section id="cta" background="dark" padding="spacious">
         <div className="max-w-2xl text-center">
-          <Heading size="lg">
+          <Heading size="2xl" tone="inverse">
             Готовы найти свой автомобиль?
           </Heading>
-          <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
+          <p className="mt-4 text-lg leading-relaxed text-white/70">
             Начните с каталога или рассчитайте стоимость — мы ответим в течение
             рабочего дня.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button
               size="lg"
-              className="h-12 px-7"
+              className="h-12 bg-brand px-7 text-brand-foreground shadow-sm hover:bg-brand-deep hover:shadow-md"
               render={<Link href="/cars" />}
               nativeButton={false}
             >
@@ -351,7 +357,7 @@ export default async function HomePage() {
             <Button
               size="lg"
               variant="outline"
-              className="h-12 px-7"
+              className="h-12 border-white/25 bg-transparent px-7 text-white hover:bg-white/10 hover:text-white"
               render={<Link href="https://wa.me/998901234567" />}
               nativeButton={false}
             >
@@ -359,7 +365,7 @@ export default async function HomePage() {
               Написать в WhatsApp
             </Button>
           </div>
-          <p className="mt-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+          <p className="mt-6 flex items-center justify-center gap-2 text-sm text-white/70">
             <Phone className="size-3.5" aria-hidden />
             +998 90 123 45 67
           </p>

@@ -145,17 +145,17 @@ export function HomeReviews({ reviews }: { reviews: Review[] }) {
   const [modalReview, setModalReview] = useState<Review | null>(null);
 
   return (
-    <Section id="reviews" divide>
+    <Section id="reviews" background="muted">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <Eyebrow>Отзывы</Eyebrow>
-          <Heading size="lg" className="mt-3">
+          <Eyebrow tone="brand">Отзывы</Eyebrow>
+          <Heading size="xl" className="mt-3">
             Отзывы клиентов
           </Heading>
         </div>
         <Link
           href="/reviews"
-          className="group inline-flex items-center gap-1.5 text-sm font-medium text-foreground transition-colors hover:text-brand"
+          className="group inline-flex items-center gap-1.5 rounded-full bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-soft transition-colors hover:bg-brand hover:text-brand-foreground"
         >
           Все отзывы
           <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
@@ -166,7 +166,7 @@ export function HomeReviews({ reviews }: { reviews: Review[] }) {
         {ratingBadges.map((badge) => (
           <div
             key={badge.platform}
-            className="flex items-center gap-2 rounded-lg bg-muted px-4 py-2.5"
+            className="flex items-center gap-2 rounded-full bg-card px-4 py-2.5 shadow-soft"
           >
             <span className="text-sm font-medium">{badge.platform}</span>
             <div className="flex items-center gap-1">

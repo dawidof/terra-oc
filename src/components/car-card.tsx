@@ -63,7 +63,14 @@ export function CarCard({
         )}
         <div className="absolute top-2.5 left-2.5 flex gap-1.5">
           {powertrainType && (
-            <Badge variant={powertrainType === "bev" ? "default" : "secondary"}>
+            <Badge
+              variant={powertrainType === "bev" ? "default" : "secondary"}
+              className={
+                powertrainType === "bev"
+                  ? "bg-brand text-brand-foreground"
+                  : undefined
+              }
+            >
               {powertrainLabel(powertrainType)}
             </Badge>
           )}
@@ -97,17 +104,17 @@ export function CarCard({
           </div>
         )}
 
-        <div className="mt-4 flex items-end justify-between border-t border-border pt-4">
+        <div className="mt-4 flex items-end justify-between rounded-lg bg-brand-muted px-3.5 py-3">
           <div>
-            <p className="text-xs text-muted-foreground">от</p>
-            <p className="mt-0.5 text-lg font-semibold tracking-[-0.02em] tabular-nums">
+            <p className="text-xs text-brand-muted-foreground">от</p>
+            <p className="mt-0.5 text-lg font-bold tracking-[-0.02em] tabular-nums">
               {formatUsd(basePrice)}
             </p>
           </div>
           {estimatedTotalUsd && (
             <div className="text-right">
-              <p className="text-xs text-muted-foreground">под ключ</p>
-              <p className="mt-0.5 text-sm font-semibold tabular-nums text-brand">
+              <p className="text-xs text-brand-muted-foreground">под ключ</p>
+              <p className="mt-0.5 text-base font-bold tabular-nums text-brand">
                 {formatUsd(estimatedTotalUsd)}
               </p>
             </div>
@@ -129,7 +136,7 @@ export function CarCard({
 
   const cardClass = [
     "group gap-0 overflow-hidden py-0 transition duration-200",
-    "hover:-translate-y-0.5 hover:shadow-md hover:ring-foreground/20",
+    "hover:-translate-y-1 hover:shadow-md hover:ring-2 hover:ring-brand/40",
     isExpanded ? "ring-2 ring-brand" : "",
   ].join(" ");
 

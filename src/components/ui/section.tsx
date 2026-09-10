@@ -10,7 +10,7 @@ import {
 
 const backgroundClass = {
   default: "",
-  muted: "bg-muted",
+  muted: "bg-muted-section",
   accent: "bg-brand-muted",
   card: "bg-card",
   dark: "bg-surface-dark text-surface-dark-foreground",
