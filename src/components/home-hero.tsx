@@ -45,7 +45,7 @@ export function HomeHero({ featuredCar }: HomeHeroProps) {
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
               <Button
                 size="lg"
-                className="h-11 px-6"
+                className="h-12 px-7"
                 render={<Link href="/cars" />}
                 nativeButton={false}
               >
@@ -55,7 +55,7 @@ export function HomeHero({ featuredCar }: HomeHeroProps) {
               <Button
                 size="lg"
                 variant="outline"
-                className="h-11 px-6"
+                className="h-12 px-7"
                 render={<Link href="/calculator" />}
                 nativeButton={false}
               >
@@ -93,7 +93,7 @@ function HeroCarCard({ car }: { car: FeaturedModel }) {
   return (
     <Link
       href={`/cars/${car.trimSlug}`}
-      className="group block overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10 transition duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:ring-foreground/20"
+      className="group block overflow-hidden rounded-xl bg-card shadow-soft transition duration-300 hover:-translate-y-0.5 hover:shadow-soft-lg"
     >
       <div className="relative aspect-[16/10] bg-muted">
         {car.imageUrl ? (
@@ -115,7 +115,7 @@ function HeroCarCard({ car }: { car: FeaturedModel }) {
             <Tag variant="solid">{powertrainLabel(car.powertrainType)}</Tag>
           )}
           {car.drivetrain && (
-            <Tag className="bg-white/85 text-foreground backdrop-blur-sm">
+            <Tag className="bg-white/90 text-foreground backdrop-blur-sm">
               {car.drivetrain}
             </Tag>
           )}
@@ -126,7 +126,7 @@ function HeroCarCard({ car }: { car: FeaturedModel }) {
         <p className="text-xs tracking-wide text-muted-foreground uppercase">
           {car.brandName}
         </p>
-        <h2 className="mt-1.5 text-xl font-semibold tracking-tight text-balance">
+        <h2 className="mt-1.5 text-xl font-bold tracking-tight text-foreground text-balance">
           {car.modelName}{" "}
           <span className="font-normal text-muted-foreground">
             {car.trimName}
@@ -143,21 +143,21 @@ function HeroCarCard({ car }: { car: FeaturedModel }) {
         <div className="mt-5 flex items-end justify-between border-t border-border pt-5">
           <div>
             <p className="text-xs text-muted-foreground">Цена авто от</p>
-            <p className="mt-0.5 text-2xl font-semibold tracking-[-0.02em] tabular-nums">
+            <p className="mt-0.5 text-2xl font-bold tracking-[-0.02em] tabular-nums text-foreground">
               {formatUsd(car.basePrice)}
             </p>
           </div>
           {car.estimatedTotalUsd && (
             <div className="text-right">
               <p className="text-xs text-muted-foreground">Под ключ</p>
-              <p className="mt-0.5 text-lg font-semibold tabular-nums text-brand">
+              <p className="mt-0.5 text-lg font-bold tabular-nums text-brand">
                 {formatUsd(car.estimatedTotalUsd)}
               </p>
             </div>
           )}
         </div>
 
-        <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-foreground">
+        <span className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-brand">
           Смотреть комплектацию
           <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
         </span>
@@ -168,7 +168,7 @@ function HeroCarCard({ car }: { car: FeaturedModel }) {
 
 function HeroFallbackCard() {
   return (
-    <div className="flex h-full flex-col justify-center rounded-xl bg-muted p-8 ring-1 ring-foreground/10">
+    <div className="flex h-full flex-col justify-center rounded-xl bg-muted p-8 shadow-soft">
       <Heading size="sm">Не знаете, с чего начать?</Heading>
       <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
         Ответьте на пять вопросов — подберём автомобиль под ваш бюджет и задачи

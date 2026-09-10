@@ -32,7 +32,7 @@ export function HomeSavings() {
           {plates.map(({ icon: Icon, title, desc }) => (
             <div
               key={title}
-              className="rounded-xl bg-card p-6 ring-1 ring-foreground/10"
+              className="rounded-xl bg-card p-6 shadow-soft"
             >
               <span className="flex size-10 items-center justify-center rounded-lg bg-muted">
                 <Icon className="size-5 text-brand" aria-hidden />

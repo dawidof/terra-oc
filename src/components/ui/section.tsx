@@ -13,6 +13,8 @@ const backgroundClass = {
   muted: "bg-muted",
   accent: "bg-brand-muted",
   card: "bg-card",
+  dark: "bg-surface-dark text-surface-dark-foreground",
+  brand: "bg-brand text-brand-foreground",
 } as const;
 
 interface SectionProps extends VariantProps<typeof sectionVariants> {
@@ -22,10 +24,6 @@ interface SectionProps extends VariantProps<typeof sectionVariants> {
   children: React.ReactNode;
 }
 
-/**
- * Full-bleed section wrapper. Background and top divider live on the outer
- * element so bands span the viewport; padding lives on the inner container.
- */
 export function Section({
   padding,
   background = "default",

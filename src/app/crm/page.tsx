@@ -53,7 +53,7 @@ export default async function CrmPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Top Models - Visual */}
         {topCars.length > 0 && (
-          <div className="flex flex-col gap-3 rounded-xl bg-card p-5 ring-1 ring-foreground/10">
+          <div className="flex flex-col gap-3 rounded-xl bg-card p-5 shadow-soft">
             <div className="flex items-center justify-between">
               <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
                 Популярные модели
@@ -97,7 +97,7 @@ export default async function CrmPage() {
         )}
 
         {/* By Status */}
-        <div className="flex flex-col gap-3 rounded-xl bg-card p-5 ring-1 ring-foreground/10">
+        <div className="flex flex-col gap-3 rounded-xl bg-card p-5 shadow-soft">
           <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
             По статусам
           </p>
@@ -131,7 +131,7 @@ export default async function CrmPage() {
       {/* By Manager + Recent Leads row */}
       <div className="grid gap-6 lg:grid-cols-3">
         {/* By Manager */}
-        <div className="flex flex-col gap-3 rounded-xl bg-card p-5 ring-1 ring-foreground/10">
+        <div className="flex flex-col gap-3 rounded-xl bg-card p-5 shadow-soft">
           <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
             По менеджерам
           </p>
@@ -167,7 +167,7 @@ export default async function CrmPage() {
         </div>
 
         {/* Recent Leads */}
-        <div className="flex flex-col gap-3 rounded-xl bg-card p-5 ring-1 ring-foreground/10 lg:col-span-2">
+        <div className="flex flex-col gap-3 rounded-xl bg-card p-5 shadow-soft lg:col-span-2">
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
               Последние заявки

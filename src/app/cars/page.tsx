@@ -142,7 +142,7 @@ interface CatalogCar {
 
 function CarCardPlaceholder({ car }: { car: CatalogCar }) {
   return (
-    <div className="overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10">
+    <div className="overflow-hidden rounded-xl bg-card shadow-soft">
       <div className="relative aspect-[4/3] bg-gray-100">
         {car.imageUrl ? (
           <img

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Lightbox } from "@/components/lightbox";
 import { Expand } from "lucide-react";
@@ -21,6 +21,10 @@ export function CarGallery({ images, brandName, modelName }: CarGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
+  useEffect(() => {
+    setSelectedIndex((prev) => (prev >= images.length ? 0 : prev));
+  }, [images.length]);
+
   function openLightbox() {
     setLightboxOpen(true);
   }
@@ -37,7 +41,8 @@ export function CarGallery({ images, brandName, modelName }: CarGalleryProps) {
     );
   }
 
-  const selected = images[selectedIndex];
+  const safeIndex = selectedIndex >= images.length ? 0 : selectedIndex;
+  const selected = images[safeIndex];
 
   return (
     <div className="space-y-4">
@@ -85,7 +90,7 @@ export function CarGallery({ images, brandName, modelName }: CarGalleryProps) {
       <Lightbox
         key={lightboxOpen ? "open" : "closed"}
         images={images.map((m) => ({ url: m.url, alt: m.alt }))}
-        initialIndex={selectedIndex}
+        initialIndex={safeIndex}
         open={lightboxOpen}
         onClose={() => setLightboxOpen(false)}
       />

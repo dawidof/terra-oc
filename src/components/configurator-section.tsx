@@ -126,7 +126,7 @@ export function ConfiguratorSection({
     <section className="mt-12">
       <h2 className="mb-6 text-2xl font-bold">Конфигурация и заявка</h2>
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,800px)_minmax(0,500px)]">
         {/* Configurator */}
         <Configurator
           groups={optionGroups}

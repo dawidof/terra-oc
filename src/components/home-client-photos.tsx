@@ -25,7 +25,7 @@ export function HomeClientPhotos() {
         {clientPhotos.map((photo, i) => (
           <div
             key={i}
-            className="group relative aspect-square overflow-hidden rounded-xl bg-muted ring-1 ring-foreground/10 transition duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:ring-foreground/20"
+            className="group relative aspect-square overflow-hidden rounded-xl bg-muted shadow-soft transition duration-200 hover:-translate-y-0.5 hover:shadow-soft-lg"
           >
             <Image
               src={photo.url}

@@ -14,6 +14,8 @@ export const sectionVariants = cva("container mx-auto px-4 sm:px-6", {
       muted: "bg-muted",
       accent: "bg-brand-muted",
       card: "bg-card",
+      dark: "bg-surface-dark text-surface-dark-foreground",
+      brand: "bg-brand text-brand-foreground",
     },
     divide: {
       true: "border-t border-border",
@@ -28,7 +30,7 @@ export const sectionVariants = cva("container mx-auto px-4 sm:px-6", {
 });
 
 export const headingVariants = cva(
-  "font-semibold tracking-[-0.03em] leading-[1.05] text-balance text-foreground",
+  "font-bold tracking-[-0.035em] leading-[1.05] text-balance text-foreground",
   {
   variants: {
     size: {
@@ -44,6 +46,7 @@ export const headingVariants = cva(
       default: "text-foreground",
       muted: "text-muted-foreground",
       inverse: "text-white",
+      light: "text-white/70",
     },
   },
   defaultVariants: {
@@ -53,12 +56,13 @@ export const headingVariants = cva(
 });
 
 export const eyebrowVariants = cva(
-  "inline-flex items-center gap-2 text-xs font-medium tracking-[0.14em] uppercase",
+  "inline-flex items-center gap-2 text-xs font-semibold tracking-[0.12em] uppercase",
   {
     variants: {
       tone: {
         default: "text-muted-foreground",
         brand: "text-brand-muted-foreground",
+        light: "text-white/60",
       },
     },
     defaultVariants: {
@@ -68,13 +72,12 @@ export const eyebrowVariants = cva(
 );
 
 /**
- * Canonical card surface. Editorial-minimal: hairline ring instead of a drop
- * shadow, so stacked cards read as crisp planes.
+ * Card surface with soft shadow, no ring border.
  */
-export const surfaceVariants = cva("rounded-xl bg-card ring-1 ring-foreground/10", {
+export const surfaceVariants = cva("rounded-xl bg-card shadow-soft", {
   variants: {
     interactive: {
-      true: "transition duration-200 hover:-translate-y-0.5 hover:shadow-md hover:ring-foreground/15",
+      true: "transition duration-200 hover:-translate-y-0.5 hover:shadow-soft-lg",
       false: "",
     },
     padding: {
@@ -112,7 +115,7 @@ export const badgeVariants = cva(
 export const cardHoverVariants = cva("transition-all duration-200", {
   variants: {
     hover: {
-      true: "hover:-translate-y-0.5 hover:shadow-md",
+      true: "hover:-translate-y-0.5 hover:shadow-soft-lg",
       false: "",
     },
   },

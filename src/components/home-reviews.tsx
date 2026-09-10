@@ -186,7 +186,7 @@ export function HomeReviews({ reviews }: { reviews: Review[] }) {
           {reviews.map((review) => (
             <div
               key={review.id}
-              className="flex flex-col overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10 transition duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:ring-foreground/20"
+              className="flex flex-col overflow-hidden rounded-xl bg-card shadow-soft transition duration-200 hover:-translate-y-0.5 hover:shadow-soft-lg"
             >
               <div className="p-5">
                 <div className="flex items-center gap-3">

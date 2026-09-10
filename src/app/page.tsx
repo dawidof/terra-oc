@@ -88,7 +88,7 @@ const faq = [
 ];
 
 const sectionLink =
-  "group inline-flex items-center gap-1.5 text-sm font-medium text-foreground transition-colors hover:text-brand";
+  "group inline-flex items-center gap-1.5 text-sm font-semibold text-foreground transition-colors hover:text-brand";
 
 const avatarMap: Record<string, string> = {
   "Артём Ким": "/avatars/avatar1.jpg",
@@ -193,7 +193,7 @@ export default async function HomePage() {
         </Section>
       )}
 
-      <Section id="process" divide>
+      <Section id="process" background="muted" divide>
         <div className="max-w-2xl">
           <Eyebrow>Процесс</Eyebrow>
           <Heading size="lg" className="mt-3">
@@ -208,13 +208,10 @@ export default async function HomePage() {
         <ol className="mt-12 grid grid-cols-1 gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
           {steps.map((item) => (
             <li key={item.step} className="border-t border-border pt-5">
-              <span
-                className="text-sm font-semibold tabular-nums text-brand"
-                aria-hidden
-              >
+              <span className="flex size-10 items-center justify-center rounded-lg bg-brand text-sm font-bold text-white">
                 {item.step}
               </span>
-              <h3 className="mt-2 text-lg font-semibold tracking-tight">
+              <h3 className="mt-4 text-lg font-bold tracking-tight">
                 {item.title}
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
@@ -259,12 +256,12 @@ export default async function HomePage() {
             {advantages.map(({ icon: Icon, title, desc }) => (
               <div
                 key={title}
-                className="rounded-xl bg-card p-6 ring-1 ring-foreground/10"
+                className="group rounded-xl bg-card p-6 shadow-soft transition duration-200 hover:-translate-y-0.5 hover:shadow-soft-lg"
               >
-                <span className="flex size-10 items-center justify-center rounded-lg bg-muted">
-                  <Icon className="size-5 text-brand" aria-hidden />
+                <span className="flex size-10 items-center justify-center rounded-lg bg-brand-muted transition-colors group-hover:bg-brand group-hover:text-white">
+                  <Icon className="size-5 text-brand group-hover:text-white transition-colors" aria-hidden />
                 </span>
-                <h3 className="mt-5 text-base font-semibold tracking-tight">
+                <h3 className="mt-5 text-base font-bold tracking-tight">
                   {title}
                 </h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
@@ -295,7 +292,7 @@ export default async function HomePage() {
           <div className="flex lg:col-span-5 lg:justify-end">
             <Button
               size="lg"
-              className="h-11 px-6"
+              className="h-12 px-7"
               render={<Link href="/choose" />}
               nativeButton={false}
             >
@@ -306,7 +303,7 @@ export default async function HomePage() {
         </div>
       </Section>
 
-      <Section id="faq" divide>
+      <Section id="faq" background="muted" divide>
         <div className="max-w-2xl">
           <Eyebrow>Вопросы</Eyebrow>
           <Heading size="lg" className="mt-3">
@@ -332,7 +329,7 @@ export default async function HomePage() {
 
       <HomeClientPhotos />
 
-      <Section id="cta" background="muted" divide>
+      <Section id="cta" background="muted" padding="spacious">
         <div className="max-w-2xl text-center">
           <Heading size="lg">
             Готовы найти свой автомобиль?
@@ -344,7 +341,7 @@ export default async function HomePage() {
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button
               size="lg"
-              className="h-11 px-6"
+              className="h-12 px-7"
               render={<Link href="/cars" />}
               nativeButton={false}
             >
@@ -354,7 +351,7 @@ export default async function HomePage() {
             <Button
               size="lg"
               variant="outline"
-              className="h-11 px-6"
+              className="h-12 px-7"
               render={<Link href="https://wa.me/998901234567" />}
               nativeButton={false}
             >

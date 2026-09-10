@@ -2,7 +2,9 @@
 
 import { useState, useCallback } from "react";
 import { CarGallery } from "@/components/car-gallery";
+import { CarOptionsList } from "@/components/car-options-list";
 import { ConfiguratorSection } from "@/components/configurator-section";
+import { PurchaseProcess } from "@/components/purchase-process";
 
 interface GalleryImage {
   id: string;
@@ -45,6 +47,7 @@ interface CarDetailClientProps {
   serviceFee: number | null;
   deliveryDays: number | null;
   colorImages?: Record<string, { url: string; alt?: string | null }[]>;
+  specs?: React.ReactNode;
   trimComparison?: React.ReactNode;
   similarCars?: React.ReactNode;
 }
@@ -67,6 +70,7 @@ export function CarDetailClient({
   serviceFee,
   deliveryDays,
   colorImages = {},
+  specs,
   trimComparison,
   similarCars,
 }: CarDetailClientProps) {
@@ -86,19 +90,34 @@ export function CarDetailClient({
   );
 
   return (
-    <>
-      {/* Hero section */}
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-        <CarGallery
-          images={galleryImages}
-          brandName={brandName}
-          modelName={modelName}
-        />
-        {heroInfo}
+    <div>
+      {/* Hero section: two-column layout */}
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[3fr_2fr]">
+        {/* Left column: Gallery */}
+        <div>
+          <CarGallery
+            images={galleryImages}
+            brandName={brandName}
+            modelName={modelName}
+          />
+        </div>
+
+        {/* Right column: Hero info */}
+        <div>
+          {heroInfo}
+        </div>
       </div>
 
+      {/* Specs & Options - full width below photos */}
+      <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+        {specs}
+        <CarOptionsList optionGroups={optionGroups} />
+      </div>
+
+      <hr className="my-10 border-border" />
+
       {/* Configurator + Lead */}
-      <div id="configurator" className="mt-8">
+      <div id="configurator" className="mt-12">
         {optionGroups.length > 0 ? (
           <ConfiguratorSection
             optionGroups={optionGroups}
@@ -126,8 +145,12 @@ export function CarDetailClient({
         )}
       </div>
 
+      <div className="mt-10">
+        <PurchaseProcess />
+      </div>
+
       {trimComparison}
       {similarCars}
-    </>
+    </div>
   );
 }
