@@ -46,6 +46,7 @@ export function HomeHero({ featuredCar }: HomeHeroProps) {
                 size="lg"
                 className="h-11 px-6"
                 render={<Link href="/cars" />}
+                nativeButton={false}
               >
                 Подобрать автомобиль
                 <ArrowRight data-icon="inline-end" className="size-4" />
@@ -55,6 +56,7 @@ export function HomeHero({ featuredCar }: HomeHeroProps) {
                 variant="outline"
                 className="h-11 px-6"
                 render={<Link href="/calculator" />}
+                nativeButton={false}
               >
                 Рассчитать стоимость
               </Button>
@@ -176,6 +178,7 @@ function HeroFallbackCard() {
           size="lg"
           className="h-11 px-6"
           render={<Link href="/choose" />}
+          nativeButton={false}
         >
           Подобрать за 2 минуты
         </Button>
@@ -184,6 +187,7 @@ function HeroFallbackCard() {
           variant="outline"
           className="h-11 px-6"
           render={<Link href="/compare" />}
+          nativeButton={false}
         >
           Сравнить модели
         </Button>

@@ -23,6 +23,11 @@ export function FilterBar({ brands, total }: FilterBarProps) {
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(searchParams.get("search") || "");
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [priceFrom, setPriceFrom] = useState(searchParams.get("priceFrom") || "");
+  const [priceTo, setPriceTo] = useState(searchParams.get("priceTo") || "");
+  const [yearFrom, setYearFrom] = useState(searchParams.get("yearFrom") || "");
+  const [yearTo, setYearTo] = useState(searchParams.get("yearTo") || "");
+  const [sourceCountry, setSourceCountry] = useState(searchParams.get("sourceCountry") || "");
 
   const createQueryString = useCallback(
     (name: string, value: string) => {
@@ -176,8 +181,11 @@ export function FilterBar({ brands, total }: FilterBarProps) {
               type="number"
               placeholder="0"
               min="0"
-              defaultValue={searchParams.get("priceFrom") || ""}
-              onChange={(e) => handleNumberFilter("priceFrom", e.target.value)}
+              value={priceFrom}
+              onChange={(e) => {
+                setPriceFrom(e.target.value);
+                handleNumberFilter("priceFrom", e.target.value);
+              }}
               className="h-8"
             />
           </div>
@@ -187,8 +195,11 @@ export function FilterBar({ brands, total }: FilterBarProps) {
               type="number"
               placeholder="∞"
               min="0"
-              defaultValue={searchParams.get("priceTo") || ""}
-              onChange={(e) => handleNumberFilter("priceTo", e.target.value)}
+              value={priceTo}
+              onChange={(e) => {
+                setPriceTo(e.target.value);
+                handleNumberFilter("priceTo", e.target.value);
+              }}
               className="h-8"
             />
           </div>
@@ -199,8 +210,11 @@ export function FilterBar({ brands, total }: FilterBarProps) {
               placeholder="1990"
               min="1990"
               max="2030"
-              defaultValue={searchParams.get("yearFrom") || ""}
-              onChange={(e) => handleNumberFilter("yearFrom", e.target.value)}
+              value={yearFrom}
+              onChange={(e) => {
+                setYearFrom(e.target.value);
+                handleNumberFilter("yearFrom", e.target.value);
+              }}
               className="h-8"
             />
           </div>
@@ -211,8 +225,11 @@ export function FilterBar({ brands, total }: FilterBarProps) {
               placeholder="2030"
               min="1990"
               max="2030"
-              defaultValue={searchParams.get("yearTo") || ""}
-              onChange={(e) => handleNumberFilter("yearTo", e.target.value)}
+              value={yearTo}
+              onChange={(e) => {
+                setYearTo(e.target.value);
+                handleNumberFilter("yearTo", e.target.value);
+              }}
               className="h-8"
             />
           </div>
@@ -236,8 +253,11 @@ export function FilterBar({ brands, total }: FilterBarProps) {
             <label className="text-xs text-muted-foreground">Страна</label>
             <Input
               placeholder="Китай, Корея..."
-              defaultValue={searchParams.get("sourceCountry") || ""}
-              onChange={(e) => handleFilterChange("sourceCountry", e.target.value || null)}
+              value={sourceCountry}
+              onChange={(e) => {
+                setSourceCountry(e.target.value);
+                handleFilterChange("sourceCountry", e.target.value || null);
+              }}
               className="h-8"
             />
           </div>

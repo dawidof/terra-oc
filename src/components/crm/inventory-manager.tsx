@@ -7,6 +7,7 @@ import { Package, Plus, Trash2 } from "lucide-react";
 
 import { AvailabilityBadge } from "@/components/availability-badge";
 import { Button } from "@/components/ui/button";
+import { InventoryAddForm } from "@/components/crm/inventory-add-form";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
@@ -56,6 +57,7 @@ export function InventoryManager() {
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<string>("");
+  const [addFormOpen, setAddFormOpen] = useState(false);
 
   useEffect(() => {
     fetchItems();
@@ -116,7 +118,7 @@ export function InventoryManager() {
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <Heading size="md">Инвентарь</Heading>
-        <Button onClick={() => toast.info("Функция добавления в разработке")}>
+        <Button onClick={() => setAddFormOpen(true)}>
           <Plus data-icon="inline-start" className="size-4" />
           Добавить
         </Button>
@@ -234,6 +236,15 @@ export function InventoryManager() {
           ))}
         </div>
       )}
+
+      <InventoryAddForm
+        open={addFormOpen}
+        onOpenChange={setAddFormOpen}
+        onCreated={() => {
+          fetchItems();
+          router.refresh();
+        }}
+      />
     </div>
   );
 }

@@ -302,13 +302,8 @@ export default async function CarDetailPage({ params }: Props) {
 
               {/* CTAs */}
               <div className="flex flex-col gap-3">
-                <Link href="/calculator">
-                  <Button size="lg" className="w-full">
-                    Рассчитать стоимость
-                  </Button>
-                </Link>
                 <a href="#configurator">
-                  <Button size="lg" variant="outline" className="w-full">
+                  <Button size="lg" className="w-full">
                     Выбрать комплектацию
                   </Button>
                 </a>

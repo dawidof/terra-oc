@@ -160,6 +160,7 @@ export function CrmClient({
                   variant="outline"
                   size="sm"
                   render={<Link href={pageHref(pagination.page - 1)} />}
+                  nativeButton={false}
                 >
                   Назад
                 </Button>
@@ -169,6 +170,7 @@ export function CrmClient({
                   variant="outline"
                   size="sm"
                   render={<Link href={pageHref(pagination.page + 1)} />}
+                  nativeButton={false}
                 >
                   Далее
                 </Button>

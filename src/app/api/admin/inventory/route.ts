@@ -136,3 +136,36 @@ export async function PATCH(request: NextRequest) {
     );
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const user = session.user as { role?: string };
+  if (user.role !== "admin") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json({ error: "id is required" }, { status: 400 });
+    }
+
+    await db
+      .delete(vehicleInventory)
+      .where(eq(vehicleInventory.id, id));
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Failed to delete inventory item:", error);
+    return NextResponse.json(
+      { error: "Failed to delete inventory item" },
+      { status: 500 }
+    );
+  }
+}

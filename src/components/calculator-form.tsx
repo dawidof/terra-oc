@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Calculator, Info, Search, X, Send, CheckCircle } from "lucide-react";
+import { formatUsd } from "@/lib/price-breakdown";
 
 interface CalculationResult {
   vehiclePrice: number;
@@ -51,10 +52,6 @@ interface CalculatorFormProps {
   initialPowertrain?: string;
   initialDisplacement?: number;
   initialPower?: number;
-}
-
-function formatCurrency(amount: number): string {
-  return `$${Math.round(amount).toLocaleString("ru-RU")}`;
 }
 
 const EV_POWERTRAINS = ["bev", "phev", "reev"];
@@ -624,38 +621,38 @@ export function CalculatorForm({
               <CardContent className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Стоимость автомобиля</span>
-                  <span className="font-medium">{formatCurrency(result.vehiclePrice)}</span>
+                  <span className="font-medium">{formatUsd(Math.round(result.vehiclePrice))}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Логистика</span>
-                  <span className="font-medium">{formatCurrency(result.logistics)}</span>
+                  <span className="font-medium">{formatUsd(Math.round(result.logistics))}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Таможенные платежи</span>
-                  <span className="font-medium">{formatCurrency(result.customsDuty)}</span>
+                  <span className="font-medium">{formatUsd(Math.round(result.customsDuty))}</span>
                 </div>
                 {result.exciseTax > 0 && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Акцизный налог</span>
-                    <span className="font-medium">{formatCurrency(result.exciseTax)}</span>
+                    <span className="font-medium">{formatUsd(Math.round(result.exciseTax))}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">НДС (12%)</span>
-                  <span className="font-medium">{formatCurrency(result.vat)}</span>
+                  <span className="font-medium">{formatUsd(Math.round(result.vat))}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Сертификация / оформление</span>
-                  <span className="font-medium">{formatCurrency(result.certificationFees)}</span>
+                  <span className="font-medium">{formatUsd(Math.round(result.certificationFees))}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Услуги компании</span>
-                  <span className="font-medium">{formatCurrency(result.serviceFee)}</span>
+                  <span className="font-medium">{formatUsd(Math.round(result.serviceFee))}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between text-lg font-bold">
                   <span>Итого ориентировочно</span>
-                  <span className="text-emerald-600">{formatCurrency(result.total)}</span>
+                  <span className="text-emerald-600">{formatUsd(Math.round(result.total))}</span>
                 </div>
                 {result.exchangeRate > 0 && (
                   <div className="text-sm text-muted-foreground">

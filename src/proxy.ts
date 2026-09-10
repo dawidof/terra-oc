@@ -5,7 +5,7 @@ export const config = {
   matcher: ["/crm/:path*", "/login"],
 };
 
-export default auth((req) => {
+export const proxy = auth((req) => {
   const isLoggedIn = !!req.auth;
   const isCrmRoute = req.nextUrl.pathname.startsWith("/crm");
   const isLoginRoute = req.nextUrl.pathname === "/login";

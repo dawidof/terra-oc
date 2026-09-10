@@ -68,6 +68,20 @@ export const statusStyles: Record<string, StatusStyle> = {
     dot: "bg-sky-500",
     chart: "#0ea5e9",
   },
+  in_transit: {
+    label: "В пути",
+    plural: "В пути",
+    badge: "bg-cyan-50 text-cyan-700 ring-1 ring-cyan-600/20",
+    dot: "bg-cyan-500",
+    chart: "#06b6d4",
+  },
+  delivered: {
+    label: "Доставлен",
+    plural: "Доставлены",
+    badge: "bg-teal-50 text-teal-700 ring-1 ring-teal-600/20",
+    dot: "bg-teal-500",
+    chart: "#14b8a6",
+  },
   won: {
     label: "Продажа",
     plural: "Продажи",

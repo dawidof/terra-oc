@@ -199,6 +199,7 @@ export default async function HomePage() {
               size="lg"
               className="mt-7 h-10 px-5"
               render={<Link href="/about" />}
+              nativeButton={false}
             >
               О компании
             </Button>
@@ -244,6 +245,7 @@ export default async function HomePage() {
               size="lg"
               className="h-11 px-6"
               render={<Link href="/choose" />}
+              nativeButton={false}
             >
               Подобрать за 2 минуты
               <ArrowRight data-icon="inline-end" className="size-4" />
@@ -327,6 +329,7 @@ export default async function HomePage() {
               size="lg"
               className="h-11 px-6"
               render={<Link href="/cars" />}
+              nativeButton={false}
             >
               Смотреть каталог
               <ArrowRight data-icon="inline-end" className="size-4" />
@@ -336,6 +339,7 @@ export default async function HomePage() {
               variant="outline"
               className="h-11 px-6"
               render={<Link href="https://wa.me/998901234567" />}
+              nativeButton={false}
             >
               <MessageCircle className="size-4" />
               Написать в WhatsApp

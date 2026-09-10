@@ -18,11 +18,10 @@ interface CarGalleryProps {
 }
 
 export function CarGallery({ images, brandName, modelName }: CarGalleryProps) {
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [lightboxIndex, setLightboxIndex] = useState(0);
 
-  function openLightbox(index: number) {
-    setLightboxIndex(index);
+  function openLightbox() {
     setLightboxOpen(true);
   }
 
@@ -38,15 +37,17 @@ export function CarGallery({ images, brandName, modelName }: CarGalleryProps) {
     );
   }
 
+  const selected = images[selectedIndex];
+
   return (
     <div className="space-y-4">
       <div
         className="group relative aspect-[4/3] cursor-pointer overflow-hidden rounded-xl bg-gray-100"
-        onClick={() => openLightbox(0)}
+        onClick={openLightbox}
       >
         <Image
-          src={images[0].url}
-          alt={images[0].alt || `${brandName} ${modelName}`}
+          src={selected.url}
+          alt={selected.alt || `${brandName} ${modelName}`}
           fill
           className="object-cover transition-transform duration-300 group-hover:scale-105"
           priority
@@ -62,8 +63,12 @@ export function CarGallery({ images, brandName, modelName }: CarGalleryProps) {
           {images.slice(0, 4).map((m, i) => (
             <button
               key={m.id}
-              onClick={() => openLightbox(i)}
-              className="group relative aspect-square overflow-hidden rounded-lg bg-gray-100"
+              onClick={() => setSelectedIndex(i)}
+              className={`group relative aspect-square overflow-hidden rounded-lg bg-gray-100 ring-2 transition-all ${
+                i === selectedIndex
+                  ? "ring-emerald-500 ring-offset-2"
+                  : "ring-transparent hover:ring-gray-300"
+              }`}
             >
               <Image
                 src={m.url}
@@ -78,9 +83,9 @@ export function CarGallery({ images, brandName, modelName }: CarGalleryProps) {
       )}
 
       <Lightbox
-        key={lightboxIndex}
+        key={lightboxOpen ? "open" : "closed"}
         images={images.map((m) => ({ url: m.url, alt: m.alt }))}
-        initialIndex={lightboxIndex}
+        initialIndex={selectedIndex}
         open={lightboxOpen}
         onClose={() => setLightboxOpen(false)}
       />

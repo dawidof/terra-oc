@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Send, CheckCircle } from "lucide-react";
+import { formatUsd } from "@/lib/price-breakdown";
 
 interface LeadFormProps {
   vehicleName: string;
@@ -165,7 +166,7 @@ export function LeadForm({
           {vehicleName}
           {estimatedTotal && (
             <span className="ml-2 font-medium text-emerald-600">
-              от ${(estimatedTotal + configuration.totalDelta).toLocaleString("en-US")}
+              от {formatUsd(Math.round(estimatedTotal + configuration.totalDelta))}
             </span>
           )}
           {configuration.unpriced_options.length > 0 && (

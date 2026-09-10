@@ -122,6 +122,7 @@ export function LeadTable({ leads }: { leads: Lead[] }) {
                     size="icon-sm"
                     aria-label={`Открыть заявку ${lead.customerName}`}
                     render={<Link href={`/crm/leads/${lead.id}`} />}
+                    nativeButton={false}
                   >
                     <ArrowUpRight className="size-4" />
                   </Button>

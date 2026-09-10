@@ -1,19 +1,22 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Clock, DollarSign, TrendingUp, Users } from "lucide-react";
+import { Clock, DollarSign, Download, TrendingUp, Users } from "lucide-react";
 
 import { StatCard, StatGrid } from "@/components/ui/stat-card";
 import { formatUsd } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Heading } from "@/components/ui/section";
+import { ExportDialog } from "@/components/crm/export-dialog";
 import { LeadsTrend } from "./charts/leads-trend";
 import { ConversionFunnel } from "./charts/conversion-funnel";
 import { TopModels } from "./charts/top-models";
 import { SourceBreakdown } from "./charts/source-breakdown";
 import { ManagerPerformance } from "./charts/manager-performance";
 import { RevenueEstimate } from "./charts/revenue-estimate";
+import { RevenuePipeline } from "./charts/revenue-pipeline";
+import { ComparisonChart } from "./charts/comparison-chart";
 
 interface AnalyticsData {
   leadsTrend: { date: string; count: number }[];
@@ -22,6 +25,26 @@ interface AnalyticsData {
   sourceBreakdown: { source: string | null; total: number }[];
   managerPerformance: { managerId: string | null; managerName: string | null; total: number }[];
   revenueEstimate: { month: string; total: number }[];
+  revenuePipeline: {
+    status: string;
+    label: string;
+    count: number;
+    totalValue: number;
+  }[];
+  comparison: {
+    current: {
+      totalLeads: number;
+      conversionRate: number;
+      avgDealSize: number;
+      wonLeads: number;
+    };
+    previous: {
+      totalLeads: number;
+      conversionRate: number;
+      avgDealSize: number;
+      wonLeads: number;
+    };
+  };
   summary: {
     totalLeads: number;
     conversionRate: number;
@@ -38,6 +61,7 @@ export function AnalyticsDashboard({ dateRange = "30d" }: AnalyticsDashboardProp
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedRange, setSelectedRange] = useState(dateRange);
+  const [exportOpen, setExportOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -70,7 +94,7 @@ export function AnalyticsDashboard({ dateRange = "30d" }: AnalyticsDashboardProp
           ))}
         </StatGrid>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {[...Array(6)].map((_, i) => (
+          {[...Array(8)].map((_, i) => (
             <Skeleton key={i} className="h-[340px] rounded-xl" />
           ))}
         </div>
@@ -95,24 +119,39 @@ export function AnalyticsDashboard({ dateRange = "30d" }: AnalyticsDashboardProp
         <StatCard label="Время ответа" value={`${data.summary.avgResponseTime}ч`} icon={Clock} tone="warning" />
       </StatGrid>
 
-      <div className="flex items-center gap-2">
-        <span className="text-xs font-medium text-muted-foreground uppercase">Период</span>
-        {[
-          { value: "7d", label: "7 дней" },
-          { value: "30d", label: "30 дней" },
-          { value: "90d", label: "90 дней" },
-        ].map((range) => (
-          <Button
-            key={range.value}
-            variant={selectedRange === range.value ? "default" : "outline"}
-            size="sm"
-            onClick={() => setSelectedRange(range.value)}
-          >
-            {range.label}
-          </Button>
-        ))}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium text-muted-foreground uppercase">Период</span>
+          {[
+            { value: "7d", label: "7 дней" },
+            { value: "30d", label: "30 дней" },
+            { value: "90d", label: "90 дней" },
+          ].map((range) => (
+            <Button
+              key={range.value}
+              variant={selectedRange === range.value ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSelectedRange(range.value)}
+            >
+              {range.label}
+            </Button>
+          ))}
+        </div>
+        <Button variant="outline" size="sm" onClick={() => setExportOpen(true)}>
+          <Download data-icon="inline-start" className="size-3.5" />
+          Экспорт
+        </Button>
       </div>
 
+      {/* New: Comparison + Pipeline row */}
+      <div className="grid gap-6 md:grid-cols-2">
+        {data.comparison && <ComparisonChart data={data.comparison} />}
+        {data.revenuePipeline && data.revenuePipeline.length > 0 && (
+          <RevenuePipeline data={data.revenuePipeline} />
+        )}
+      </div>
+
+      {/* Existing charts */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <LeadsTrend data={data.leadsTrend} />
         <ConversionFunnel data={data.conversionFunnel} />
@@ -121,6 +160,13 @@ export function AnalyticsDashboard({ dateRange = "30d" }: AnalyticsDashboardProp
         <SourceBreakdown data={data.sourceBreakdown} />
         <ManagerPerformance data={data.managerPerformance} />
       </div>
+
+      <ExportDialog
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        data={data}
+        dateRange={selectedRange}
+      />
     </div>
   );
 }

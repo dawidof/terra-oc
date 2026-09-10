@@ -81,7 +81,7 @@ export function SiteHeader() {
           </a>
           {is_admin_user && <AdminToggle />}
           {isAdmin && <SettingsDrawer />}
-          <Button variant="outline" size="sm" render={<Link href="/login" />}>
+          <Button variant="outline" size="sm" render={<Link href="/login" />} nativeButton={false}>
             Вход в CRM
           </Button>
           <button

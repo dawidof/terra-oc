@@ -17,7 +17,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -179,10 +179,9 @@ export function LeadDetailActions({
           <Clock className="size-3.5" aria-hidden />
           Следующий звонок
         </Label>
-        <Input
-          type="datetime-local"
+        <DatePicker
           value={followUpDate}
-          onChange={(e) => setFollowUpDate(e.target.value)}
+          onChange={setFollowUpDate}
         />
       </div>
 

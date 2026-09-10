@@ -10,8 +10,8 @@ import {
   LogOut,
   PanelLeftClose,
   PanelLeftOpen,
-  Upload,
   Users,
+  User,
 } from "lucide-react";
 
 import { BrandMark } from "@/components/brand-mark";
@@ -30,7 +30,7 @@ const navItems: NavItem[] = [
   { href: "/crm", label: "Дашборд", icon: LayoutDashboard, exact: true },
   { href: "/crm/leads", label: "Заявки", icon: Users },
   { href: "/crm/inventory", label: "Инвентарь", icon: Car },
-  { href: "/crm/import", label: "Импорт", icon: Upload },
+  { href: "/portal", label: "Портал клиента", icon: User },
 ];
 
 const roleLabels: Record<string, string> = {
