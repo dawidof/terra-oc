@@ -3,9 +3,11 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Package, Plus, Trash2 } from "lucide-react";
+
 import { AvailabilityBadge } from "@/components/availability-badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,7 +19,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Package, Plus, Trash2 } from "lucide-react";
+import { Heading } from "@/components/ui/section";
+import { formatUsd } from "@/lib/format";
 
 interface InventoryItem {
   id: string;
@@ -63,7 +66,6 @@ export function InventoryManager() {
     try {
       const params = new URLSearchParams();
       if (filterStatus) params.set("status", filterStatus);
-
       const res = await fetch(`/api/admin/inventory?${params}`);
       if (res.ok) {
         const data = await res.json();
@@ -83,7 +85,6 @@ export function InventoryManager() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, status: newStatus }),
       });
-
       if (res.ok) {
         toast.success("Статус инвентаря обновлён");
         fetchItems();
@@ -111,23 +112,18 @@ export function InventoryManager() {
     }
   }
 
-  function formatPrice(price: string | null): string {
-    if (!price) return "—";
-    return `$${Number(price).toLocaleString("en-US")}`;
-  }
-
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold">Инвентарь</h2>
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <Heading size="md">Инвентарь</Heading>
         <Button onClick={() => toast.info("Функция добавления в разработке")}>
-          <Plus className="mr-2 h-4 w-4" />
+          <Plus data-icon="inline-start" className="size-4" />
           Добавить
         </Button>
       </div>
 
       {/* Filters */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Button
           variant={filterStatus === "" ? "default" : "outline"}
           size="sm"
@@ -151,96 +147,90 @@ export function InventoryManager() {
       {loading ? (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {[...Array(6)].map((_, i) => (
-            <Card key={i}>
-              <CardContent className="p-4">
-                <div className="space-y-2">
-                  <div className="h-4 w-32 animate-pulse rounded bg-gray-200" />
-                  <div className="h-3 w-24 animate-pulse rounded bg-gray-200" />
-                  <div className="h-3 w-20 animate-pulse rounded bg-gray-200" />
-                </div>
-              </CardContent>
-            </Card>
+            <Skeleton key={i} className="h-[180px] rounded-xl" />
           ))}
         </div>
       ) : items.length === 0 ? (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <Package className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-            <p className="text-muted-foreground">Инвентарь пуст</p>
-          </CardContent>
-        </Card>
+        <div className="flex flex-col items-center rounded-xl bg-card px-6 py-16 text-center ring-1 ring-foreground/10">
+          <Package className="mb-4 size-10 text-muted-foreground" aria-hidden />
+          <p className="text-sm text-muted-foreground">Инвентарь пуст</p>
+        </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {items.map((item) => (
-            <Card key={item.id}>
-              <CardContent className="p-4">
-                <div className="mb-2 flex items-start justify-between">
-                  <div>
-                    <div className="text-sm font-medium">
-                      {item.brandName} {item.modelName}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {item.trimName}
-                    </div>
+            <div key={item.id} className="flex flex-col gap-3 rounded-xl bg-card p-4 ring-1 ring-foreground/10">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className="text-sm font-medium">
+                    {item.brandName} {item.modelName}
                   </div>
-                  <AvailabilityBadge status={item.status} />
+                  <div className="text-xs text-muted-foreground">{item.trimName}</div>
                 </div>
+                <AvailabilityBadge status={item.status} />
+              </div>
 
-                <div className="mb-3 space-y-1 text-xs text-muted-foreground">
-                  {item.vin && (
-                    <div>VIN: <span className="font-mono">{item.vin}</span></div>
-                  )}
-                  {item.location && <div>Локация: {item.location}</div>}
-                  {item.expectedDate && (
-                    <div>
-                      Ожидается: {new Date(item.expectedDate).toLocaleDateString("ru-RU")}
-                    </div>
-                  )}
-                  {item.basePrice && (
-                    <div>Цена: {formatPrice(item.basePrice)}</div>
-                  )}
-                </div>
-
-                <div className="flex gap-2">
-                  <select
-                    value={item.status}
-                    onChange={(e) => handleStatusChange(item.id, e.target.value)}
-                    className="flex-1 rounded-md border bg-transparent px-2 py-1 text-xs"
-                  >
-                    {STATUS_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                  <AlertDialog>
-                    <AlertDialogTrigger render={<Button variant="ghost" size="sm" className="h-7 px-2 text-muted-foreground hover:text-red-600" />}>
-                      <Trash2 className="h-3 w-3" />
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Удалить позицию?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          {item.brandName} {item.modelName} — {item.trimName}. Это действие нельзя отменить.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Отмена</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => handleDelete(item.id)} className="bg-red-600 hover:bg-red-700">
-                          Удалить
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-
-                {item.notes && (
-                  <div className="mt-2 rounded bg-gray-50 p-2 text-xs text-muted-foreground">
-                    {item.notes}
+              <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+                {item.vin && (
+                  <div>
+                    VIN: <span className="font-mono">{item.vin}</span>
                   </div>
                 )}
-              </CardContent>
-            </Card>
+                {item.location && <div>Локация: {item.location}</div>}
+                {item.expectedDate && (
+                  <div>
+                    Ожидается: {new Date(item.expectedDate).toLocaleDateString("ru-RU")}
+                  </div>
+                )}
+                {item.basePrice && <div>Цена: {formatUsd(item.basePrice)}</div>}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <select
+                  value={item.status}
+                  onChange={(e) => handleStatusChange(item.id, e.target.value)}
+                  className="flex-1 rounded-lg border border-border bg-background px-2 py-1.5 text-xs focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                >
+                  {STATUS_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+                <AlertDialog>
+                  <AlertDialogTrigger
+                    render={
+                      <Button variant="ghost" size="icon" className="size-7 shrink-0 text-muted-foreground hover:text-destructive" />
+                    }
+                  >
+                    <Trash2 className="size-3.5" />
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Удалить позицию?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {item.brandName} {item.modelName} — {item.trimName}. Это действие
+                        нельзя отменить.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Отмена</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => handleDelete(item.id)}
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        Удалить
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+
+              {item.notes && (
+                <p className="rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
+                  {item.notes}
+                </p>
+              )}
+            </div>
           ))}
         </div>
       )}

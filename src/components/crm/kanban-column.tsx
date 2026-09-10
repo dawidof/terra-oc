@@ -1,51 +1,27 @@
 "use client";
 
-import { KanbanCard } from "./kanban-card";
 import { Badge } from "@/components/ui/badge";
+import { formatUsd } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
-interface KanbanLead {
-  id: string;
-  status: string;
-  source: string | null;
-  estimatedTotalUsd: string | null;
-  createdAt: string;
-  lastContactAt: string | null;
-  nextFollowUpAt: string | null;
-  customerName: string;
-  customerPhone: string | null;
-  brandName: string | null;
-  modelName: string | null;
-  trimName: string | null;
-  managerName: string | null;
-  statusOrder: number;
-}
+import { KanbanCard } from "./kanban-card";
+import type { KanbanLead } from "./kanban-board";
+import { StatusDot } from "./status-badge";
 
 interface KanbanColumnProps {
   status: string;
   label: string;
-  color: string;
   leads: KanbanLead[];
+  isDragActive?: boolean;
   onDragStart: (leadId: string, sourceStatus: string) => void;
   onDrop: (leadId: string, targetStatus: string) => void;
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  new: "bg-blue-500",
-  assigned: "bg-indigo-500",
-  contacted: "bg-cyan-500",
-  needs_follow_up: "bg-amber-500",
-  qualified: "bg-purple-500",
-  quote_sent: "bg-indigo-500",
-  negotiation: "bg-orange-500",
-  won: "bg-green-500",
-  lost: "bg-red-500",
-};
-
 export function KanbanColumn({
   status,
   label,
-  color,
   leads,
+  isDragActive = false,
   onDragStart,
   onDrop,
 }: KanbanColumnProps) {
@@ -69,37 +45,36 @@ export function KanbanColumn({
 
   return (
     <div
-      className="flex min-w-[280px] flex-col rounded-lg bg-gray-50 p-2"
+      className={cn(
+        "flex w-[280px] shrink-0 flex-col rounded-xl bg-muted/60 p-2 ring-1 ring-transparent transition",
+        isDragActive && "ring-foreground/10"
+      )}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
-      <div className="mb-2 flex items-center justify-between px-2 py-1">
-        <div className="flex items-center gap-2">
-          <div className={`h-2.5 w-2.5 rounded-full ${color || STATUS_COLORS[status] || "bg-gray-400"}`} />
-          <span className="text-sm font-medium">{label}</span>
-          <Badge variant="secondary" className="text-xs">
+      <div className="mb-2 flex items-center justify-between gap-2 px-2 py-1.5">
+        <div className="flex min-w-0 items-center gap-2">
+          <StatusDot status={status} />
+          <span className="truncate text-sm font-medium">{label}</span>
+          <Badge variant="secondary" className="bg-background text-muted-foreground">
             {leads.length}
           </Badge>
         </div>
         {totalValue > 0 && (
-          <span className="text-xs text-muted-foreground">
-            ${totalValue.toLocaleString("en-US")}
+          <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+            {formatUsd(totalValue)}
           </span>
         )}
       </div>
 
-      <div className="flex-1 space-y-2 overflow-y-auto">
+      <div className="flex flex-1 flex-col gap-2">
         {leads.length === 0 ? (
-          <div className="rounded-lg border border-dashed p-4 text-center text-xs text-muted-foreground">
+          <div className="rounded-lg border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
             Перетащите заявку сюда
           </div>
         ) : (
           leads.map((lead) => (
-            <KanbanCard
-              key={lead.id}
-              lead={lead}
-              onDragStart={onDragStart}
-            />
+            <KanbanCard key={lead.id} lead={lead} onDragStart={onDragStart} />
           ))
         )}
       </div>

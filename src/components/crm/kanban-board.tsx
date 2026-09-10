@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { toast } from "sonner";
-import { KanbanColumn } from "./kanban-column";
 
-interface KanbanLead {
+import { KanbanColumn } from "./kanban-column";
+import { STATUS_ORDER, getStatusStyle } from "./status-badge";
+
+export interface KanbanLead {
   id: string;
   status: string;
   source: string | null;
@@ -26,18 +28,6 @@ interface KanbanBoardProps {
   leads: KanbanLead[];
 }
 
-const COLUMNS = [
-  { status: "new", label: "Новые", color: "bg-blue-500" },
-  { status: "assigned", label: "Назначены", color: "bg-indigo-500" },
-  { status: "contacted", label: "Связались", color: "bg-cyan-500" },
-  { status: "needs_follow_up", label: "Follow-up", color: "bg-amber-500" },
-  { status: "qualified", label: "Квалифицированы", color: "bg-purple-500" },
-  { status: "quote_sent", label: "Расчёт отправлен", color: "bg-indigo-500" },
-  { status: "negotiation", label: "Переговоры", color: "bg-orange-500" },
-  { status: "won", label: "Выиграны", color: "bg-green-500" },
-  { status: "lost", label: "Проиграны", color: "bg-red-500" },
-];
-
 export function KanbanBoard({ leads }: KanbanBoardProps) {
   const router = useRouter();
   const [optimisticLeads, setOptimisticLeads] = useState<KanbanLead[]>(leads);
@@ -50,7 +40,6 @@ export function KanbanBoard({ leads }: KanbanBoardProps) {
   async function handleDrop(leadId: string, targetStatus: string) {
     setDraggedLeadId(null);
 
-    // Optimistic update
     setOptimisticLeads((prev) =>
       prev.map((lead) =>
         lead.id === leadId ? { ...lead, status: targetStatus } : lead
@@ -84,14 +73,14 @@ export function KanbanBoard({ leads }: KanbanBoardProps) {
   }
 
   return (
-    <div className="flex gap-3 overflow-x-auto pb-4">
-      {COLUMNS.map((col) => (
+    <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-4">
+      {STATUS_ORDER.map((status) => (
         <KanbanColumn
-          key={col.status}
-          status={col.status}
-          label={col.label}
-          color={col.color}
-          leads={getLeadsForStatus(col.status)}
+          key={status}
+          status={status}
+          label={getStatusStyle(status).plural}
+          leads={getLeadsForStatus(status)}
+          isDragActive={draggedLeadId !== null}
           onDragStart={handleDragStart}
           onDrop={handleDrop}
         />

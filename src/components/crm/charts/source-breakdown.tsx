@@ -8,27 +8,26 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
+
+import {
+  CHART_CATEGORIES,
+  CHART_TOOLTIP_STYLE,
+  CHART_TOOLTIP_LABEL_STYLE,
+  CHART_TOOLTIP_ITEM_STYLE,
+  CHART_LEGEND_STYLE,
+} from "@/lib/chart-colors";
+import { sourceLabel } from "@/components/crm/lead-source";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface SourceBreakdownProps {
   data: { source: string | null; total: number }[];
 }
 
-const SOURCE_LABELS: Record<string, string> = {
-  website: "Сайт",
-  configurator: "Конфигуратор",
-  calculator: "Калькулятор",
-  phone: "Телефон",
-  telegram: "Telegram",
-};
-
-const COLORS = ["#10b981", "#3b82f6", "#8b5cf6", "#f59e0b", "#ef4444", "#6b7280"];
-
 export function SourceBreakdown({ data }: SourceBreakdownProps) {
   const formattedData = data.map((item, index) => ({
-    name: SOURCE_LABELS[item.source || ""] || item.source || "Другое",
+    name: sourceLabel(item.source),
     value: item.total,
-    fill: COLORS[index % COLORS.length],
+    fill: CHART_CATEGORIES[index % CHART_CATEGORIES.length],
   }));
 
   return (
@@ -54,19 +53,15 @@ export function SourceBreakdown({ data }: SourceBreakdownProps) {
                 ))}
               </Pie>
               <Tooltip
-                contentStyle={{
-                  backgroundColor: "white",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: "8px",
-                  fontSize: "12px",
-                }}
-                formatter={(value: number) => [value, "Заявки"]}
+                contentStyle={CHART_TOOLTIP_STYLE}
+                labelStyle={CHART_TOOLTIP_LABEL_STYLE}
+                itemStyle={CHART_TOOLTIP_ITEM_STYLE}
+                formatter={(value) => [
+                  Number(value ?? 0).toLocaleString("ru-RU"),
+                  "Заявки",
+                ]}
               />
-              <Legend
-                formatter={(value) => (
-                  <span className="text-xs">{value}</span>
-                )}
-              />
+              <Legend formatter={(value) => <span style={CHART_LEGEND_STYLE}>{value}</span>} />
             </PieChart>
           </ResponsiveContainer>
         </div>

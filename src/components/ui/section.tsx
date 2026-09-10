@@ -1,33 +1,94 @@
-import { sectionVariants, headingVariants, badgeVariants } from "@/lib/variants";
+import type { VariantProps } from "class-variance-authority";
 
-interface SectionProps {
-  padding?: "default" | "tight" | "spacious";
-  background?: "default" | "muted" | "accent";
+import { cn } from "@/lib/utils";
+import {
+  badgeVariants,
+  eyebrowVariants,
+  headingVariants,
+  sectionVariants,
+} from "@/lib/variants";
+
+const backgroundClass = {
+  default: "",
+  muted: "bg-muted",
+  accent: "bg-brand-muted",
+  card: "bg-card",
+} as const;
+
+interface SectionProps extends VariantProps<typeof sectionVariants> {
+  id?: string;
+  className?: string;
+  containerClassName?: string;
   children: React.ReactNode;
 }
 
-export function Section({ padding = "default", background = "default", children }: SectionProps) {
+/**
+ * Full-bleed section wrapper. Background and top divider live on the outer
+ * element so bands span the viewport; padding lives on the inner container.
+ */
+export function Section({
+  padding,
+  background = "default",
+  divide = false,
+  id,
+  className,
+  containerClassName,
+  children,
+}: SectionProps) {
   return (
-    <section className={sectionVariants({ padding, background })}>
-      {children}
+    <section
+      id={id}
+      className={cn(
+        backgroundClass[background ?? "default"],
+        divide && "border-t border-border",
+        className
+      )}
+    >
+      <div className={cn(sectionVariants({ padding }), containerClassName)}>
+        {children}
+      </div>
     </section>
   );
 }
 
-interface HeadingProps {
-  size?: "xs" | "sm" | "md" | "lg" | "xl";
-  children: React.ReactNode;
+interface HeadingProps extends VariantProps<typeof headingVariants> {
+  as?: "h1" | "h2" | "h3" | "h4";
   className?: string;
+  children: React.ReactNode;
 }
 
-export function Heading({ size = "md", children, className }: HeadingProps) {
+export function Heading({
+  as: Tag = "h2",
+  size = "md",
+  tone,
+  className,
+  children,
+}: HeadingProps) {
   return (
-    <h2 className={headingVariants({ size, className })}>
+    <Tag className={cn(headingVariants({ size, tone }), className)}>
       {children}
-    </h2>
+    </Tag>
   );
 }
 
-export function StatusBadge({ variant = "default", children }: { variant?: "default" | "warning" | "danger" | "info" | "neutral"; children: React.ReactNode }) {
-  return <span className={badgeVariants({ variant })}>{children}</span>;
+interface EyebrowProps extends VariantProps<typeof eyebrowVariants> {
+  className?: string;
+  children: React.ReactNode;
+}
+
+export function Eyebrow({ tone, className, children }: EyebrowProps) {
+  return (
+    <p className={cn(eyebrowVariants({ tone }), className)}>{children}</p>
+  );
+}
+
+interface TagProps extends VariantProps<typeof badgeVariants> {
+  className?: string;
+  children: React.ReactNode;
+}
+
+export function Tag({ variant, className, children }: TagProps) {
+  return (
+    <span className={cn(badgeVariants({ variant }), className)}>{children}</span>
+  );
 }

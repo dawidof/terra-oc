@@ -1,8 +1,10 @@
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
+import { BatteryCharging, ChevronDown } from "lucide-react";
+
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { ChevronDown } from "lucide-react";
+import { formatUsd, powerLabel, powertrainLabel } from "@/lib/format";
 
 interface CarCardProps {
   brandName: string;
@@ -24,36 +26,9 @@ interface CarCardProps {
   isExpanded?: boolean;
 }
 
-function formatPrice(price: string | null): string {
-  if (!price || price === "0") return "Цена уточняется";
-  const num = Number(price);
-  if (num === 0) return "Цена уточняется";
-  return `$${num.toLocaleString("en-US")}`;
-}
-
-function powertrainLabel(type: string | null): string {
-  switch (type) {
-    case "bev": return "Электро";
-    case "phev": return "Гибрид";
-    case "hev": return "Гибрид";
-    case "reev": return "REEV";
-    case "petrol": return "Бензин";
-    case "diesel": return "Дизель";
-    default: return type || "";
-  }
-}
-
-function powerLabel(kw: number | null, hp: number | null): string {
-  if (kw) return `${kw} кВт`;
-  if (hp) return `${hp} л.с.`;
-  return "";
-}
-
 export function CarCard({
   brandName,
-  brandSlug,
   modelName,
-  modelSlug,
   trimName,
   trimSlug,
   powertrainType,
@@ -68,65 +43,83 @@ export function CarCard({
   onExpand,
   isExpanded,
 }: CarCardProps) {
+  const power = powerLabel(motorPowerKw, enginePowerHp);
+
   const inner = (
     <>
-      <div className="relative aspect-[4/3] bg-gray-100">
+      <div className="relative aspect-[4/3] bg-muted">
         {imageUrl ? (
           <Image
             src={imageUrl}
             alt={`${brandName} ${modelName}`}
             fill
-            className="object-cover transition-transform group-hover:scale-105"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+            className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
           />
         ) : (
-          <div className="flex h-full items-center justify-center text-gray-400">
+          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
             Фото скоро
           </div>
         )}
-        <div className="absolute left-2 top-2 flex gap-1">
+        <div className="absolute top-2.5 left-2.5 flex gap-1.5">
           {powertrainType && (
             <Badge variant={powertrainType === "bev" ? "default" : "secondary"}>
               {powertrainLabel(powertrainType)}
             </Badge>
           )}
           {drivetrain && (
-            <Badge variant="outline" className="bg-white/90">
+            <Badge variant="outline" className="bg-white/85 backdrop-blur-sm">
               {drivetrain}
             </Badge>
           )}
         </div>
       </div>
-      <CardContent className="p-4">
-        <div className="mb-1 text-sm text-muted-foreground">
-          {brandName} {modelYear && `• ${modelYear}`}
-        </div>
-        <h3 className="mb-2 text-lg font-semibold">
-          {modelName} <span className="text-muted-foreground font-normal">{trimName}</span>
+
+      <CardContent className="p-4 sm:p-5">
+        <p className="text-xs tracking-wide text-muted-foreground uppercase">
+          {brandName}
+          {modelYear ? ` · ${modelYear}` : ""}
+        </p>
+        <h3 className="mt-1.5 text-base leading-snug font-semibold tracking-tight">
+          {modelName}{" "}
+          <span className="font-normal text-muted-foreground">{trimName}</span>
         </h3>
-        <div className="mb-3 flex flex-wrap gap-2 text-sm text-muted-foreground">
-          {motorPowerKw && <span>{powerLabel(motorPowerKw, null)}</span>}
-          {enginePowerHp && <span>{powerLabel(null, enginePowerHp)}</span>}
-          {rangeKm && <span>🔋 {rangeKm} км</span>}
-        </div>
-        <div className="flex items-end justify-between">
+
+        {(power || rangeKm) && (
+          <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+            {power && <span>{power}</span>}
+            {rangeKm ? (
+              <span className="inline-flex items-center gap-1">
+                <BatteryCharging className="size-3.5" aria-hidden />
+                {rangeKm} км
+              </span>
+            ) : null}
+          </div>
+        )}
+
+        <div className="mt-4 flex items-end justify-between border-t border-border pt-4">
           <div>
-            <div className="text-xs text-muted-foreground">от</div>
-            <div className="text-xl font-bold">{formatPrice(basePrice)}</div>
+            <p className="text-xs text-muted-foreground">от</p>
+            <p className="mt-0.5 text-lg font-semibold tracking-[-0.02em] tabular-nums">
+              {formatUsd(basePrice)}
+            </p>
           </div>
           {estimatedTotalUsd && (
             <div className="text-right">
-              <div className="text-xs text-muted-foreground">под ключ</div>
-              <div className="text-sm font-medium text-emerald-600">
-                {formatPrice(estimatedTotalUsd)}
-              </div>
+              <p className="text-xs text-muted-foreground">под ключ</p>
+              <p className="mt-0.5 text-sm font-semibold tabular-nums text-brand">
+                {formatUsd(estimatedTotalUsd)}
+              </p>
             </div>
           )}
         </div>
+
         {onExpand && (
           <div className="mt-3 flex justify-center">
             <ChevronDown
-              className={`h-5 w-5 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`}
+              className={`size-5 text-muted-foreground transition-transform ${
+                isExpanded ? "rotate-180" : ""
+              }`}
             />
           </div>
         )}
@@ -134,25 +127,23 @@ export function CarCard({
     </>
   );
 
+  const cardClass = [
+    "group gap-0 overflow-hidden py-0 transition duration-200",
+    "hover:-translate-y-0.5 hover:shadow-md hover:ring-foreground/20",
+    isExpanded ? "ring-2 ring-brand" : "",
+  ].join(" ");
+
   if (onExpand) {
     return (
-      <button
-        type="button"
-        onClick={onExpand}
-        className="text-left"
-      >
-        <Card className={`group overflow-hidden transition-shadow hover:shadow-lg ${isExpanded ? "ring-2 ring-emerald-600" : ""}`}>
-          {inner}
-        </Card>
+      <button type="button" onClick={onExpand} className="text-left">
+        <Card className={cardClass}>{inner}</Card>
       </button>
     );
   }
 
   return (
-    <Link href={`/cars/${trimSlug}`}>
-      <Card className="group overflow-hidden transition-shadow hover:shadow-lg">
-        {inner}
-      </Card>
+    <Link href={`/cars/${trimSlug}`} className="block h-full">
+      <Card className={cardClass}>{inner}</Card>
     </Link>
   );
 }

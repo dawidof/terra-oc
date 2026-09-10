@@ -1,204 +1,130 @@
-import { redirect } from "next/navigation";
 import Link from "next/link";
-import { auth } from "@/lib/auth";
-import { getDashboardStats, getLeads } from "@/lib/crm";
+import { ArrowRight, TrendingUp, Users, Clock } from "lucide-react";
+
 import { StatusBadge } from "@/components/crm/status-badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import {
-  Users,
-  TrendingUp,
-  Clock,
-  AlertTriangle,
-  ArrowRight,
-} from "lucide-react";
+import { StatCard, StatGrid } from "@/components/ui/stat-card";
+import { Heading } from "@/components/ui/section";
+import { getDashboardStats, getLeads } from "@/lib/crm";
+import { formatDate } from "@/lib/format";
 
 export const metadata = {
   title: "CRM — Дашборд",
 };
 
 export default async function CrmPage() {
-  const session = await auth();
-  if (!session?.user) redirect("/login");
-
-  const user = session.user as { id?: string; role?: string };
   const [stats, recentLeads] = await Promise.all([
-    getDashboardStats(user.id, user.role),
+    getDashboardStats(),
     getLeads({ pageSize: 10 }),
   ]);
 
+  const totalByStatus = stats.byStatus.reduce((sum, s) => sum + s.total, 0);
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="border-b bg-white">
-        <div className="container mx-auto flex items-center justify-between px-4 py-4">
-          <Link href="/" className="text-2xl font-bold text-emerald-600">
-            TerraAuto
+    <div className="flex flex-col gap-8">
+      <div>
+        <Heading size="md">CRM — Дашборд</Heading>
+        <p className="mt-1.5 text-sm text-muted-foreground">
+          Обзор активности и ключевых метрик
+        </p>
+      </div>
+
+      <StatGrid>
+        <StatCard label="Сегодня" value={stats.today} icon={Users} tone="info" hint="заявок" />
+        <StatCard label="За неделю" value={stats.thisWeek} icon={TrendingUp} hint="заявок" />
+        <StatCard
+          label="Ожидают звонка"
+          value={stats.overdueFollowUps}
+          icon={Clock}
+          tone="warning"
+          hint="просрочено"
+        />
+        <StatCard label="Всего заявок" value={totalByStatus} icon={Users} hint="в системе" />
+      </StatGrid>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* By Status */}
+        <div className="flex flex-col gap-3 rounded-xl bg-card p-5 ring-1 ring-foreground/10">
+          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+            По статусам
+          </p>
+          {stats.byStatus.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Нет данных</p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {stats.byStatus.map((s) => (
+                <div key={s.status} className="flex items-center justify-between">
+                  <StatusBadge status={s.status} />
+                  <span className="tabular-nums text-sm font-medium">{s.total}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* By Manager */}
+        <div className="flex flex-col gap-3 rounded-xl bg-card p-5 ring-1 ring-foreground/10">
+          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+            По менеджерам
+          </p>
+          {stats.byManager.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Нет данных</p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {stats.byManager.map((m) => (
+                <div
+                  key={m.managerId || "unassigned"}
+                  className="flex items-center justify-between"
+                >
+                  <span className="text-sm">{m.managerName || "Не назначен"}</span>
+                  <span className="tabular-nums text-sm font-medium">{m.total}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Recent Leads */}
+      <div className="flex flex-col gap-3 rounded-xl bg-card p-5 ring-1 ring-foreground/10">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+            Последние заявки
+          </p>
+          <Link
+            href="/crm/leads"
+            className="inline-flex items-center gap-1 text-xs font-medium text-brand transition-colors hover:text-brand/80"
+          >
+            Все заявки
+            <ArrowRight className="size-3.5" aria-hidden />
           </Link>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">
-              {session.user.name || session.user.email}
-            </span>
-            <form
-              action={async () => {
-                "use server";
-                const { signOut } = await import("@/lib/auth");
-                await signOut({ redirectTo: "/login" });
-              }}
-            >
-              <Button variant="ghost" size="sm" type="submit">
-                Выйти
-              </Button>
-            </form>
+        </div>
+
+        {recentLeads.leads.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">Заявок пока нет</p>
+        ) : (
+          <div className="flex flex-col gap-1.5">
+            {recentLeads.leads.map((lead) => (
+              <Link
+                key={lead.id}
+                href={`/crm/leads/${lead.id}`}
+                className="flex items-center justify-between gap-4 rounded-lg px-3 py-2.5 transition-colors hover:bg-muted"
+              >
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-medium">{lead.customerName}</div>
+                  <div className="truncate text-xs text-muted-foreground">
+                    {lead.brandName} {lead.modelName}
+                  </div>
+                </div>
+                <div className="flex shrink-0 items-center gap-3">
+                  <StatusBadge status={lead.status} />
+                  <span className="whitespace-nowrap text-xs text-muted-foreground">
+                    {formatDate(lead.createdAt)}
+                  </span>
+                </div>
+              </Link>
+            ))}
           </div>
-        </div>
-      </header>
-
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="mb-8 text-3xl font-bold">CRM — Дашборд</h1>
-
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Сегодня
-              </CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{stats.today}</div>
-              <p className="text-xs text-muted-foreground">заявок</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                За неделю
-              </CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{stats.thisWeek}</div>
-              <p className="text-xs text-muted-foreground">заявок</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Ожидают звонка
-              </CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{stats.overdueFollowUps}</div>
-              <p className="text-xs text-muted-foreground">просрочено</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Всего заявок
-              </CardTitle>
-              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">
-                {stats.byStatus.reduce((sum, s) => sum + s.total, 0)}
-              </div>
-              <p className="text-xs text-muted-foreground">в системе</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {/* By Status */}
-          <Card>
-            <CardHeader>
-              <CardTitle>По статусам</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {stats.byStatus.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Нет данных</p>
-              ) : (
-                <div className="space-y-2">
-                  {stats.byStatus.map((s) => (
-                    <div key={s.status} className="flex items-center justify-between">
-                      <StatusBadge status={s.status} />
-                      <span className="text-sm font-medium">{s.total}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* By Manager */}
-          <Card>
-            <CardHeader>
-              <CardTitle>По менеджерам</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {stats.byManager.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Нет данных</p>
-              ) : (
-                <div className="space-y-2">
-                  {stats.byManager.map((m) => (
-                    <div key={m.managerId || "unassigned"} className="flex items-center justify-between">
-                      <span className="text-sm">{m.managerName || "Не назначен"}</span>
-                      <span className="text-sm font-medium">{m.total}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Recent Leads */}
-        <Card className="mt-8">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Последние заявки</CardTitle>
-            <Link href="/crm/leads">
-              <Button variant="ghost" size="sm">
-                Все заявки <ArrowRight className="ml-1 h-4 w-4" />
-              </Button>
-            </Link>
-          </CardHeader>
-          <CardContent>
-            {recentLeads.leads.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Заявок пока нет</p>
-            ) : (
-              <div className="space-y-2">
-                {recentLeads.leads.map((lead) => (
-                  <Link
-                    key={lead.id}
-                    href={`/crm/leads/${lead.id}`}
-                    className="flex items-center justify-between rounded-lg border p-3 transition-colors hover:bg-muted"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="min-w-0">
-                        <div className="text-sm font-medium truncate">
-                          {lead.customerName}
-                        </div>
-                        <div className="text-xs text-muted-foreground truncate">
-                          {lead.brandName} {lead.modelName}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <StatusBadge status={lead.status} />
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">
-                        {new Date(lead.createdAt).toLocaleDateString("ru-RU")}
-                      </span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        )}
       </div>
     </div>
   );

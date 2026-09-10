@@ -53,6 +53,7 @@ interface ConfiguratorSectionProps {
   deliveryDays: number | null;
   colorImages?: Record<string, ColorImage[]>;
   defaultMedia?: MediaImage[];
+  onColorSelect?: (groupId: string, optionId: string, images: ColorImage[]) => void;
 }
 
 export function ConfiguratorSection({
@@ -72,6 +73,7 @@ export function ConfiguratorSection({
   deliveryDays,
   colorImages = {},
   defaultMedia = [],
+  onColorSelect,
 }: ConfiguratorSectionProps) {
   const [showLeadForm, setShowLeadForm] = useState(false);
   const [configuration, setConfiguration] = useState<{
@@ -96,16 +98,16 @@ export function ConfiguratorSection({
 
   const estimatedBase = estimatedTotalUsd ? Number(estimatedTotalUsd) : basePrice + 9000;
 
-  function handleColorSelect(_groupId: string, _optionId: string, images: ColorImage[]) {
+  function handleColorSelect(_groupId: string, optionId: string, images: ColorImage[]) {
     const galleryImages = images.length > 0
       ? images.map((img, i) => ({
-          id: `color-${i}`,
+          id: `${optionId}-${i}`,
           url: img.url,
           alt: img.alt,
         }))
-      : defaultMedia.map((m) => ({ id: m.id, url: m.url, alt: m.alt }));
+      : defaultMedia.map((m, i) => ({ id: `${optionId}-default-${i}`, url: m.url, alt: m.alt }));
 
-    window.dispatchEvent(new CustomEvent("colorimages:update", { detail: galleryImages }));
+    onColorSelect?.(_groupId, optionId, galleryImages);
   }
 
   return (

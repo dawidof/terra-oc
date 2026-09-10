@@ -10,6 +10,15 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
+
+import {
+  CHART_CATEGORIES,
+  CHART_GRID_STROKE,
+  CHART_TOOLTIP_STYLE,
+  CHART_TOOLTIP_LABEL_STYLE,
+  CHART_TOOLTIP_ITEM_STYLE,
+  CHART_AXIS_TICK,
+} from "@/lib/chart-colors";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface ConversionFunnelProps {
@@ -28,25 +37,30 @@ const STATUS_LABELS: Record<string, string> = {
   lost: "Проиграны",
 };
 
-const STATUS_COLORS: Record<string, string> = {
-  new: "#3b82f6",
-  assigned: "#6366f1",
-  contacted: "#06b6d4",
-  needs_follow_up: "#f59e0b",
-  qualified: "#8b5cf6",
-  quote_sent: "#6366f1",
-  negotiation: "#f97316",
-  won: "#10b981",
-  lost: "#ef4444",
-};
+const STATUS_ORDER = [
+  "new",
+  "assigned",
+  "contacted",
+  "needs_follow_up",
+  "qualified",
+  "quote_sent",
+  "negotiation",
+  "won",
+  "lost",
+] as const;
+
+const STATUS_COLOR_MAP: Record<string, string> = Object.fromEntries(
+  STATUS_ORDER.map((key, i) => [key, CHART_CATEGORIES[i % CHART_CATEGORIES.length]])
+);
 
 export function ConversionFunnel({ data }: ConversionFunnelProps) {
-  const formattedData = data
+  const ordered = [...data]
+    .sort((a, b) => STATUS_ORDER.indexOf(a.status as typeof STATUS_ORDER[number]) - STATUS_ORDER.indexOf(b.status as typeof STATUS_ORDER[number]))
     .filter((item) => item.status !== "lost")
     .map((item) => ({
       name: STATUS_LABELS[item.status] || item.status,
       count: item.count,
-      fill: STATUS_COLORS[item.status] || "#6b7280",
+      status: item.status,
     }));
 
   return (
@@ -57,27 +71,25 @@ export function ConversionFunnel({ data }: ConversionFunnelProps) {
       <CardContent>
         <div className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={formattedData} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200" />
-              <XAxis type="number" tick={{ fontSize: 12 }} />
-              <YAxis
-                type="category"
-                dataKey="name"
-                tick={{ fontSize: 11 }}
-                width={120}
-              />
+            <BarChart data={ordered} layout="vertical">
+              <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} />
+              <XAxis type="number" tick={CHART_AXIS_TICK} />
+              <YAxis type="category" dataKey="name" tick={CHART_AXIS_TICK} width={120} />
               <Tooltip
-                contentStyle={{
-                  backgroundColor: "white",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: "8px",
-                  fontSize: "12px",
-                }}
-                formatter={(value: number) => [value, "Заявки"]}
+                contentStyle={CHART_TOOLTIP_STYLE}
+                labelStyle={CHART_TOOLTIP_LABEL_STYLE}
+                itemStyle={CHART_TOOLTIP_ITEM_STYLE}
+                formatter={(value) => [
+                  Number(value ?? 0).toLocaleString("ru-RU"),
+                  "Заявки",
+                ]}
               />
               <Bar dataKey="count" radius={[0, 4, 4, 0]}>
-                {formattedData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                {ordered.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={STATUS_COLOR_MAP[entry.status] ?? CHART_CATEGORIES[index % CHART_CATEGORIES.length]}
+                  />
                 ))}
               </Bar>
             </BarChart>

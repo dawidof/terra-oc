@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { auth } from "@/lib/auth";
+import { Toaster } from "sonner";
+
+import { Analytics } from "@/components/analytics";
+import { AppChrome } from "@/components/app-chrome";
 import { Providers } from "@/components/providers";
 import { ScrollToTop } from "@/components/scroll-to-top";
-import { SiteHeader, SiteFooter } from "@/components/site-header";
-import { Analytics } from "@/components/analytics";
-import { ContactButtons } from "@/components/contact-buttons";
-import { Toaster } from "sonner";
+import { auth } from "@/lib/auth";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
   title: {
@@ -54,14 +54,11 @@ export default async function RootLayout({
 
   return (
     <html lang="ru">
-      <body className={inter.className}>
+      <body className={`${inter.variable} ${inter.className}`}>
         <Analytics />
         <Providers userRole={userRole}>
           <ScrollToTop />
-          <SiteHeader />
-          <main>{children}</main>
-          <SiteFooter />
-          <ContactButtons variant="floating" />
+          <AppChrome>{children}</AppChrome>
           <Toaster position="bottom-right" richColors closeButton />
         </Providers>
       </body>

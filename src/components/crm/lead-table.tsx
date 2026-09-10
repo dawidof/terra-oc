@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { StatusBadge } from "./status-badge";
+import { ArrowUpRight, Clock, Phone } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -11,7 +12,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Phone, MessageSquare, Clock } from "lucide-react";
+import { formatDate, formatUsd } from "@/lib/format";
+
+import { StatusBadge } from "./status-badge";
 
 interface Lead {
   id: string;
@@ -28,20 +31,6 @@ interface Lead {
   trimName: string | null;
 }
 
-function formatDate(date: Date | null): string {
-  if (!date) return "—";
-  return new Date(date).toLocaleDateString("ru-RU", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "2-digit",
-  });
-}
-
-function formatPrice(price: string | null): string {
-  if (!price) return "—";
-  return `$${Number(price).toLocaleString("en-US")}`;
-}
-
 function vehicleLabel(lead: Lead): string {
   if (lead.brandName && lead.modelName) {
     return `${lead.brandName} ${lead.modelName}${lead.trimName ? ` ${lead.trimName}` : ""}`;
@@ -49,41 +38,41 @@ function vehicleLabel(lead: Lead): string {
   return "—";
 }
 
-function followUpStatus(date: Date | null): { label: string; color: string } | null {
+function followUpStatus(date: Date | null): { label: string; className: string } | null {
   if (!date) return null;
-  const now = new Date();
   const followUp = new Date(date);
-  const diffDays = Math.ceil((followUp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  const diffDays = Math.ceil((followUp.getTime() - Date.now()) / 86400000);
 
-  if (diffDays < 0) return { label: "Просрочено", color: "text-red-600" };
-  if (diffDays === 0) return { label: "Сегодня", color: "text-amber-600" };
-  if (diffDays <= 3) return { label: `через ${diffDays} дн.`, color: "text-green-600" };
-  return { label: formatDate(date), color: "text-muted-foreground" };
+  if (diffDays < 0) return { label: "Просрочено", className: "text-red-600" };
+  if (diffDays === 0) return { label: "Сегодня", className: "text-amber-600" };
+  if (diffDays <= 3)
+    return { label: `через ${diffDays} дн.`, className: "text-brand" };
+  return { label: formatDate(followUp), className: "text-muted-foreground" };
 }
 
 export function LeadTable({ leads }: { leads: Lead[] }) {
   if (leads.length === 0) {
     return (
-      <div className="rounded-lg border bg-white p-8 text-center">
-        <p className="text-muted-foreground">Заявки не найдены</p>
+      <div className="rounded-xl bg-card px-6 py-12 text-center ring-1 ring-foreground/10">
+        <p className="text-sm text-muted-foreground">Заявки не найдены</p>
       </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border bg-white">
+    <div className="overflow-x-auto rounded-xl bg-card ring-1 ring-foreground/10">
       <Table>
         <TableHeader>
-          <TableRow>
+          <TableRow className="hover:bg-transparent">
             <TableHead>Клиент</TableHead>
             <TableHead>Телефон</TableHead>
             <TableHead>Автомобиль</TableHead>
-            <TableHead>Сумма</TableHead>
+            <TableHead className="text-right">Сумма</TableHead>
             <TableHead>Статус</TableHead>
             <TableHead>Менеджер</TableHead>
             <TableHead>Создана</TableHead>
             <TableHead>Звонок</TableHead>
-            <TableHead />
+            <TableHead className="w-10" />
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -94,39 +83,48 @@ export function LeadTable({ leads }: { leads: Lead[] }) {
                 <TableCell className="font-medium">{lead.customerName}</TableCell>
                 <TableCell>
                   {lead.customerPhone ? (
-                    <span className="flex items-center gap-1">
-                      <Phone className="h-3 w-3 text-muted-foreground" />
+                    <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                      <Phone className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
                       {lead.customerPhone}
                     </span>
                   ) : (
-                    "—"
+                    <span className="text-muted-foreground">—</span>
                   )}
                 </TableCell>
-                <TableCell>{vehicleLabel(lead)}</TableCell>
-                <TableCell>{formatPrice(lead.estimatedTotalUsd)}</TableCell>
+                <TableCell className="max-w-[220px] truncate">
+                  {vehicleLabel(lead)}
+                </TableCell>
+                <TableCell className="text-right font-medium tabular-nums whitespace-nowrap">
+                  {lead.estimatedTotalUsd ? formatUsd(lead.estimatedTotalUsd) : "—"}
+                </TableCell>
                 <TableCell>
                   <StatusBadge status={lead.status} />
                 </TableCell>
                 <TableCell>{lead.assignedManagerName || "—"}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">
+                <TableCell className="text-muted-foreground whitespace-nowrap">
                   {formatDate(lead.createdAt)}
                 </TableCell>
                 <TableCell>
                   {followUp ? (
-                    <span className={`flex items-center gap-1 text-sm ${followUp.color}`}>
-                      <Clock className="h-3 w-3" />
+                    <span
+                      className={`inline-flex items-center gap-1.5 whitespace-nowrap ${followUp.className}`}
+                    >
+                      <Clock className="size-3.5" aria-hidden />
                       {followUp.label}
                     </span>
                   ) : (
-                    "—"
+                    <span className="text-muted-foreground">—</span>
                   )}
                 </TableCell>
                 <TableCell>
-                  <Link href={`/crm/leads/${lead.id}`}>
-                    <Button variant="ghost" size="sm">
-                      Открыть
-                    </Button>
-                  </Link>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={`Открыть заявку ${lead.customerName}`}
+                    render={<Link href={`/crm/leads/${lead.id}`} />}
+                  >
+                    <ArrowUpRight className="size-4" />
+                  </Button>
                 </TableCell>
               </TableRow>
             );

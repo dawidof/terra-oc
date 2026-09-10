@@ -1,16 +1,19 @@
 "use client";
 
+import Link from "next/link";
 import { Suspense, useState } from "react";
-import { logout } from "@/lib/actions";
+import { BarChart3, LayoutGrid, Table } from "lucide-react";
+
+import { AnalyticsDashboard } from "@/components/crm/analytics-dashboard";
+import { DashboardStats } from "@/components/crm/dashboard-stats";
+import { FollowUpSettings } from "@/components/crm/follow-up-settings";
+import { KanbanBoard } from "@/components/crm/kanban-board";
 import { LeadFilters } from "@/components/crm/lead-filters";
 import { LeadTable } from "@/components/crm/lead-table";
-import { KanbanBoard } from "@/components/crm/kanban-board";
-import { DashboardStats } from "@/components/crm/dashboard-stats";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { LayoutGrid, Table, BarChart3 } from "lucide-react";
-import { AnalyticsDashboard } from "@/components/crm/analytics-dashboard";
-import { FollowUpSettings } from "@/components/crm/follow-up-settings";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Heading } from "@/components/ui/section";
 
 interface Manager {
   id: string;
@@ -38,8 +41,16 @@ interface DashboardData {
   thisWeek: number;
   overdueFollowUps: number;
   byStatus: { status: string; total: number }[];
-  byManager: { managerId: string | null; managerName: string | null; total: number }[];
-  topCars: { brandName: string | null; modelName: string | null; total: number }[];
+  byManager: {
+    managerId: string | null;
+    managerName: string | null;
+    total: number;
+  }[];
+  topCars: {
+    brandName: string | null;
+    modelName: string | null;
+    total: number;
+  }[];
 }
 
 interface CrmClientProps {
@@ -62,175 +73,118 @@ interface CrmClientProps {
 
 type ViewMode = "table" | "kanban" | "analytics";
 
+function toIsoString(value: Date | string | null): string | null {
+  if (!value) return null;
+  return value instanceof Date ? value.toISOString() : String(value);
+}
+
 export function CrmClient({
   managers,
   leads,
   dashboard,
   currentFilters,
   pagination,
-  userRole,
 }: CrmClientProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("table");
 
   const kanbanLeads = leads.map((lead) => ({
     ...lead,
     statusOrder: 0,
-    customerName: lead.customerName,
     managerName: lead.assignedManagerName,
-    createdAt: lead.createdAt instanceof Date ? lead.createdAt.toISOString() : String(lead.createdAt),
-    lastContactAt: lead.lastContactAt ? (lead.lastContactAt instanceof Date ? lead.lastContactAt.toISOString() : String(lead.lastContactAt)) : null,
-    nextFollowUpAt: lead.nextFollowUpAt ? (lead.nextFollowUpAt instanceof Date ? lead.nextFollowUpAt.toISOString() : String(lead.nextFollowUpAt)) : null,
+    createdAt: toIsoString(lead.createdAt) ?? "",
+    lastContactAt: toIsoString(lead.lastContactAt),
+    nextFollowUpAt: toIsoString(lead.nextFollowUpAt),
   }));
 
+  const pageHref = (page: number) =>
+    `/crm/leads?${new URLSearchParams({
+      ...(currentFilters as Record<string, string>),
+      page: String(page),
+    }).toString()}`;
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="border-b bg-white">
-        <div className="container mx-auto flex items-center justify-between px-4 py-4">
-          <div className="flex items-center gap-4">
-            <Link href="/cars">
-              <Button variant="ghost" size="sm">
-                Каталог
-              </Button>
-            </Link>
-            <Link href="/crm/import">
-              <Button variant="ghost" size="sm">Импорт</Button>
-            </Link>
-            <Link href="/crm/inventory">
-              <Button variant="ghost" size="sm">Инвентарь</Button>
-            </Link>
-          </div>
-          <div className="flex items-center gap-4">
-            <Link href="/crm">
-              <Button variant="outline" size="sm">CRM</Button>
-            </Link>
-            <form action={logout}>
-              <Button variant="outline" size="sm" type="submit">
-                Выйти
-              </Button>
-            </form>
-          </div>
+    <Tabs
+      value={viewMode}
+      onValueChange={(value) => setViewMode(value as ViewMode)}
+      className="gap-6"
+    >
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <Heading size="md">Заявки</Heading>
+          <p className="mt-1.5 text-sm text-muted-foreground">
+            Всего {pagination.total} · управление статусами и менеджерами
+          </p>
         </div>
-      </header>
+        <TabsList>
+          <TabsTrigger value="table">
+            <Table data-icon="inline-start" />
+            Таблица
+          </TabsTrigger>
+          <TabsTrigger value="kanban">
+            <LayoutGrid data-icon="inline-start" />
+            Канбан
+          </TabsTrigger>
+          <TabsTrigger value="analytics">
+            <BarChart3 data-icon="inline-start" />
+            Аналитика
+          </TabsTrigger>
+        </TabsList>
+      </div>
 
-      <main className="container mx-auto px-4 py-6">
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">CRM</h1>
-            <p className="text-sm text-muted-foreground">
-              Управление заявками и клиентами
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="flex rounded-lg border bg-white p-1">
-              <button
-                onClick={() => setViewMode("table")}
-                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                  viewMode === "table"
-                    ? "bg-gray-100 text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Table className="h-4 w-4" />
-                Таблица
-              </button>
-              <button
-                onClick={() => setViewMode("kanban")}
-                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                  viewMode === "kanban"
-                    ? "bg-gray-100 text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <LayoutGrid className="h-4 w-4" />
-                Канбан
-              </button>
-              <button
-                onClick={() => setViewMode("analytics")}
-                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                  viewMode === "analytics"
-                    ? "bg-gray-100 text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <BarChart3 className="h-4 w-4" />
-                Аналитика
-              </button>
+      {viewMode !== "analytics" && (
+        <>
+          <div className="grid gap-5 xl:grid-cols-3">
+            <div className="xl:col-span-2">
+              <DashboardStats data={dashboard} />
             </div>
-          </div>
-        </div>
-
-        {/* Dashboard */}
-        <div className="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2">
-            <DashboardStats data={dashboard} />
-          </div>
-          <div>
             <FollowUpSettings />
           </div>
-        </div>
 
-        {/* Filters */}
-        <div className="mb-4">
-          <Suspense fallback={<div>Загрузка фильтров...</div>}>
+          <Suspense fallback={<Skeleton className="h-16 w-full rounded-xl" />}>
             <LeadFilters managers={managers} currentFilters={currentFilters} />
           </Suspense>
-        </div>
+        </>
+      )}
 
-        {/* Content based on view mode */}
-        {viewMode === "table" && (
-          <>
-            <div className="mb-4">
-              <LeadTable leads={leads} />
+      <TabsContent value="table" className="flex flex-col gap-4">
+        <LeadTable leads={leads} />
+
+        {pagination.totalPages > 1 && (
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">
+              Страница {pagination.page} из {pagination.totalPages}
+            </p>
+            <div className="flex items-center gap-2">
+              {pagination.page > 1 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  render={<Link href={pageHref(pagination.page - 1)} />}
+                >
+                  Назад
+                </Button>
+              )}
+              {pagination.page < pagination.totalPages && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  render={<Link href={pageHref(pagination.page + 1)} />}
+                >
+                  Далее
+                </Button>
+              )}
             </div>
-
-            {/* Pagination */}
-            {pagination.totalPages > 1 && (
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">
-                  Всего: {pagination.total} заявок
-                </p>
-                <div className="flex gap-2">
-                  {pagination.page > 1 && (
-                    <Link
-                      href={`/crm?${new URLSearchParams({
-                        ...currentFilters,
-                        page: String(pagination.page - 1),
-                      }).toString()}`}
-                    >
-                      <Button variant="outline" size="sm">
-                        Назад
-                      </Button>
-                    </Link>
-                  )}
-                  <span className="flex items-center px-3 text-sm text-muted-foreground">
-                    {pagination.page} / {pagination.totalPages}
-                  </span>
-                  {pagination.page < pagination.totalPages && (
-                    <Link
-                      href={`/crm?${new URLSearchParams({
-                        ...currentFilters,
-                        page: String(pagination.page + 1),
-                      }).toString()}`}
-                    >
-                      <Button variant="outline" size="sm">
-                        Далее
-                      </Button>
-                    </Link>
-                  )}
-                </div>
-              </div>
-            )}
-          </>
+          </div>
         )}
+      </TabsContent>
 
-        {viewMode === "kanban" && (
-          <KanbanBoard leads={kanbanLeads} />
-        )}
+      <TabsContent value="kanban">
+        <KanbanBoard leads={kanbanLeads} />
+      </TabsContent>
 
-        {viewMode === "analytics" && (
-          <AnalyticsDashboard />
-        )}
-      </main>
-    </div>
+      <TabsContent value="analytics">
+        <AnalyticsDashboard />
+      </TabsContent>
+    </Tabs>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import { Lightbox } from "@/components/lightbox";
 import { Expand } from "lucide-react";
@@ -17,23 +17,9 @@ interface CarGalleryProps {
   modelName: string;
 }
 
-export function CarGallery({ images: initialImages, brandName, modelName }: CarGalleryProps) {
-  const [images, setImages] = useState<GalleryImage[]>(initialImages);
+export function CarGallery({ images, brandName, modelName }: CarGalleryProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
-
-  useEffect(() => {
-    function handleColorImages(e: Event) {
-      const detail = (e as CustomEvent<GalleryImage[]>).detail;
-      if (detail && detail.length > 0) {
-        setImages(detail);
-      } else {
-        setImages(initialImages);
-      }
-    }
-    window.addEventListener("colorimages:update", handleColorImages);
-    return () => window.removeEventListener("colorimages:update", handleColorImages);
-  }, [initialImages]);
 
   function openLightbox(index: number) {
     setLightboxIndex(index);

@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { DollarSign, Plus, RefreshCw, Save, Trash2 } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { DollarSign, Plus, Trash2, Save, CheckCircle, RefreshCw } from "lucide-react";
+import { formatUsd } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 interface CalculatorBreakdown {
   vehiclePrice: number;
@@ -60,10 +62,6 @@ function groupLabel(groupType: string): string {
   return GROUP_LABELS[groupType] || groupType;
 }
 
-function fmt(amount: number): string {
-  return `$${Math.round(amount).toLocaleString("ru-RU")}`;
-}
-
 export function LeadCostEditor({
   leadId,
   calculatorBreakdown,
@@ -114,8 +112,8 @@ export function LeadCostEditor({
 
   const pricedOptionsTotal = Object.values(optionPrices).reduce((sum, v) => sum + v, 0);
   const carOptionsTotal = carOptions.reduce((sum, c) => sum + c.amount, 0);
-
   const extras = additionalCosts.reduce((sum, c) => sum + c.amount, 0);
+
   const total =
     fields.vehiclePrice +
     pricedOptionsTotal +
@@ -182,13 +180,7 @@ export function LeadCostEditor({
       const res = await fetch("/api/calculate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sourceCountry,
-          condition,
-          purchasePrice,
-          currency: "USD",
-          trimId,
-        }),
+        body: JSON.stringify({ sourceCountry, condition, purchasePrice, currency: "USD", trimId }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -204,9 +196,6 @@ export function LeadCostEditor({
             serviceFee: b.serviceFee,
           }));
         }
-      } else {
-        const err = await res.json().catch(() => ({}));
-        console.error("Recalculate failed:", err);
       }
     } finally {
       setRecalculating(false);
@@ -243,236 +232,127 @@ export function LeadCostEditor({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <DollarSign className="h-4 w-4" />
-          Расчёт стоимости
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Автомобиль и комплектация */}
-        <div className="rounded-lg border bg-gray-50 p-4 space-y-3">
-          <p className="text-xs font-medium text-muted-foreground">Автомобиль и комплектация</p>
-          <EditableRow
-            label="Цена автомобиля"
-            value={fields.vehiclePrice}
-            onChange={(v) => updateField("vehiclePrice", v)}
-          />
-          {optionsWithPrices.map((opt, i) => (
-            <div key={i} className="flex items-center gap-3">
-              <span className="min-w-[180px] text-sm text-muted-foreground">
-                {groupLabel(opt.groupType)}: {opt.name}
-              </span>
-              <div className="relative flex-1">
-                <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                  $
-                </span>
-                <Input
-                  type="number"
-                  value={optionPrices[i] || ""}
-                  onChange={(e) => updateOptionPrice(i, e.target.value)}
-                  placeholder={opt.priceKnown ? "0" : "цена уточняется"}
-                  className="h-8 pl-6 text-sm"
-                />
-              </div>
-            </div>
-          ))}
+    <div className="flex flex-col gap-4 rounded-xl bg-card p-5 ring-1 ring-foreground/10">
+      <p className="flex items-center gap-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+        <DollarSign className="size-3.5" aria-hidden />
+        Расчёт стоимости
+      </p>
 
-          {carOptions.map((cost, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <Input
-                value={cost.label}
-                onChange={(e) => updateCarOption(i, "label", e.target.value)}
-                className="flex-1"
-                placeholder="Название"
-              />
+      {/* Автомобиль и комплектация */}
+      <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/50 p-4">
+        <p className="text-xs font-medium text-muted-foreground uppercase">Автомобиль и комплектация</p>
+        <EditableRow label="Цена автомобиля" value={fields.vehiclePrice} onChange={(v) => updateField("vehiclePrice", v)} />
+        {optionsWithPrices.map((opt, i) => (
+          <div key={i} className="flex items-center gap-3">
+            <span className="min-w-[180px] text-sm text-muted-foreground">
+              {groupLabel(opt.groupType)}: {opt.name}
+            </span>
+            <div className="relative flex-1">
+              <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
               <Input
                 type="number"
-                value={cost.amount || ""}
-                onChange={(e) => updateCarOption(i, "amount", e.target.value)}
-                className="w-32"
-                placeholder="0"
+                value={optionPrices[i] || ""}
+                onChange={(e) => updateOptionPrice(i, e.target.value)}
+                placeholder={opt.priceKnown ? "0" : "цена уточняется"}
+                className="h-8 pl-6 text-sm"
               />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
-                onClick={() => removeCarOption(i)}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
             </div>
-          ))}
+          </div>
+        ))}
 
-          <div className="flex items-end gap-2">
-            <div className="flex-1 space-y-1">
-              <Input
-                value={carOptionLabel}
-                onChange={(e) => setCarOptionLabel(e.target.value)}
-                placeholder="Доп. опция..."
-                className="h-8 text-sm"
-              />
-            </div>
-            <div className="w-32 space-y-1">
-              <Input
-                type="number"
-                value={carOptionAmount}
-                onChange={(e) => setCarOptionAmount(e.target.value)}
-                placeholder="0"
-                className="h-8 text-sm"
-              />
-            </div>
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-8 w-8 shrink-0"
-              onClick={addCarOption}
-              disabled={!carOptionLabel.trim() || !carOptionAmount}
-            >
-              <Plus className="h-4 w-4" />
+        {carOptions.map((cost, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <Input value={cost.label} onChange={(e) => updateCarOption(i, "label", e.target.value)} className="flex-1" placeholder="Название" />
+            <Input type="number" value={cost.amount || ""} onChange={(e) => updateCarOption(i, "amount", e.target.value)} className="w-32" placeholder="0" />
+            <Button variant="ghost" size="icon" className="size-8 shrink-0 text-muted-foreground hover:text-destructive" onClick={() => removeCarOption(i)}>
+              <Trash2 className="size-4" />
             </Button>
           </div>
-        </div>
+        ))}
 
-        {/* Налоги и сборы */}
-        <div className="rounded-lg border bg-gray-50 p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-medium text-muted-foreground">Налоги и сборы</p>
-            {trimId && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={recalculate}
-                disabled={recalculating}
-                className="h-7 text-xs gap-1"
-              >
-                <RefreshCw className={`h-3 w-3 ${recalculating ? "animate-spin" : ""}`} />
-                Пересчитать
-              </Button>
-            )}
-          </div>
-          <EditableRow
-            label="Логистика"
-            value={fields.logistics}
-            onChange={(v) => updateField("logistics", v)}
-          />
-          <EditableRow
-            label="Таможенная пошлина"
-            value={fields.customsDuty}
-            onChange={(v) => updateField("customsDuty", v)}
-          />
-          <EditableRow
-            label="Акцизный налог"
-            value={fields.exciseTax}
-            onChange={(v) => updateField("exciseTax", v)}
-          />
-          <EditableRow
-            label="НДС"
-            value={fields.vat}
-            onChange={(v) => updateField("vat", v)}
-          />
-          <EditableRow
-            label="Сертификация / оформление"
-            value={fields.certificationFees}
-            onChange={(v) => updateField("certificationFees", v)}
-          />
-          <EditableRow
-            label="Сервисный сбор"
-            value={fields.serviceFee}
-            onChange={(v) => updateField("serviceFee", v)}
-          />
-        </div>
-
-        {/* Additional costs */}
-        {additionalCosts.length > 0 && (
-          <div className="space-y-2">
-            <Label className="text-xs font-medium text-muted-foreground">Дополнительные расходы</Label>
-            <div className="space-y-2">
-              {additionalCosts.map((cost, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <Input
-                    value={cost.label}
-                    onChange={(e) => updateAdditionalCost(i, "label", e.target.value)}
-                    className="flex-1"
-                    placeholder="Название"
-                  />
-                  <Input
-                    type="number"
-                    value={cost.amount || ""}
-                    onChange={(e) => updateAdditionalCost(i, "amount", e.target.value)}
-                    className="w-32"
-                    placeholder="0"
-                  />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
-                    onClick={() => removeCost(i)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Add new cost */}
         <div className="flex items-end gap-2">
-          <div className="flex-1 space-y-1">
-            <Label className="text-xs text-muted-foreground">Название</Label>
-            <Input
-              value={newLabel}
-              onChange={(e) => setNewLabel(e.target.value)}
-              placeholder="Цвет, колёса, пакет..."
-            />
-          </div>
-          <div className="w-32 space-y-1">
-            <Label className="text-xs text-muted-foreground">Сумма ($)</Label>
-            <Input
-              type="number"
-              value={newAmount}
-              onChange={(e) => setNewAmount(e.target.value)}
-              placeholder="0"
-            />
-          </div>
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-9 w-9 shrink-0"
-            onClick={addCost}
-            disabled={!newLabel.trim() || !newAmount}
-          >
-            <Plus className="h-4 w-4" />
+          <Input value={carOptionLabel} onChange={(e) => setCarOptionLabel(e.target.value)} placeholder="Доп. опция..." className="h-8 flex-1 text-sm" />
+          <Input type="number" value={carOptionAmount} onChange={(e) => setCarOptionAmount(e.target.value)} placeholder="0" className="h-8 w-32 text-sm" />
+          <Button variant="outline" size="icon" className="size-8 shrink-0" onClick={addCarOption} disabled={!carOptionLabel.trim() || !carOptionAmount}>
+            <Plus className="size-4" />
           </Button>
         </div>
+      </div>
 
-        {/* Total */}
-        <Separator />
+      {/* Налоги и сборы */}
+      <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/50 p-4">
         <div className="flex items-center justify-between">
-          <span className="text-lg font-semibold">Итого</span>
-          <span className="text-lg font-bold text-emerald-600">{fmt(total)}</span>
-        </div>
-
-        {/* Save */}
-        <Button onClick={handleSave} disabled={saving} className="w-full" size="lg">
-          {saving ? (
-            "Сохранение..."
-          ) : saved ? (
-            <span className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4" />
-              Сохранено
-            </span>
-          ) : (
-            <span className="flex items-center gap-2">
-              <Save className="h-4 w-4" />
-              Сохранить расчёт
-            </span>
+          <p className="text-xs font-medium text-muted-foreground uppercase">Налоги и сборы</p>
+          {trimId && (
+            <Button variant="outline" size="sm" onClick={recalculate} disabled={recalculating} className="h-7 gap-1 text-xs">
+              <RefreshCw className={cn("size-3.5", recalculating && "animate-spin")} />
+              Пересчитать
+            </Button>
           )}
+        </div>
+        <EditableRow label="Логистика" value={fields.logistics} onChange={(v) => updateField("logistics", v)} />
+        <EditableRow label="Таможенная пошлина" value={fields.customsDuty} onChange={(v) => updateField("customsDuty", v)} />
+        <EditableRow label="Акцизный налог" value={fields.exciseTax} onChange={(v) => updateField("exciseTax", v)} />
+        <EditableRow label="НДС" value={fields.vat} onChange={(v) => updateField("vat", v)} />
+        <EditableRow label="Сертификация / оформление" value={fields.certificationFees} onChange={(v) => updateField("certificationFees", v)} />
+        <EditableRow label="Сервисный сбор" value={fields.serviceFee} onChange={(v) => updateField("serviceFee", v)} />
+      </div>
+
+      {/* Additional costs */}
+      {additionalCosts.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <Label className="text-xs font-medium text-muted-foreground uppercase">Дополнительные расходы</Label>
+          {additionalCosts.map((cost, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <Input value={cost.label} onChange={(e) => updateAdditionalCost(i, "label", e.target.value)} className="flex-1" placeholder="Название" />
+              <Input type="number" value={cost.amount || ""} onChange={(e) => updateAdditionalCost(i, "amount", e.target.value)} className="w-32" placeholder="0" />
+              <Button variant="ghost" size="icon" className="size-8 shrink-0 text-muted-foreground hover:text-destructive" onClick={() => removeCost(i)}>
+                <Trash2 className="size-4" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Add new cost */}
+      <div className="flex items-end gap-2">
+        <div className="flex flex-1 flex-col gap-1">
+          <Label className="text-xs text-muted-foreground">Название</Label>
+          <Input value={newLabel} onChange={(e) => setNewLabel(e.target.value)} placeholder="Цвет, колёса, пакет..." />
+        </div>
+        <div className="flex w-32 flex-col gap-1">
+          <Label className="text-xs text-muted-foreground">Сумма ($)</Label>
+          <Input type="number" value={newAmount} onChange={(e) => setNewAmount(e.target.value)} placeholder="0" />
+        </div>
+        <Button variant="outline" size="icon" className="size-9 shrink-0" onClick={addCost} disabled={!newLabel.trim() || !newAmount}>
+          <Plus className="size-4" />
         </Button>
-      </CardContent>
-    </Card>
+      </div>
+
+      {/* Total */}
+      <Separator />
+      <div className="flex items-center justify-between">
+        <span className="text-lg font-semibold">Итого</span>
+        <span className="text-lg font-semibold text-brand">{formatUsd(total)}</span>
+      </div>
+
+      {/* Save */}
+      <Button onClick={handleSave} disabled={saving} className="w-full" size="lg">
+        {saving ? (
+          "Сохранение..."
+        ) : saved ? (
+          <span className="inline-flex items-center gap-2">
+            <Save className="size-4" />
+            Сохранено
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-2">
+            <Save className="size-4" />
+            Сохранить расчёт
+          </span>
+        )}
+      </Button>
+    </div>
   );
 }
 
@@ -489,9 +369,7 @@ function EditableRow({
     <div className="flex items-center gap-3">
       <span className="min-w-[180px] text-sm text-muted-foreground">{label}</span>
       <div className="relative flex-1">
-        <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-          $
-        </span>
+        <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
         <Input
           type="number"
           value={value === 0 ? "" : value}

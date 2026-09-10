@@ -13,14 +13,14 @@ interface Review {
 export function ReviewList({ reviews }: { reviews: Review[] }) {
   if (reviews.length === 0) {
     return (
-      <p className="text-center text-muted-foreground">
+      <p className="rounded-xl bg-muted px-6 py-10 text-center text-sm text-muted-foreground">
         Отзывов пока нет
       </p>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
       {reviews.map((review) => (
         <ReviewCard key={review.id} review={review} />
       ))}

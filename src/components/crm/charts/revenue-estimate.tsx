@@ -9,6 +9,16 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+
+import {
+  CHART_BRAND,
+  CHART_GRID_STROKE,
+  CHART_TOOLTIP_STYLE,
+  CHART_TOOLTIP_LABEL_STYLE,
+  CHART_TOOLTIP_ITEM_STYLE,
+  CHART_AXIS_TICK,
+} from "@/lib/chart-colors";
+import { formatUsd } from "@/lib/format";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface RevenueEstimateProps {
@@ -33,25 +43,19 @@ export function RevenueEstimate({ data }: RevenueEstimateProps) {
         <div className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={formattedData}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200" />
-              <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+              <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} />
+              <XAxis dataKey="month" tick={CHART_AXIS_TICK} />
               <YAxis
-                tick={{ fontSize: 12 }}
-                tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                tick={CHART_AXIS_TICK}
+                tickFormatter={(v) => `$${(Number(v) / 1000).toFixed(0)}k`}
               />
               <Tooltip
-                contentStyle={{
-                  backgroundColor: "white",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: "8px",
-                  fontSize: "12px",
-                }}
-                formatter={(value: number) => [
-                  `$${value.toLocaleString("en-US")}`,
-                  "Сумма",
-                ]}
+                contentStyle={CHART_TOOLTIP_STYLE}
+                labelStyle={CHART_TOOLTIP_LABEL_STYLE}
+                itemStyle={CHART_TOOLTIP_ITEM_STYLE}
+                formatter={(value) => [formatUsd(Array.isArray(value) ? value[0] : value ?? 0), "Сумма"]}
               />
-              <Bar dataKey="total" fill="#10b981" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="total" fill={CHART_BRAND} radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

@@ -388,6 +388,8 @@ export async function getFeaturedModels() {
     .limit(8);
 }
 
+export type FeaturedModel = Awaited<ReturnType<typeof getFeaturedModels>>[number];
+
 export async function getTrimsByModel(modelId: string) {
   return db
     .select({

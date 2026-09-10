@@ -9,6 +9,15 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+
+import {
+  CHART_NEUTRAL,
+  CHART_GRID_STROKE,
+  CHART_TOOLTIP_STYLE,
+  CHART_TOOLTIP_LABEL_STYLE,
+  CHART_TOOLTIP_ITEM_STYLE,
+  CHART_AXIS_TICK,
+} from "@/lib/chart-colors";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface ManagerPerformanceProps {
@@ -32,19 +41,19 @@ export function ManagerPerformance({ data }: ManagerPerformanceProps) {
         <div className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={formattedData}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200" />
-              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 12 }} />
+              <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} />
+              <XAxis dataKey="name" tick={CHART_AXIS_TICK} />
+              <YAxis tick={CHART_AXIS_TICK} />
               <Tooltip
-                contentStyle={{
-                  backgroundColor: "white",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: "8px",
-                  fontSize: "12px",
-                }}
-                formatter={(value: number) => [value, "Заявки"]}
+                contentStyle={CHART_TOOLTIP_STYLE}
+                labelStyle={CHART_TOOLTIP_LABEL_STYLE}
+                itemStyle={CHART_TOOLTIP_ITEM_STYLE}
+                formatter={(value) => [
+                  Number(value ?? 0).toLocaleString("ru-RU"),
+                  "Заявки",
+                ]}
               />
-              <Bar dataKey="count" fill="#6366f1" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="count" fill={CHART_NEUTRAL} radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

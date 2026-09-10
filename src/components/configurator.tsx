@@ -77,6 +77,7 @@ export function Configurator({
   function handleGroupSelect(groupId: string, optionId: string) {
     const newSelections = { ...selections, [groupId]: optionId };
     setSelections(newSelections);
+    setExpandedSwatch(null);
     emitChange(newSelections, selectedOptions);
 
     const group = groups.find((g) => g.id === groupId);
@@ -213,6 +214,7 @@ export function Configurator({
                             style={{ backgroundColor: option.imageUrl }}
                             onClick={(e) => {
                               e.stopPropagation();
+                              handleGroupSelect(group.id, option.id);
                               setExpandedSwatch(expandedSwatch === option.id ? null : option.id);
                             }}
                           />

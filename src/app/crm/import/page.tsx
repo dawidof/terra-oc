@@ -1,9 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { AlertCircle, CheckCircle, Database, FileText, Loader2, Play, Plus, RefreshCw, Trash2 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Database, RefreshCw, FileText, AlertCircle, Play, CheckCircle, Loader2, Trash2, Plus } from "lucide-react";
+import { StatCard, StatGrid } from "@/components/ui/stat-card";
+import { Heading } from "@/components/ui/section";
+import { cn } from "@/lib/utils";
 
 interface ImportStats {
   brands: number;
@@ -76,7 +79,6 @@ export default function ImportPage() {
       .split("\n")
       .map((l) => l.trim())
       .filter((l) => l && l.startsWith("http"));
-
     if (urlList.length === 0) return;
 
     setAddingUrls(true);
@@ -86,7 +88,6 @@ export default function ImportPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ urls: urlList }),
       });
-
       if (res.ok) {
         setNewUrls("");
         fetchUrls();
@@ -101,9 +102,7 @@ export default function ImportPage() {
 
   async function deleteUrl(id: string) {
     try {
-      const res = await fetch(`/api/admin/import/urls?id=${id}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(`/api/admin/import/urls?id=${id}`, { method: "DELETE" });
       if (res.ok) {
         fetchUrls();
         fetchStats();
@@ -116,9 +115,7 @@ export default function ImportPage() {
   async function clearAllUrls() {
     if (!confirm("Удалить все URL?")) return;
     try {
-      const res = await fetch("/api/admin/import/urls?clearAll=true", {
-        method: "DELETE",
-      });
+      const res = await fetch("/api/admin/import/urls?clearAll=true", { method: "DELETE" });
       if (res.ok) {
         fetchUrls();
         fetchStats();
@@ -138,7 +135,6 @@ export default function ImportPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action }),
       });
-
       const data = await res.json();
 
       if (res.ok) {
@@ -167,282 +163,201 @@ export default function ImportPage() {
   function getStepIcon(status: StepStatus) {
     switch (status) {
       case "running":
-        return <Loader2 className="h-4 w-4 animate-spin text-blue-600" />;
+        return <Loader2 className="size-4 animate-spin text-blue-500" />;
       case "done":
-        return <CheckCircle className="h-4 w-4 text-emerald-600" />;
+        return <CheckCircle className="size-4 text-brand" />;
       case "error":
-        return <AlertCircle className="h-4 w-4 text-red-600" />;
+        return <AlertCircle className="size-4 text-red-500" />;
       default:
-        return <Play className="h-4 w-4" />;
+        return <Play className="size-4" />;
     }
   }
 
   function getStatusBadge(status: string) {
-    switch (status) {
-      case "pending":
-        return <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs text-yellow-800">Ожидает</span>;
-      case "scraped":
-        return <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-800">Спарсено</span>;
-      case "imported":
-        return <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-800">Импортировано</span>;
-      case "error":
-        return <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-800">Ошибка</span>;
-      default:
-        return <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-800">{status}</span>;
-    }
+    const map: Record<string, string> = {
+      pending: "bg-amber-50 text-amber-700",
+      scraped: "bg-blue-50 text-blue-700",
+      imported: "bg-brand-muted text-brand-muted-foreground",
+      error: "bg-red-50 text-red-700",
+    };
+    const labels: Record<string, string> = {
+      pending: "Ожидает",
+      scraped: "Спарсено",
+      imported: "Импортировано",
+      error: "Ошибка",
+    };
+    return (
+      <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium", map[status] ?? "bg-muted text-muted-foreground")}>
+        {labels[status] ?? status}
+      </span>
+    );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="mb-2 text-3xl font-bold">Импорт данных</h1>
-        <p className="text-muted-foreground">
+    <div className="flex flex-col gap-8">
+      <div>
+        <Heading size="md">Импорт данных</Heading>
+        <p className="mt-1.5 text-sm text-muted-foreground">
           Управление импортом автомобилей из внешних источников
         </p>
       </div>
 
       {/* Stats */}
-      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Марки</CardTitle>
-            <Database className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{loading ? "—" : stats?.brands ?? 0}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Модели</CardTitle>
-            <Database className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{loading ? "—" : stats?.models ?? 0}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Комплектации</CardTitle>
-            <Database className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{loading ? "—" : stats?.trims ?? 0}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Предложения</CardTitle>
-            <Database className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{loading ? "—" : stats?.offers ?? 0}</div>
-          </CardContent>
-        </Card>
-      </div>
+      <StatGrid>
+        <StatCard label="Марки" value={loading ? "—" : (stats?.brands ?? 0)} icon={Database} tone="info" />
+        <StatCard label="Модели" value={loading ? "—" : (stats?.models ?? 0)} icon={Database} tone="info" />
+        <StatCard label="Комплектации" value={loading ? "—" : (stats?.trims ?? 0)} icon={Database} />
+        <StatCard label="Предложения" value={loading ? "—" : (stats?.offers ?? 0)} icon={Database} />
+      </StatGrid>
 
       {/* URL Management */}
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Шаг 1: URL-адреса для скрапинга
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-2">
-            <textarea
-              value={newUrls}
-              onChange={(e) => setNewUrls(e.target.value)}
-              placeholder={"Введите URL-адреса, по одному на строку:\nhttps://gonzo-motors.uz/zeekr-7x\nhttps://gonzo-motors.uz/zeekr001"}
-              className="flex-1 rounded-lg border p-3 font-mono text-sm"
-              rows={4}
-            />
-          </div>
-          <div className="flex gap-2">
-            <Button
-              onClick={addUrls}
-              disabled={addingUrls || !newUrls.trim()}
-              size="sm"
-            >
-              {addingUrls ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Plus className="mr-2 h-4 w-4" />
-              )}
-              Добавить
-            </Button>
-            {urls.length > 0 && (
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={clearAllUrls}
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Очистить все
-              </Button>
+      <div className="flex flex-col gap-4 rounded-xl bg-card p-5 ring-1 ring-foreground/10">
+        <p className="flex items-center gap-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+          <FileText className="size-3.5" aria-hidden />
+          Шаг 1: URL-адреса для скрапинга
+        </p>
+
+        <textarea
+          value={newUrls}
+          onChange={(e) => setNewUrls(e.target.value)}
+          placeholder={"Введите URL-адреса, по одному на строку:\nhttps://gonzo-motors.uz/zeekr-7x\nhttps://gonzo-motors.uz/zeekr001"}
+          className="rounded-lg border border-border bg-background px-3 py-2 font-mono text-sm placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          rows={4}
+        />
+
+        <div className="flex gap-2">
+          <Button onClick={addUrls} disabled={addingUrls || !newUrls.trim()} size="sm">
+            {addingUrls ? (
+              <Loader2 data-icon="inline-start" className="size-4 animate-spin" />
+            ) : (
+              <Plus data-icon="inline-start" className="size-4" />
             )}
-          </div>
-
-          {/* URL List */}
+            Добавить
+          </Button>
           {urls.length > 0 && (
-            <div className="rounded-lg border">
-              <div className="grid grid-cols-12 gap-2 border-b bg-gray-50 p-2 text-xs font-medium text-muted-foreground">
-                <div className="col-span-6">URL</div>
-                <div className="col-span-2">Источник</div>
-                <div className="col-span-2">Статус</div>
-                <div className="col-span-2">Действия</div>
-              </div>
-              {urls.map((url) => (
-                <div key={url.id} className="grid grid-cols-12 gap-2 border-b p-2 text-sm last:border-0">
-                  <div className="col-span-6 truncate font-mono text-xs">{url.url}</div>
-                  <div className="col-span-2 text-xs text-muted-foreground">{url.sourceSite || "—"}</div>
-                  <div className="col-span-2">{getStatusBadge(url.status)}</div>
-                  <div className="col-span-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => deleteUrl(url.id)}
-                    >
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <Button variant="destructive" size="sm" onClick={clearAllUrls}>
+              <Trash2 data-icon="inline-start" className="size-4" />
+              Очистить все
+            </Button>
           )}
+        </div>
 
-          {urls.length === 0 && !urlsLoading && (
-            <div className="rounded-lg bg-gray-50 p-4 text-center text-sm text-muted-foreground">
-              Нет URL-адресов. Добавьте URL-адреса страниц автомобилей для скрапинга.
+        {/* URL List */}
+        {urls.length > 0 && (
+          <div className="overflow-x-auto rounded-lg ring-1 ring-foreground/10">
+            <div className="grid grid-cols-12 gap-2 border-b border-border bg-muted/50 px-3 py-2 text-xs font-medium text-muted-foreground">
+              <div className="col-span-6">URL</div>
+              <div className="col-span-2">Источник</div>
+              <div className="col-span-2">Статус</div>
+              <div className="col-span-2 text-right">Действия</div>
             </div>
-          )}
-        </CardContent>
-      </Card>
+            {urls.map((url) => (
+              <div key={url.id} className="grid grid-cols-12 items-center gap-2 border-b border-border px-3 py-2 text-sm last:border-0">
+                <div className="col-span-6 truncate font-mono text-xs">{url.url}</div>
+                <div className="col-span-2 text-xs text-muted-foreground">{url.sourceSite || "—"}</div>
+                <div className="col-span-2">{getStatusBadge(url.status)}</div>
+                <div className="col-span-2 text-right">
+                  <Button variant="ghost" size="icon" className="size-7 text-muted-foreground hover:text-destructive" onClick={() => deleteUrl(url.id)}>
+                    <Trash2 className="size-3.5" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {urls.length === 0 && !urlsLoading && (
+          <div className="rounded-lg bg-muted/50 px-4 py-8 text-center text-sm text-muted-foreground">
+            Нет URL-адресов. Добавьте URL-адреса страниц автомобилей для скрапинга.
+          </div>
+        )}
+      </div>
 
       {/* Import Actions */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <RefreshCw className="h-5 w-5" />
-              Шаг 2: Скрапинг
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        {[
+          {
+            action: "scrape",
+            title: "Шаг 2: Скрапинг",
+            icon: RefreshCw,
+            desc: "Извлекает данные со страниц и сохраняет в",
+            code: "data/raw/",
+            labels: { idle: "Запустить скрапинг", running: "Выполняется...", done: "Повторить скрапинг" },
+          },
+          {
+            action: "validate",
+            title: "Шаг 3: Валидация",
+            icon: AlertCircle,
+            desc: "Проверяет данные на ошибки и неполные поля перед импортом",
+            code: null,
+            labels: { idle: "Проверить данные", running: "Проверяется...", done: "Проверить снова" },
+          },
+          {
+            action: "persist",
+            title: "Шаг 4: Импорт в БД",
+            icon: Database,
+            desc: "Импортирует нормализованные данные в базу данных",
+            code: null,
+            labels: { idle: "Импортировать в БД", running: "Импортируется...", done: "Импортировать снова" },
+          },
+        ].map(({ action, title, icon: Icon, desc, code, labels }) => (
+          <div key={action} className="flex flex-col gap-4 rounded-xl bg-card p-5 ring-1 ring-foreground/10">
+            <p className="flex items-center gap-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              <Icon className="size-3.5" aria-hidden />
+              {title}
+            </p>
             <p className="text-sm text-muted-foreground">
-              Извлекает данные со страниц и сохраняет в{" "}
-              <code className="rounded bg-gray-100 px-1 py-0.5">data/raw/</code>
+              {desc}
+              {code && (
+                <>
+                  {" "}
+                  <code className="rounded bg-muted px-1 py-0.5 text-xs">{code}</code>
+                </>
+              )}
             </p>
             <Button
               variant="outline"
               className="w-full"
-              onClick={() => runAction("scrape")}
-              disabled={stepStatuses.scrape === "running" || urls.length === 0}
+              onClick={() => runAction(action)}
+              disabled={stepStatuses[action] === "running" || (action === "scrape" && urls.length === 0)}
             >
-              {getStepIcon(stepStatuses.scrape || "idle")}
+              {getStepIcon(stepStatuses[action] || "idle")}
               <span className="ml-2">
-                {stepStatuses.scrape === "running"
-                  ? "Выполняется..."
-                  : stepStatuses.scrape === "done"
-                    ? "Повторить скрапинг"
-                    : "Запустить скрапинг"}
+                {stepStatuses[action] === "running"
+                  ? labels.running
+                  : stepStatuses[action] === "done"
+                    ? labels.done
+                    : labels.idle}
               </span>
             </Button>
-            {stepOutputs.scrape && (
-              <pre className="max-h-40 overflow-auto rounded-lg bg-gray-900 p-3 font-mono text-xs text-green-400">
-                {stepOutputs.scrape}
+            {stepOutputs[action] && (
+              <pre className="max-h-40 overflow-auto rounded-lg bg-zinc-900 p-3 font-mono text-xs text-green-400">
+                {stepOutputs[action]}
               </pre>
             )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5" />
-              Шаг 3: Валидация
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Проверяет данные на ошибки и неполные поля перед импортом
-            </p>
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => runAction("validate")}
-              disabled={stepStatuses.validate === "running"}
-            >
-              {getStepIcon(stepStatuses.validate || "idle")}
-              <span className="ml-2">
-                {stepStatuses.validate === "running"
-                  ? "Проверяется..."
-                  : stepStatuses.validate === "done"
-                    ? "Проверить снова"
-                    : "Проверить данные"}
-              </span>
-            </Button>
-            {stepOutputs.validate && (
-              <pre className="max-h-40 overflow-auto rounded-lg bg-gray-900 p-3 font-mono text-xs text-green-400">
-                {stepOutputs.validate}
-              </pre>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Database className="h-5 w-5" />
-              Шаг 4: Импорт в БД
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Импортирует нормализованные данные в базу данных
-            </p>
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => runAction("persist")}
-              disabled={stepStatuses.persist === "running"}
-            >
-              {getStepIcon(stepStatuses.persist || "idle")}
-              <span className="ml-2">
-                {stepStatuses.persist === "running"
-                  ? "Импортируется..."
-                  : stepStatuses.persist === "done"
-                    ? "Импортировать снова"
-                    : "Импортировать в БД"}
-              </span>
-            </Button>
-            {stepOutputs.persist && (
-              <pre className="max-h-40 overflow-auto rounded-lg bg-gray-900 p-3 font-mono text-xs text-green-400">
-                {stepOutputs.persist}
-              </pre>
-            )}
-          </CardContent>
-        </Card>
+          </div>
+        ))}
       </div>
 
       {/* Current Data */}
-      <Card className="mt-8">
-        <CardHeader>
-          <CardTitle>Текущие данные</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              {stats ? `${stats.brands} марок, ${stats.models} моделей, ${stats.trims} комплектаций` : "Загрузка..."}
-            </p>
-            <Button variant="ghost" size="sm" onClick={() => { fetchStats(); fetchUrls(); }}>
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Обновить
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-between rounded-xl bg-card px-5 py-4 ring-1 ring-foreground/10">
+        <p className="text-sm text-muted-foreground">
+          {stats
+            ? `${stats.brands} марок, ${stats.models} моделей, ${stats.trims} комплектаций`
+            : "Загрузка..."}
+        </p>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            fetchStats();
+            fetchUrls();
+          }}
+        >
+          <RefreshCw data-icon="inline-start" className="size-3.5" />
+          Обновить
+        </Button>
+      </div>
     </div>
   );
 }

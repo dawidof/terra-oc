@@ -1,5 +1,6 @@
+import { Car, MapPin, Star } from "lucide-react";
+
 import { Card, CardContent } from "@/components/ui/card";
-import { Star, MapPin, Car } from "lucide-react";
 
 interface Review {
   id: string;
@@ -14,13 +15,16 @@ interface Review {
 function StarRating({ rating }: { rating: number | null }) {
   if (!rating) return null;
   return (
-    <div className="flex gap-0.5">
+    <div className="flex gap-0.5" aria-label={`Оценка: ${rating} из 5`}>
       {Array.from({ length: 5 }).map((_, i) => (
         <Star
           key={i}
-          className={`h-4 w-4 ${
-            i < rating ? "fill-yellow-400 text-yellow-400" : "text-gray-200"
-          }`}
+          aria-hidden
+          className={
+            i < rating
+              ? "size-4 fill-amber-400 text-amber-400"
+              : "size-4 fill-transparent text-border"
+          }
         />
       ))}
     </div>
@@ -29,14 +33,16 @@ function StarRating({ rating }: { rating: number | null }) {
 
 export function ReviewCard({ review }: { review: Review }) {
   return (
-    <Card className="h-full">
-      <CardContent className="flex h-full flex-col p-6">
-        <div className="mb-3 flex items-start justify-between">
-          <div>
-            <h3 className="font-semibold">{review.name}</h3>
+    <Card className="h-full gap-0 py-0 transition duration-200 hover:shadow-md hover:ring-foreground/20">
+      <CardContent className="flex h-full flex-col p-5 sm:p-6">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="truncate text-base font-semibold tracking-tight">
+              {review.name}
+            </h3>
             {review.city && (
-              <p className="flex items-center gap-1 text-sm text-muted-foreground">
-                <MapPin className="h-3 w-3" />
+              <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+                <MapPin className="size-3 shrink-0" aria-hidden />
                 {review.city}
               </p>
             )}
@@ -45,24 +51,26 @@ export function ReviewCard({ review }: { review: Review }) {
         </div>
 
         {review.vehicleLabel && (
-          <p className="mb-2 flex items-center gap-1 text-sm text-emerald-600">
-            <Car className="h-3 w-3" />
+          <p className="mt-3 flex items-center gap-1.5 text-xs font-medium text-brand">
+            <Car className="size-3.5 shrink-0" aria-hidden />
             {review.vehicleLabel}
           </p>
         )}
 
         {review.text && (
-          <p className="flex-1 text-sm leading-relaxed text-muted-foreground">
-            "{review.text}"
+          <p className="mt-4 flex-1 text-sm leading-relaxed text-muted-foreground">
+            «{review.text}»
           </p>
         )}
 
         {review.imageUrl && (
-          <div className="mt-4">
+          <div className="mt-5 overflow-hidden rounded-lg">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={review.imageUrl}
               alt={review.name}
-              className="h-32 w-full rounded-lg object-cover"
+              loading="lazy"
+              className="aspect-[16/9] w-full object-cover"
             />
           </div>
         )}

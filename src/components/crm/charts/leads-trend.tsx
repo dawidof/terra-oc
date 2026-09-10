@@ -9,6 +9,15 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+
+import {
+  CHART_BRAND,
+  CHART_GRID_STROKE,
+  CHART_TOOLTIP_STYLE,
+  CHART_TOOLTIP_LABEL_STYLE,
+  CHART_TOOLTIP_ITEM_STYLE,
+  CHART_AXIS_TICK,
+} from "@/lib/chart-colors";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface LeadsTrendProps {
@@ -34,31 +43,24 @@ export function LeadsTrend({ data, title = "Заявки по дням" }: Leads
         <div className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={formattedData}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200" />
-              <XAxis
-                dataKey="date"
-                tick={{ fontSize: 12 }}
-                className="text-muted-foreground"
-              />
-              <YAxis
-                tick={{ fontSize: 12 }}
-                className="text-muted-foreground"
-              />
+              <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_STROKE} />
+              <XAxis dataKey="date" tick={CHART_AXIS_TICK} />
+              <YAxis tick={CHART_AXIS_TICK} />
               <Tooltip
-                contentStyle={{
-                  backgroundColor: "white",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: "8px",
-                  fontSize: "12px",
-                }}
-                formatter={(value: number) => [value, "Заявки"]}
+                contentStyle={CHART_TOOLTIP_STYLE}
+                labelStyle={CHART_TOOLTIP_LABEL_STYLE}
+                itemStyle={CHART_TOOLTIP_ITEM_STYLE}
+                formatter={(value) => [
+                  Number(value ?? 0).toLocaleString("ru-RU"),
+                  "Заявки",
+                ]}
               />
               <Line
                 type="monotone"
                 dataKey="count"
-                stroke="#10b981"
+                stroke={CHART_BRAND}
                 strokeWidth={2}
-                dot={{ fill: "#10b981", strokeWidth: 2 }}
+                dot={{ fill: CHART_BRAND, strokeWidth: 2 }}
                 activeDot={{ r: 6 }}
               />
             </LineChart>

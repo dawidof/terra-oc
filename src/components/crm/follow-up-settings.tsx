@@ -1,16 +1,24 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { toast } from "sonner";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Bell, Clock, Loader2 } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface FollowUpStats {
   overdue: number;
   pending: number;
   completed: number;
 }
+
+const statCard = {
+  overdue: "bg-red-50 text-red-700",
+  pending: "bg-amber-50 text-amber-700",
+  completed: "bg-brand-muted text-brand-muted-foreground",
+} as const;
 
 export function FollowUpSettings() {
   const [stats, setStats] = useState<FollowUpStats | null>(null);
@@ -53,72 +61,67 @@ export function FollowUpSettings() {
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="h-20 animate-pulse rounded bg-gray-200" />
-        </CardContent>
-      </Card>
+      <div className="flex flex-col gap-3 rounded-xl bg-card p-5 ring-1 ring-foreground/10">
+        <Skeleton className="h-4 w-40" />
+        <div className="grid grid-cols-3 gap-3">
+          <Skeleton className="h-16" />
+          <Skeleton className="h-16" />
+          <Skeleton className="h-16" />
+        </div>
+        <Skeleton className="h-9 w-full" />
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Bell className="h-4 w-4" />
-          Автоматические напоминания
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="mb-4 grid grid-cols-3 gap-4">
-          <div className="rounded-lg bg-red-50 p-3 text-center">
-            <div className="text-2xl font-bold text-red-600">
-              {stats?.overdue || 0}
-            </div>
-            <div className="text-xs text-red-600">Просрочено</div>
-          </div>
-          <div className="rounded-lg bg-amber-50 p-3 text-center">
-            <div className="text-2xl font-bold text-amber-600">
-              {stats?.pending || 0}
-            </div>
-            <div className="text-xs text-amber-600">Ожидает</div>
-          </div>
-          <div className="rounded-lg bg-green-50 p-3 text-center">
-            <div className="text-2xl font-bold text-green-600">
-              {stats?.completed || 0}
-            </div>
-            <div className="text-xs text-green-600">Выполнено</div>
-          </div>
-        </div>
+    <div className="flex flex-col gap-3 rounded-xl bg-card p-5 ring-1 ring-foreground/10">
+      <p className="flex items-center gap-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+        <Bell className="size-3.5" aria-hidden />
+        Автоматические напоминания
+      </p>
 
-        <div className="mb-4 space-y-2 text-sm text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            <span>Новые заявки — напоминание через 24 часа</span>
+      <div className="grid grid-cols-3 gap-3">
+        {(["overdue", "pending", "completed"] as const).map((key) => (
+          <div
+            key={key}
+            className={cn(
+              "flex flex-col items-center rounded-lg px-3 py-2.5",
+              statCard[key]
+            )}
+          >
+            <span className="text-2xl font-semibold tabular-nums">
+              {stats?.[key] ?? 0}
+            </span>
+            <span className="mt-0.5 text-[11px] font-medium">
+              {key === "overdue" ? "Просрочено" : key === "pending" ? "Ожидает" : "Выполнено"}
+            </span>
           </div>
-          <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            <span>После связи — напоминание через 3 дня</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            <span>Отправлен расчёт — напоминание через 3 дня</span>
-          </div>
-        </div>
+        ))}
+      </div>
 
-        <Button
-          onClick={handleCheckNow}
-          disabled={checking}
-          className="w-full"
-        >
-          {checking ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Bell className="mr-2 h-4 w-4" />
-          )}
-          {checking ? "Проверка..." : "Проверить сейчас"}
-        </Button>
-      </CardContent>
-    </Card>
+      <div className="flex flex-col gap-1.5 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2">
+          <Clock className="size-3.5 shrink-0" aria-hidden />
+          Новые заявки — напоминание через 24 часа
+        </div>
+        <div className="flex items-center gap-2">
+          <Clock className="size-3.5 shrink-0" aria-hidden />
+          После связи — напоминание через 3 дня
+        </div>
+        <div className="flex items-center gap-2">
+          <Clock className="size-3.5 shrink-0" aria-hidden />
+          Отправлен расчёт — напоминание через 3 дня
+        </div>
+      </div>
+
+      <Button onClick={handleCheckNow} disabled={checking} variant="outline" size="sm" className="w-full">
+        {checking ? (
+          <Loader2 data-icon="inline-start" className="size-4 animate-spin" />
+        ) : (
+          <Bell data-icon="inline-start" className="size-3.5" />
+        )}
+        {checking ? "Проверка..." : "Проверить сейчас"}
+      </Button>
+    </div>
   );
 }

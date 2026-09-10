@@ -4,7 +4,7 @@ import { getCarBySlug, getCarOffers, getCarMedia, getAllTrims, getSimilarCars, g
 import { getComparisonSpecs } from "@/lib/compare";
 import { getConfigurationOptions, getCarColorImages } from "@/lib/leads";
 import { generateCsrfToken } from "@/lib/csrf-actions";
-import { ConfiguratorSection } from "@/components/configurator-section";
+import { CarDetailClient } from "@/components/car-detail-client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,7 +12,6 @@ import { ChevronRight, Zap, Gauge, Calendar, MapPin, Shield } from "lucide-react
 import { CarCard } from "@/components/car-card";
 import { TrimComparisonTable } from "@/components/trim-comparison-table";
 import { VehicleAdminBar } from "@/components/admin/vehicle-admin-bar";
-import { CarGallery } from "@/components/car-gallery";
 import { ContactButtons } from "@/components/contact-buttons";
 
 interface Props {
@@ -128,269 +127,251 @@ export default async function CarDetailPage({ params }: Props) {
           <span className="text-foreground">{car.modelName}</span>
         </nav>
 
-        {/* Hero section */}
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-          {/* Gallery */}
-          <CarGallery
-            images={media.map((m) => ({ id: m.id, url: m.url, alt: m.alt }))}
-            brandName={car.brandName}
-            modelName={car.modelName}
-          />
+        {/* Hero + Configurator + Extras — wrapped in client component for gallery state */}
+        <CarDetailClient
+          initialMedia={media.map((m) => ({ id: m.id, url: m.url, alt: m.alt }))}
+          brandName={car.brandName}
+          modelName={car.modelName}
+          optionGroups={optionGroups}
+          basePrice={Number(car.basePrice)}
+          estimatedTotalUsd={offer?.estimatedTotalUsd || null}
+          trimId={car.trimId}
+          trimName={car.trimName}
+          sourceCountry={offer?.sourceCountry || "Китай"}
+          condition={offer?.condition || "new"}
+          csrfToken={csrfToken}
+          logisticsCost={offer?.estimatedLogistics ? Number(offer.estimatedLogistics) : null}
+          customsCost={offer?.estimatedCustoms ? Number(offer.estimatedCustoms) : null}
+          serviceFee={offer?.estimatedServiceFee ? Number(offer.estimatedServiceFee) : null}
+          deliveryDays={offer?.deliveryDays || null}
+          colorImages={colorImagesMap}
+          heroInfo={
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Badge variant={car.powertrainType === "bev" ? "default" : "secondary"}>
+                  {powertrainLabel(car.powertrainType)}
+                </Badge>
+                {car.drivetrain && <Badge variant="outline">{car.drivetrain}</Badge>}
+                {car.brandCountry && <Badge variant="outline">{car.brandCountry}</Badge>}
+              </div>
 
-          {/* Info */}
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Badge variant={car.powertrainType === "bev" ? "default" : "secondary"}>
-                {powertrainLabel(car.powertrainType)}
-              </Badge>
-              {car.drivetrain && <Badge variant="outline">{car.drivetrain}</Badge>}
-              {car.brandCountry && <Badge variant="outline">{car.brandCountry}</Badge>}
-            </div>
+              <h1 className="text-3xl font-bold mb-1">
+                {car.brandName} {car.modelName}
+              </h1>
+              <p className="text-xl text-muted-foreground mb-4">
+                {car.trimName} • {car.modelVersionName}
+              </p>
 
-            <h1 className="text-3xl font-bold mb-1">
-              {car.brandName} {car.modelName}
-            </h1>
-            <p className="text-xl text-muted-foreground mb-4">
-              {car.trimName} • {car.modelVersionName}
-            </p>
+              {car.shortDescription && (
+                <p className="text-muted-foreground mb-6">{car.shortDescription}</p>
+              )}
 
-            {car.shortDescription && (
-              <p className="text-muted-foreground mb-6">{car.shortDescription}</p>
-            )}
-
-            {/* Pricing */}
-            <Card className="mb-6">
-              <CardContent className="p-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <div className="text-sm text-muted-foreground">Цена авто</div>
-                    <div className="text-2xl font-bold">{formatPrice(offer?.sourcePrice || car.basePrice)}</div>
-                    {offer?.priceBasis && (
-                      <div className="text-xs text-muted-foreground">{offer.priceBasis}</div>
-                    )}
-                  </div>
-                  <div>
-                    <div className="text-sm text-muted-foreground">Ориентировочно под ключ</div>
-                    <div className="text-2xl font-bold text-emerald-600">
-                      {formatPrice(offer?.estimatedTotalUsd)}
+              {/* Pricing */}
+              <Card className="mb-6">
+                <CardContent className="p-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-sm text-muted-foreground">Цена авто</div>
+                      <div className="text-2xl font-bold">{formatPrice(offer?.sourcePrice || car.basePrice)}</div>
+                      {offer?.priceBasis && (
+                        <div className="text-xs text-muted-foreground">{offer.priceBasis}</div>
+                      )}
                     </div>
-                    {offer?.deliveryDays && (
-                      <div className="text-xs text-muted-foreground">~{offer.deliveryDays} дней доставка</div>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Used vehicle details */}
-            {usedDetail && (
-              <Card className="mb-6 border-amber-200 bg-amber-50">
-                <CardContent className="p-4">
-                  <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                    <Shield className="h-4 w-4 text-amber-600" />
-                    Информация о б/у автомобиле
-                  </h3>
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    {usedDetail.vin && (
-                      <div>
-                        <div className="text-muted-foreground">VIN</div>
-                        <div className="font-mono font-medium">{usedDetail.vin}</div>
+                    <div>
+                      <div className="text-sm text-muted-foreground">Ориентировочно под ключ</div>
+                      <div className="text-2xl font-bold text-emerald-600">
+                        {formatPrice(offer?.estimatedTotalUsd)}
                       </div>
-                    )}
-                    {usedDetail.mileageKm != null && (
-                      <div>
-                        <div className="text-muted-foreground">Пробег</div>
-                        <div className="font-medium">{usedDetail.mileageKm.toLocaleString("ru-RU")} км</div>
-                      </div>
-                    )}
-                    {usedDetail.auctionGrade && (
-                      <div>
-                        <div className="text-muted-foreground">Класс аукциона</div>
-                        <div className="font-medium">{usedDetail.auctionGrade}</div>
-                      </div>
-                    )}
-                    {usedDetail.ownersCount != null && (
-                      <div>
-                        <div className="text-muted-foreground">Владельцев</div>
-                        <div className="font-medium">{usedDetail.ownersCount}</div>
-                      </div>
-                    )}
-                    {usedDetail.accidentStatus && (
-                      <div>
-                        <div className="text-muted-foreground">Аварийность</div>
-                        <div className="font-medium">{usedDetail.accidentStatus}</div>
-                      </div>
-                    )}
-                    {usedDetail.manufactureDate && (
-                      <div>
-                        <div className="text-muted-foreground">Дата выпуска</div>
-                        <div className="font-medium">
-                          {new Date(usedDetail.manufactureDate).toLocaleDateString("ru-RU")}
-                        </div>
-                      </div>
-                    )}
+                      {offer?.deliveryDays && (
+                        <div className="text-xs text-muted-foreground">~{offer.deliveryDays} дней доставка</div>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
-            )}
 
-            {/* Quick specs */}
-            <div className="grid grid-cols-2 gap-3 mb-6">
-              {car.motorPowerKw && (
-                <div className="flex items-center gap-2 rounded-lg border p-3">
-                  <Zap className="h-4 w-4 text-emerald-600" />
-                  <div>
-                    <div className="text-xs text-muted-foreground">Мощность</div>
-                    <div className="font-medium">{car.motorPowerKw} кВт</div>
-                  </div>
-                </div>
+              {/* Used vehicle details */}
+              {usedDetail && (
+                <Card className="mb-6 border-amber-200 bg-amber-50">
+                  <CardContent className="p-4">
+                    <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                      <Shield className="h-4 w-4 text-amber-600" />
+                      Информация о б/у автомобиле
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      {usedDetail.vin && (
+                        <div>
+                          <div className="text-muted-foreground">VIN</div>
+                          <div className="font-mono font-medium">{usedDetail.vin}</div>
+                        </div>
+                      )}
+                      {usedDetail.mileageKm != null && (
+                        <div>
+                          <div className="text-muted-foreground">Пробег</div>
+                          <div className="font-medium">{usedDetail.mileageKm.toLocaleString("ru-RU")} км</div>
+                        </div>
+                      )}
+                      {usedDetail.auctionGrade && (
+                        <div>
+                          <div className="text-muted-foreground">Класс аукциона</div>
+                          <div className="font-medium">{usedDetail.auctionGrade}</div>
+                        </div>
+                      )}
+                      {usedDetail.ownersCount != null && (
+                        <div>
+                          <div className="text-muted-foreground">Владельцев</div>
+                          <div className="font-medium">{usedDetail.ownersCount}</div>
+                        </div>
+                      )}
+                      {usedDetail.accidentStatus && (
+                        <div>
+                          <div className="text-muted-foreground">Аварийность</div>
+                          <div className="font-medium">{usedDetail.accidentStatus}</div>
+                        </div>
+                      )}
+                      {usedDetail.manufactureDate && (
+                        <div>
+                          <div className="text-muted-foreground">Дата выпуска</div>
+                          <div className="font-medium">
+                            {new Date(usedDetail.manufactureDate).toLocaleDateString("ru-RU")}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
               )}
-              {car.enginePowerHp && (
-                <div className="flex items-center gap-2 rounded-lg border p-3">
-                  <Gauge className="h-4 w-4 text-emerald-600" />
-                  <div>
-                    <div className="text-xs text-muted-foreground">Мощность</div>
-                    <div className="font-medium">{car.enginePowerHp} л.с.</div>
-                  </div>
-                </div>
-              )}
-              {car.rangeKm && (
-                <div className="flex items-center gap-2 rounded-lg border p-3">
-                  <Zap className="h-4 w-4 text-emerald-600" />
-                  <div>
-                    <div className="text-xs text-muted-foreground">Запас хода</div>
-                    <div className="font-medium">{car.rangeKm} км</div>
-                  </div>
-                </div>
-              )}
-              {car.acceleration0100 && (
-                <div className="flex items-center gap-2 rounded-lg border p-3">
-                  <Gauge className="h-4 w-4 text-emerald-600" />
-                  <div>
-                    <div className="text-xs text-muted-foreground">0-100 км/ч</div>
-                    <div className="font-medium">{car.acceleration0100} сек</div>
-                  </div>
-                </div>
-              )}
-              {car.modelYearFrom && (
-                <div className="flex items-center gap-2 rounded-lg border p-3">
-                  <Calendar className="h-4 w-4 text-emerald-600" />
-                  <div>
-                    <div className="text-xs text-muted-foreground">Год</div>
-                    <div className="font-medium">{car.modelYearFrom}</div>
-                  </div>
-                </div>
-              )}
-              {offer?.sourceCountry && (
-                <div className="flex items-center gap-2 rounded-lg border p-3">
-                  <MapPin className="h-4 w-4 text-emerald-600" />
-                  <div>
-                    <div className="text-xs text-muted-foreground">Страна</div>
-                    <div className="font-medium">{offer.sourceCountry}</div>
-                  </div>
-                </div>
-              )}
-            </div>
 
-            {/* CTAs */}
-            <div className="flex flex-col gap-3">
-              <Link href="/calculator">
-                <Button size="lg" className="w-full">
-                  Рассчитать стоимость
-                </Button>
-              </Link>
-              <a href="#configurator">
-                <Button size="lg" variant="outline" className="w-full">
-                  Выбрать комплектацию
-                </Button>
-              </a>
-            </div>
+              {/* Quick specs */}
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                {car.motorPowerKw && (
+                  <div className="flex items-center gap-2 rounded-lg border p-3">
+                    <Zap className="h-4 w-4 text-emerald-600" />
+                    <div>
+                      <div className="text-xs text-muted-foreground">Мощность</div>
+                      <div className="font-medium">{car.motorPowerKw} кВт</div>
+                    </div>
+                  </div>
+                )}
+                {car.enginePowerHp && (
+                  <div className="flex items-center gap-2 rounded-lg border p-3">
+                    <Gauge className="h-4 w-4 text-emerald-600" />
+                    <div>
+                      <div className="text-xs text-muted-foreground">Мощность</div>
+                      <div className="font-medium">{car.enginePowerHp} л.с.</div>
+                    </div>
+                  </div>
+                )}
+                {car.rangeKm && (
+                  <div className="flex items-center gap-2 rounded-lg border p-3">
+                    <Zap className="h-4 w-4 text-emerald-600" />
+                    <div>
+                      <div className="text-xs text-muted-foreground">Запас хода</div>
+                      <div className="font-medium">{car.rangeKm} км</div>
+                    </div>
+                  </div>
+                )}
+                {car.acceleration0100 && (
+                  <div className="flex items-center gap-2 rounded-lg border p-3">
+                    <Gauge className="h-4 w-4 text-emerald-600" />
+                    <div>
+                      <div className="text-xs text-muted-foreground">0-100 км/ч</div>
+                      <div className="font-medium">{car.acceleration0100} сек</div>
+                    </div>
+                  </div>
+                )}
+                {car.modelYearFrom && (
+                  <div className="flex items-center gap-2 rounded-lg border p-3">
+                    <Calendar className="h-4 w-4 text-emerald-600" />
+                    <div>
+                      <div className="text-xs text-muted-foreground">Год</div>
+                      <div className="font-medium">{car.modelYearFrom}</div>
+                    </div>
+                  </div>
+                )}
+                {offer?.sourceCountry && (
+                  <div className="flex items-center gap-2 rounded-lg border p-3">
+                    <MapPin className="h-4 w-4 text-emerald-600" />
+                    <div>
+                      <div className="text-xs text-muted-foreground">Страна</div>
+                      <div className="font-medium">{offer.sourceCountry}</div>
+                    </div>
+                  </div>
+                )}
+              </div>
 
-            {/* Contact buttons */}
-            <div className="mt-4">
-              <ContactButtons
-                brandName={car.brandName}
-                modelName={car.modelName}
-                trimName={car.trimName}
-                estimatedTotal={offer?.estimatedTotalUsd ? Number(offer.estimatedTotalUsd) : undefined}
-                variant="inline"
-              />
-            </div>
-          </div>
-        </div>
+              {/* CTAs */}
+              <div className="flex flex-col gap-3">
+                <Link href="/calculator">
+                  <Button size="lg" className="w-full">
+                    Рассчитать стоимость
+                  </Button>
+                </Link>
+                <a href="#configurator">
+                  <Button size="lg" variant="outline" className="w-full">
+                    Выбрать комплектацию
+                  </Button>
+                </a>
+              </div>
 
-        {/* Configurator + Lead */}
-        <div id="configurator" className="mt-8">
-          {optionGroups.length > 0 ? (
-            <ConfiguratorSection
-              optionGroups={optionGroups}
-              basePrice={Number(car.basePrice)}
-              estimatedTotalUsd={offer?.estimatedTotalUsd || null}
-              trimId={car.trimId}
-              brandName={car.brandName}
-              modelName={car.modelName}
-              trimName={car.trimName}
-              sourceCountry={offer?.sourceCountry || "Китай"}
-              condition={offer?.condition || "new"}
-              csrfToken={csrfToken}
-              logisticsCost={offer?.estimatedLogistics ? Number(offer.estimatedLogistics) : null}
-              customsCost={offer?.estimatedCustoms ? Number(offer.estimatedCustoms) : null}
-              serviceFee={offer?.estimatedServiceFee ? Number(offer.estimatedServiceFee) : null}
-              deliveryDays={offer?.deliveryDays || null}
-              colorImages={colorImagesMap}
-              defaultMedia={media.map((m) => ({ id: m.id, url: m.url, alt: m.alt }))}
-            />
-          ) : (
-            <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-              Конфигуратор недоступен для этой комплектации
-            </div>
-          )}
-        </div>
-
-        {/* Trim comparison */}
-        {allTrims.length > 1 && comparisonSpecs.length > 0 && (
-          <section className="mt-12">
-            <h2 className="mb-6 text-2xl font-bold">Сравнение комплектаций</h2>
-            <Card>
-              <CardContent className="p-6">
-                <TrimComparisonTable
-                  trims={allTrims}
-                  specs={comparisonSpecs}
-                  currentSlug={slug}
-                />
-              </CardContent>
-            </Card>
-          </section>
-        )}
-
-        {/* Similar cars */}
-        {similarCars.length > 0 && (
-          <section className="mt-12">
-            <h2 className="mb-6 text-2xl font-bold">Похожие автомобили</h2>
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {similarCars.map((car) => (
-                <CarCard
-                  key={car.trimId}
+              {/* Contact buttons */}
+              <div className="mt-4">
+                <ContactButtons
                   brandName={car.brandName}
-                  brandSlug={car.brandSlug}
                   modelName={car.modelName}
-                  modelSlug={car.modelSlug}
                   trimName={car.trimName}
-                  trimSlug={car.trimSlug}
-                  powertrainType={car.powertrainType}
-                  drivetrain={car.drivetrain}
-                  motorPowerKw={car.motorPowerKw}
-                  enginePowerHp={null}
-                  rangeKm={car.rangeKm}
-                  basePrice={car.basePrice}
-                  estimatedTotalUsd={car.estimatedTotalUsd}
-                  imageUrl={car.imageUrl}
-                  modelYear={null}
+                  estimatedTotal={offer?.estimatedTotalUsd ? Number(offer.estimatedTotalUsd) : undefined}
+                  variant="inline"
                 />
-              ))}
+              </div>
             </div>
-          </section>
-        )}
+          }
+          trimComparison={
+            allTrims.length > 1 && comparisonSpecs.length > 0 ? (
+              <section className="mt-12">
+                <h2 className="mb-6 text-2xl font-bold">Сравнение комплектаций</h2>
+                <Card>
+                  <CardContent className="p-6">
+                    <TrimComparisonTable
+                      trims={allTrims}
+                      specs={comparisonSpecs}
+                      currentSlug={slug}
+                    />
+                  </CardContent>
+                </Card>
+              </section>
+            ) : undefined
+          }
+          similarCars={
+            similarCars.length > 0 ? (
+              <section className="mt-12">
+                <h2 className="mb-6 text-2xl font-bold">Похожие автомобили</h2>
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                  {similarCars.map((car) => (
+                    <CarCard
+                      key={car.trimId}
+                      brandName={car.brandName}
+                      brandSlug={car.brandSlug}
+                      modelName={car.modelName}
+                      modelSlug={car.modelSlug}
+                      trimName={car.trimName}
+                      trimSlug={car.trimSlug}
+                      powertrainType={car.powertrainType}
+                      drivetrain={car.drivetrain}
+                      motorPowerKw={car.motorPowerKw}
+                      enginePowerHp={null}
+                      rangeKm={car.rangeKm}
+                      basePrice={car.basePrice}
+                      estimatedTotalUsd={car.estimatedTotalUsd}
+                      imageUrl={car.imageUrl}
+                      modelYear={null}
+                    />
+                  ))}
+                </div>
+              </section>
+            ) : undefined
+          }
+        />
       </div>
     </div>
   );

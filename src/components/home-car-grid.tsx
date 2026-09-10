@@ -1,31 +1,20 @@
 import { CarCard } from "@/components/car-card";
-
-interface Model {
-  modelId: string;
-  modelName: string;
-  modelSlug: string;
-  brandName: string;
-  brandSlug: string;
-  trimId: string;
-  trimName: string;
-  trimSlug: string;
-  modelVersionId: string;
-  powertrainType: string | null;
-  drivetrain: string | null;
-  motorPowerKw: number | null;
-  rangeKm: number | null;
-  basePrice: string | null;
-  estimatedTotalUsd: string | null;
-  imageUrl: string | null;
-}
+import { cn } from "@/lib/utils";
+import type { FeaturedModel } from "@/lib/queries";
 
 interface HomeCarGridProps {
-  models: Model[];
+  models: FeaturedModel[];
+  className?: string;
 }
 
-export function HomeCarGrid({ models }: HomeCarGridProps) {
+export function HomeCarGrid({ models, className }: HomeCarGridProps) {
   return (
-    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+    <div
+      className={cn(
+        "grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4",
+        className
+      )}
+    >
       {models.map((model) => (
         <CarCard
           key={model.modelId}
