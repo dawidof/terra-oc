@@ -120,9 +120,9 @@ export function OrderTracker({ order }: { order: OrderData }) {
                     <div
                       className={`flex size-8 shrink-0 items-center justify-center rounded-full ${
                         isCompleted
-                          ? "bg-green-100 text-green-700"
+                          ? "bg-brand-muted text-brand"
                           : "bg-muted text-muted-foreground"
-                      } ${isCurrent ? "ring-2 ring-green-500 ring-offset-2" : ""}`}
+                      } ${isCurrent ? "ring-2 ring-brand ring-offset-2" : ""}`}
                     >
                       {isCompleted && !isCurrent ? (
                         <CheckCircle className="size-4" />
@@ -133,7 +133,7 @@ export function OrderTracker({ order }: { order: OrderData }) {
                     {index < STATUS_STEPS.length - 1 && (
                       <div
                         className={`w-0.5 flex-1 ${
-                          index < currentStepIndex ? "bg-green-200" : "bg-muted"
+                          index < currentStepIndex ? "bg-brand/40" : "bg-muted"
                         }`}
                       />
                     )}
@@ -147,7 +147,7 @@ export function OrderTracker({ order }: { order: OrderData }) {
                       {step.label}
                     </span>
                     {isCurrent && (
-                      <span className="text-xs text-green-600">Текущий статус</span>
+                      <span className="text-xs text-brand">Текущий статус</span>
                     )}
                   </div>
                 </div>
@@ -176,7 +176,7 @@ export function OrderTracker({ order }: { order: OrderData }) {
               {lead.estimatedTotalUsd && (
                 <div>
                   <p className="text-muted-foreground">Ориентировочная стоимость</p>
-                  <p className="text-lg font-semibold text-green-700">
+                  <p className="text-lg font-semibold text-brand">
                     {formatUsd(lead.estimatedTotalUsd)}
                   </p>
                 </div>
@@ -222,7 +222,7 @@ export function OrderTracker({ order }: { order: OrderData }) {
                   {options.map((opt) => (
                     <span
                       key={opt}
-                      className="inline-flex items-center rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700 ring-1 ring-green-200"
+                      className="inline-flex items-center rounded-full bg-brand-muted px-2.5 py-0.5 text-xs font-medium text-brand ring-1 ring-brand/25"
                     >
                       {opt}
                     </span>
@@ -298,7 +298,7 @@ export function OrderTracker({ order }: { order: OrderData }) {
           <div className="mt-3 flex gap-3">
             <a
               href="tel:+998901234567"
-              className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700"
+              className="inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-deep"
             >
               <Phone className="size-4" />
               Позвонить

@@ -352,11 +352,11 @@ export function WizardClient({ csrfToken }: WizardClientProps) {
         <CardContent className="p-8">
           {/* Step header with icon */}
           <div className="mb-6 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-muted text-brand">
               <StepIcon className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold">{currentStep.title}</h2>
+              <h2 className="text-2xl font-bold tracking-tight">{currentStep.title}</h2>
               <p className="text-muted-foreground">{currentStep.subtitle}</p>
             </div>
           </div>
@@ -379,17 +379,17 @@ export function WizardClient({ csrfToken }: WizardClientProps) {
                   onClick={() => handleSelect(opt.value)}
                   className={`relative flex items-start gap-3 rounded-lg border p-4 text-left transition-all ${
                     state === "primary"
-                      ? "border-emerald-600 bg-emerald-50 ring-1 ring-emerald-600"
+                      ? "border-brand bg-brand-muted ring-1 ring-brand"
                       : state === "fallback"
-                        ? "border-emerald-300 bg-emerald-50/50 ring-1 ring-emerald-300"
-                        : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                        ? "border-brand/50 bg-brand-muted/50 ring-1 ring-brand/40"
+                        : "border-border hover:border-foreground/25 hover:bg-muted"
                   }`}
                 >
                   {/* Priority badge */}
                   {state !== "none" && (
                     <span
                       className={`absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold text-white ${
-                        state === "primary" ? "bg-emerald-600" : "bg-emerald-400"
+                        state === "primary" ? "bg-brand" : "bg-brand/60"
                       }`}
                     >
                       {state === "primary" ? "1" : "2"}
@@ -399,9 +399,9 @@ export function WizardClient({ csrfToken }: WizardClientProps) {
                   <div
                     className={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg ${
                       state === "primary"
-                        ? "bg-emerald-200 text-emerald-700"
+                        ? "bg-brand text-white"
                         : state === "fallback"
-                          ? "bg-emerald-100 text-emerald-600"
+                          ? "bg-brand-muted text-brand"
                           : "bg-muted text-muted-foreground"
                     }`}
                   >
@@ -410,8 +410,8 @@ export function WizardClient({ csrfToken }: WizardClientProps) {
 
                   <div className="min-w-0 flex-1">
                     <span
-                      className={`block text-sm font-medium ${
-                        state !== "none" ? "text-emerald-900" : "text-foreground"
+                      className={`block text-sm font-medium text-foreground ${
+                        state !== "none" ? "font-semibold" : ""
                       }`}
                     >
                       {opt.label}
@@ -434,17 +434,17 @@ export function WizardClient({ csrfToken }: WizardClientProps) {
               {hasPrimary && (
                 <span>
                   Основной:{" "}
-                  <span className="font-medium text-emerald-700">
+                  <span className="font-medium text-brand">
                     {currentStep.options.find((o) => o.value === currentAnswer?.primary)?.label}
                   </span>
                 </span>
               )}
               {hasFallback && (
                 <>
-                  <span className="text-gray-300">·</span>
+                  <span className="text-border">·</span>
                   <span>
                     Запасной:{" "}
-                    <span className="font-medium text-emerald-500">
+                    <span className="font-medium text-brand/70">
                       {currentStep.options.find((o) => o.value === currentAnswer?.fallback)?.label}
                     </span>
                   </span>
@@ -469,6 +469,7 @@ export function WizardClient({ csrfToken }: WizardClientProps) {
           <Button
             onClick={handleShowResults}
             disabled={!hasPrimary || loading}
+            className="bg-brand text-brand-foreground shadow-sm hover:bg-brand-deep"
           >
             {loading ? "Подбор..." : "Показать результаты"}
           </Button>
@@ -476,6 +477,7 @@ export function WizardClient({ csrfToken }: WizardClientProps) {
           <Button
             onClick={() => setStep((s) => s + 1)}
             disabled={!hasPrimary}
+            className="bg-brand text-brand-foreground shadow-sm hover:bg-brand-deep"
           >
             Далее
             <ArrowRight className="ml-1 h-4 w-4" />

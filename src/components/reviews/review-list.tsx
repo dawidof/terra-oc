@@ -13,7 +13,7 @@ interface Review {
 export function ReviewList({ reviews }: { reviews: Review[] }) {
   if (reviews.length === 0) {
     return (
-      <p className="rounded-xl bg-muted px-6 py-10 text-center text-sm text-muted-foreground">
+      <p className="rounded-xl bg-card px-6 py-10 text-center text-sm text-muted-foreground shadow-soft">
         Отзывов пока нет
       </p>
     );

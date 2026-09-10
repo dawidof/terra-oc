@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { Car, Calculator, Truck, MapPin, MessageSquare } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Car, Calculator, Truck, MapPin, ArrowRight, MessageSquare } from "lucide-react";
+import { PageHeader } from "@/components/ui/page-header";
+import { Heading, Section } from "@/components/ui/section";
 
 export const metadata = {
   title: "Как купить автомобиль — TerraAuto",
@@ -61,64 +63,83 @@ const steps = [
 
 export default async function HowItWorksPage() {
   return (
-    <div className="min-h-screen bg-white">
-      <div className="container mx-auto px-4 py-12">
-        <div className="mb-16 text-center">
-          <h1 className="mb-4 text-4xl font-bold">Как купить автомобиль</h1>
-          <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-            Простой и прозрачный процесс покупки автомобиля из-за рубежа
-          </p>
-        </div>
+    <>
+      <Section padding="spacious">
+        <PageHeader
+          eyebrow="Процесс"
+          title="Как купить автомобиль"
+          description="Простой и прозрачный процесс покупки автомобиля из-за рубежа"
+          size="2xl"
+        />
+      </Section>
 
-        <div className="space-y-12">
+      <Section background="muted">
+        <ol className="space-y-10">
           {steps.map((step, i) => (
-            <div key={i} className="flex flex-col gap-8 md:flex-row md:items-center">
-              <div className="flex-1">
-                <div className="mb-4 flex items-center gap-3">
-                  <span className="text-5xl font-bold text-emerald-100">{step.number}</span>
-                  <step.icon className="h-8 w-8 text-emerald-600" />
-                </div>
-                <h2 className="mb-3 text-2xl font-bold">{step.title}</h2>
-                <p className="mb-4 text-muted-foreground">{step.description}</p>
-                <ul className="space-y-2">
+            <li
+              key={i}
+              className="grid gap-5 border-t border-border pt-8 md:grid-cols-12 md:items-start"
+            >
+              <div className="flex items-center gap-4 md:col-span-4">
+                <span className="text-6xl font-bold tracking-tighter tabular-nums text-brand">
+                  {step.number}
+                </span>
+                <span className="flex size-11 items-center justify-center rounded-xl bg-brand shadow-sm">
+                  <step.icon className="size-5 text-white" aria-hidden />
+                </span>
+              </div>
+              <div className="md:col-span-8">
+                <h2 className="text-xl font-bold tracking-tight">{step.title}</h2>
+                <p className="mt-2 leading-relaxed text-muted-foreground">
+                  {step.description}
+                </p>
+                <ul className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
                   {step.details.map((detail, j) => (
-                    <li key={j} className="flex items-center gap-2 text-sm">
-                      <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    <li
+                      key={j}
+                      className="flex items-center gap-2 text-sm text-muted-foreground"
+                    >
+                      <span className="size-1.5 rounded-full bg-brand" />
                       {detail}
                     </li>
                   ))}
                 </ul>
               </div>
-              {i < steps.length - 1 && (
-                <div className="hidden md:block">
-                  <ArrowRight className="h-8 w-8 text-gray-300" />
-                </div>
-              )}
-            </div>
+            </li>
           ))}
-        </div>
+        </ol>
+      </Section>
 
-        {/* CTA */}
-        <div className="mt-16 rounded-lg bg-emerald-50 py-12 text-center">
-          <h2 className="mb-4 text-2xl font-bold">Готовы начать?</h2>
-          <p className="mb-6 text-muted-foreground">
+      <Section background="dark" padding="spacious">
+        <div className="mx-auto max-w-2xl text-center">
+          <Heading size="xl" tone="inverse">
+            Готовы начать?
+          </Heading>
+          <p className="mt-4 text-lg leading-relaxed text-white/70">
             Выберите автомобиль или получите индивидуальный подбор
           </p>
-          <div className="flex items-center justify-center gap-4">
-            <Link href="/cars">
-              <Button size="lg">
-                Смотреть автомобили
-              </Button>
-            </Link>
-            <Link href="/choose">
-              <Button variant="outline" size="lg">
-                <MessageSquare className="mr-2 h-4 w-4" />
-                Помочь выбрать
-              </Button>
-            </Link>
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Button
+              size="lg"
+              className="h-12 bg-brand px-7 text-brand-foreground shadow-sm hover:bg-brand-deep hover:shadow-md"
+              render={<Link href="/cars" />}
+              nativeButton={false}
+            >
+              Смотреть автомобили
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="h-12 border-white/25 bg-transparent px-7 text-white hover:bg-white/10 hover:text-white"
+              render={<Link href="/choose" />}
+              nativeButton={false}
+            >
+              <MessageSquare className="size-4" />
+              Помочь выбрать
+            </Button>
           </div>
         </div>
-      </div>
-    </div>
+      </Section>
+    </>
   );
 }

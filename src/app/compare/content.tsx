@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { X, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ShareComparison } from "@/components/share-comparison";
+import { PageHeader } from "@/components/ui/page-header";
 
 interface Vehicle {
   trimId: string;
@@ -137,10 +138,15 @@ export default function CompareContent() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen">
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Сравнение автомобилей</h1>
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+          <PageHeader
+            eyebrow="Сравнение"
+            title="Сравнение автомобилей"
+            align="left"
+            size="xl"
+          />
           {carSlugs.length > 0 && (
             <ShareComparison slugs={carSlugs} />
           )}
@@ -148,7 +154,7 @@ export default function CompareContent() {
 
         {carSlugs.length === 0 ? (
           <div className="py-16 text-center">
-            <h2 className="mb-4 text-xl font-semibold">Добавьте автомобили для сравнения</h2>
+            <h2 className="mb-4 text-xl font-bold tracking-tight">Добавьте автомобили для сравнения</h2>
             <p className="mb-6 text-muted-foreground">
               Выберите до 4 автомобилей из каталога для сравнения характеристик
             </p>
@@ -163,12 +169,12 @@ export default function CompareContent() {
                 />
               </div>
               {searchResults.length > 0 && (
-                <div className="mt-2 rounded-lg border bg-white shadow-lg">
+                <div className="mt-2 rounded-lg border bg-card shadow-lg">
                   {searchResults.map((r: any) => (
                     <button
                       key={r.trimSlug}
                       onClick={() => addVehicle(r.trimSlug)}
-                      className="flex w-full items-center justify-between px-4 py-2 text-left hover:bg-gray-50"
+                      className="flex w-full items-center justify-between px-4 py-2 text-left hover:bg-muted"
                     >
                       <span>
                         {r.brandName} {r.modelName} {r.trimName}
@@ -181,7 +187,7 @@ export default function CompareContent() {
                 </div>
               )}
             </div>
-            <Link href="/cars" className="mt-4 inline-block text-sm text-emerald-600 hover:underline">
+            <Link href="/cars" className="mt-4 inline-block text-sm font-semibold text-brand hover:underline">
               Или перейти в каталог →
             </Link>
           </div>
@@ -194,11 +200,11 @@ export default function CompareContent() {
                   <CardContent className="relative p-4">
                     <button
                       onClick={() => removeVehicle(v.trimSlug)}
-                      className="absolute right-2 top-2 rounded-full p-1 hover:bg-gray-100"
+                      className="absolute right-2 top-2 rounded-full p-1 transition-colors hover:bg-muted"
                     >
                       <X className="h-4 w-4" />
                     </button>
-                    <div className="relative mb-3 aspect-[4/3] overflow-hidden rounded-lg bg-gray-100">
+                    <div className="relative mb-3 aspect-[4/3] overflow-hidden rounded-lg bg-muted">
                       {v.imageUrl ? (
                         <Image
                           src={v.imageUrl}
@@ -208,7 +214,7 @@ export default function CompareContent() {
                           sizes="200px"
                         />
                       ) : (
-                        <div className="flex h-full items-center justify-center text-gray-400 text-xs">
+                        <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
                           Фото
                         </div>
                       )}
@@ -216,9 +222,9 @@ export default function CompareContent() {
                     <div className="text-xs text-muted-foreground">{v.brandName}</div>
                     <div className="font-semibold">{v.modelName}</div>
                     <div className="text-sm text-muted-foreground">{v.trimName}</div>
-                    <div className="mt-2 text-lg font-bold">{formatPrice(v.basePrice)}</div>
+                    <div className="mt-2 text-lg font-bold tabular-nums">{formatPrice(v.basePrice)}</div>
                     {v.estimatedTotalUsd && (
-                      <div className="text-xs text-emerald-600">
+                      <div className="text-xs font-semibold text-brand">
                         под ключ: {formatPrice(v.estimatedTotalUsd)}
                       </div>
                     )}
@@ -239,12 +245,12 @@ export default function CompareContent() {
                       />
                     </div>
                     {searchResults.length > 0 && (
-                      <div className="mt-2 w-full rounded-lg border bg-white shadow-lg">
+                      <div className="mt-2 w-full rounded-lg border bg-card shadow-lg">
                         {searchResults.slice(0, 5).map((r: any) => (
                           <button
                             key={r.trimSlug}
                             onClick={() => addVehicle(r.trimSlug)}
-                            className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-gray-50"
+                            className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-muted"
                           >
                             <span>
                               {r.brandName} {r.modelName}
@@ -278,7 +284,8 @@ export default function CompareContent() {
 
             {/* Comparison table */}
             {vehicles.length > 0 && (
-              <div className="overflow-x-auto">
+              <div className="overflow-hidden rounded-xl border border-border bg-card shadow-soft">
+                <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b">
@@ -297,7 +304,7 @@ export default function CompareContent() {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr className="border-b bg-gray-50">
+                    <tr className="border-b bg-muted-section/60">
                       <td className="py-2 pr-4 font-medium">Цена</td>
                       {vehicles.map((v) => (
                         <td key={v.trimId} className="py-2 px-4 text-center font-semibold">
@@ -305,25 +312,32 @@ export default function CompareContent() {
                         </td>
                       ))}
                     </tr>
-                    <tr className="border-b bg-gray-50">
+                    <tr className="border-b bg-muted-section/60">
                       <td className="py-2 pr-4 font-medium">Под ключ</td>
                       {vehicles.map((v) => (
-                        <td key={v.trimId} className="py-2 px-4 text-center text-emerald-600">
+                        <td key={v.trimId} className="py-2 px-4 text-center font-semibold text-brand">
                           {formatPrice(v.estimatedTotalUsd)}
                         </td>
                       ))}
                     </tr>
-                    <tr className="border-b bg-gray-50">
+                    <tr className="border-b bg-muted-section/60">
                       <td className="py-2 pr-4 font-medium">Тип привода</td>
                       {vehicles.map((v) => (
                         <td key={v.trimId} className="py-2 px-4 text-center">
-                          <Badge variant={v.powertrainType === "bev" ? "default" : "secondary"}>
+                          <Badge
+                            variant={v.powertrainType === "bev" ? "default" : "secondary"}
+                            className={
+                              v.powertrainType === "bev"
+                                ? "bg-brand text-brand-foreground"
+                                : undefined
+                            }
+                          >
                             {powertrainLabel(v.powertrainType)}
                           </Badge>
                         </td>
                       ))}
                     </tr>
-                    <tr className="border-b bg-gray-50">
+                    <tr className="border-b bg-muted-section/60">
                       <td className="py-2 pr-4 font-medium">Привод</td>
                       {vehicles.map((v) => (
                         <td key={v.trimId} className="py-2 px-4 text-center">
@@ -331,7 +345,7 @@ export default function CompareContent() {
                         </td>
                       ))}
                     </tr>
-                    <tr className="border-b bg-gray-50">
+                    <tr className="border-b bg-muted-section/60">
                       <td className="py-2 pr-4 font-medium">Мощность</td>
                       {vehicles.map((v) => (
                         <td key={v.trimId} className="py-2 px-4 text-center">
@@ -339,7 +353,7 @@ export default function CompareContent() {
                         </td>
                       ))}
                     </tr>
-                    <tr className="border-b bg-gray-50">
+                    <tr className="border-b bg-muted-section/60">
                       <td className="py-2 pr-4 font-medium">Батарея</td>
                       {vehicles.map((v) => (
                         <td key={v.trimId} className="py-2 px-4 text-center">
@@ -347,7 +361,7 @@ export default function CompareContent() {
                         </td>
                       ))}
                     </tr>
-                    <tr className="border-b bg-gray-50">
+                    <tr className="border-b bg-muted-section/60">
                       <td className="py-2 pr-4 font-medium">Запас хода</td>
                       {vehicles.map((v) => (
                         <td key={v.trimId} className="py-2 px-4 text-center">
@@ -355,7 +369,7 @@ export default function CompareContent() {
                         </td>
                       ))}
                     </tr>
-                    <tr className="border-b bg-gray-50">
+                    <tr className="border-b bg-muted-section/60">
                       <td className="py-2 pr-4 font-medium">0-100 км/ч</td>
                       {vehicles.map((v) => (
                         <td key={v.trimId} className="py-2 px-4 text-center">
@@ -366,10 +380,10 @@ export default function CompareContent() {
 
                     {Object.entries(grouped).map(([groupName, rows]) => (
                       <React.Fragment key={groupName}>
-                        <tr className="border-t-2">
+                        <tr className="border-t-2 bg-muted-section">
                           <td
                             colSpan={vehicles.length + 1}
-                            className="py-3 pr-4 font-semibold"
+                            className="py-3 pr-4 font-bold"
                           >
                             {groupName}
                           </td>
@@ -390,6 +404,7 @@ export default function CompareContent() {
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
             )}
           </>

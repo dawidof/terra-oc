@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 
+import { PageHeader } from "@/components/ui/page-header";
+import { Section } from "@/components/ui/section";
+
 export const metadata: Metadata = {
   title: "Политика конфиденциальности",
   description: "Политика обработки персональных данных ООО «TerraAuto»",
@@ -7,9 +10,14 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <div className="container mx-auto px-4 py-12">
-      <div className="prose prose-gray mx-auto max-w-3xl">
-        <h1>Политика конфиденциальности</h1>
+    <Section padding="spacious">
+      <PageHeader
+        eyebrow="Документы"
+        title="Политика конфиденциальности"
+        align="left"
+        size="xl"
+      />
+      <div className="prose prose-gray mx-auto mt-10 max-w-3xl">
         <p className="text-muted-foreground">
           Дата последнего обновления: {new Date().toLocaleDateString("ru-RU")}
         </p>
@@ -81,6 +89,6 @@ export default function PrivacyPage() {
           Телефон: +998 90 123 45 67
         </p>
       </div>
-    </div>
+    </Section>
   );
 }

@@ -92,40 +92,39 @@ export default async function CarDetailPage({ params }: Props) {
   const csrfToken = generateCsrfToken();
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="container mx-auto px-4 py-6">
-        <VehicleAdminBar
-          trimId={car.trimId}
-          data={{
-            trimName: car.trimName,
-            trimSlug: car.trimSlug,
-            powertrainType: car.powertrainType,
-            drivetrain: car.drivetrain,
-            motorPowerKw: car.motorPowerKw,
-            rangeKm: car.rangeKm,
-            acceleration0100: car.acceleration0100,
-            batteryCapacityKwh: car.batteryCapacityKwh,
-            basePrice: car.basePrice,
-            estimatedTotalUsd: offer?.estimatedTotalUsd || null,
-            sourcePrice: offer?.sourcePrice || null,
-            deliveryDays: offer?.deliveryDays || null,
-            active: true,
-          }}
-        />
+    <div className="min-h-screen">
+      <VehicleAdminBar
+        trimId={car.trimId}
+        data={{
+          trimName: car.trimName,
+          trimSlug: car.trimSlug,
+          powertrainType: car.powertrainType,
+          drivetrain: car.drivetrain,
+          motorPowerKw: car.motorPowerKw,
+          rangeKm: car.rangeKm,
+          acceleration0100: car.acceleration0100,
+          batteryCapacityKwh: car.batteryCapacityKwh,
+          basePrice: car.basePrice,
+          estimatedTotalUsd: offer?.estimatedTotalUsd || null,
+          sourcePrice: offer?.sourcePrice || null,
+          deliveryDays: offer?.deliveryDays || null,
+          active: true,
+        }}
+      />
 
-        <nav className="mb-6 flex items-center gap-2 text-sm text-muted-foreground">
-          <Link href="/" className="hover:text-foreground">Главная</Link>
-          <ChevronRight className="h-3 w-3" />
-          <Link href="/cars" className="hover:text-foreground">Автомобили</Link>
-          <ChevronRight className="h-3 w-3" />
-          <Link href={`/cars?brand=${car.brandSlug}`} className="hover:text-foreground">
-            {car.brandName}
-          </Link>
-          <ChevronRight className="h-3 w-3" />
-          <span className="text-foreground">{car.modelName}</span>
-        </nav>
+      <nav className="container mx-auto flex items-center gap-2 px-4 py-4 text-sm text-muted-foreground sm:px-6">
+        <Link href="/" className="hover:text-foreground">Главная</Link>
+        <ChevronRight className="h-3 w-3" />
+        <Link href="/cars" className="hover:text-foreground">Автомобили</Link>
+        <ChevronRight className="h-3 w-3" />
+        <Link href={`/cars?brand=${car.brandSlug}`} className="hover:text-foreground">
+          {car.brandName}
+        </Link>
+        <ChevronRight className="h-3 w-3" />
+        <span className="text-foreground">{car.modelName}</span>
+      </nav>
 
-        <CarDetailClient
+      <CarDetailClient
           initialMedia={media.map((m) => ({ id: m.id, url: m.url, alt: m.alt }))}
           brandName={car.brandName}
           modelName={car.modelName}
@@ -146,14 +145,21 @@ export default async function CarDetailPage({ params }: Props) {
             <div className="space-y-5">
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <Badge variant={car.powertrainType === "bev" ? "default" : "secondary"}>
+                  <Badge
+                    variant={car.powertrainType === "bev" ? "default" : "secondary"}
+                    className={
+                      car.powertrainType === "bev"
+                        ? "bg-brand text-brand-foreground"
+                        : undefined
+                    }
+                  >
                     {powertrainLabel(car.powertrainType)}
                   </Badge>
                   {car.drivetrain && <Badge variant="outline">{car.drivetrain}</Badge>}
                   {car.brandCountry && <Badge variant="outline">{car.brandCountry}</Badge>}
                 </div>
 
-                <h1 className="text-3xl font-bold mb-1">
+                <h1 className="text-3xl font-bold tracking-tight mb-1">
                   {car.brandName} {car.modelName}
                 </h1>
                 <p className="text-xl text-muted-foreground">
@@ -161,19 +167,24 @@ export default async function CarDetailPage({ params }: Props) {
                 </p>
               </div>
 
-              <div className="border-t pt-4">
-                <div className="text-3xl font-bold">
-                  {formatPrice(offer?.estimatedTotalUsd)}
-                </div>
-                <div className="text-sm text-muted-foreground mt-1">
+              <div className="rounded-xl bg-brand-muted px-4 py-3.5">
+                <div className="text-sm text-brand-muted-foreground">
                   Под ключ в Ташкент
                   {offer?.deliveryDays && <> • ~{offer.deliveryDays} дней доставка</>}
+                </div>
+                <div className="mt-1 text-3xl font-bold tracking-[-0.02em] tabular-nums text-foreground">
+                  {formatPrice(offer?.estimatedTotalUsd)}
                 </div>
               </div>
 
               <div className="flex flex-wrap gap-2">
                 <a href="#configurator">
-                  <Button size="lg">Отправить запрос</Button>
+                  <Button
+                    size="lg"
+                    className="bg-brand text-brand-foreground shadow-sm hover:bg-brand-deep"
+                  >
+                    Отправить запрос
+                  </Button>
                 </a>
                 <ContactButtons
                   brandName={car.brandName}
@@ -245,7 +256,7 @@ export default async function CarDetailPage({ params }: Props) {
                   .filter(Boolean)
                   .map((spec) => (
                     <div key={spec.label} className="flex flex-col items-center gap-0.5 w-[90px]">
-                      <spec.icon className="h-8 w-8" strokeWidth={1.5} />
+                      <spec.icon className="h-8 w-8 text-brand" strokeWidth={1.5} />
                       <span className="text-sm font-bold leading-tight">{spec.value}</span>
                       <span className="text-[11px] text-muted-foreground leading-tight">{spec.label}</span>
                     </div>
@@ -256,7 +267,7 @@ export default async function CarDetailPage({ params }: Props) {
           trimComparison={
             allTrims.length > 1 && comparisonSpecs.length > 0 ? (
               <section className="mt-12">
-                <h2 className="mb-6 text-2xl font-bold">Сравнение комплектаций</h2>
+                <h2 className="mb-6 text-2xl font-bold tracking-tight">Сравнение комплектаций</h2>
                 <Card>
                   <CardContent className="p-6">
                     <TrimComparisonTable
@@ -271,9 +282,9 @@ export default async function CarDetailPage({ params }: Props) {
           }
           similarCars={
             similarCars.length > 0 ? (
-              <section className="mt-12">
-                <h2 className="mb-6 text-2xl font-bold">Похожие автомобили</h2>
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              <section>
+                <h2 className="mb-6 text-2xl font-bold tracking-tight">Похожие автомобили</h2>
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
                   {similarCars.map((car) => (
                     <CarCard
                       key={car.trimId}
@@ -299,7 +310,6 @@ export default async function CarDetailPage({ params }: Props) {
             ) : undefined
           }
         />
-      </div>
     </div>
   );
 }

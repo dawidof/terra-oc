@@ -36,7 +36,7 @@ function powertrainLabel(type: string | null): string {
 
 function scoreColor(score: number): string {
   if (score >= 80) return "text-green-600";
-  if (score >= 60) return "text-emerald-600";
+  if (score >= 60) return "text-brand";
   if (score >= 40) return "text-yellow-600";
   return "text-orange-600";
 }
@@ -51,7 +51,7 @@ export function ResultCard({
   onToggleSelect?: (trimSlug: string) => void;
 }) {
   return (
-    <Card className={`overflow-hidden transition-all ${selected ? "ring-2 ring-emerald-600" : ""}`}>
+    <Card className={`overflow-hidden transition-all ${selected ? "ring-2 ring-brand" : ""}`}>
       <CardContent className="p-6">
         <div className="flex gap-5">
           {/* Selection checkbox */}
@@ -59,7 +59,7 @@ export function ResultCard({
             <label
               className={`flex cursor-pointer flex-col items-center gap-1 rounded-lg border p-2 transition-all ${
                 selected
-                  ? "border-emerald-600 bg-emerald-50 text-emerald-700"
+                  ? "border-brand bg-brand-muted text-brand"
                   : "border-transparent text-muted-foreground hover:bg-muted"
               }`}
               onClick={(e) => {
@@ -114,7 +114,7 @@ export function ResultCard({
             <div className="mt-4 space-y-1">
               {rec.reasons.map((reason, i) => (
                 <div key={i} className="flex items-center gap-2 text-sm">
-                  <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  <div className="h-1.5 w-1.5 rounded-full bg-brand" />
                   {reason}
                 </div>
               ))}
@@ -138,7 +138,7 @@ export function ResultCard({
 
             {/* Price + Actions */}
             <div className="mt-4 flex items-center justify-between border-t pt-4">
-              <p className="text-xl font-bold text-emerald-600">
+              <p className="text-xl font-bold text-brand">
                 {formatPrice(rec.estimatedTotalUsd)}
               </p>
               <div className="flex gap-2">

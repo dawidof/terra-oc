@@ -170,7 +170,7 @@ export default async function HomePage() {
         }}
       />
 
-      <HomeHero cars={featuredModels.slice(0, 2)} />
+      <HomeHero />
 
       {featuredModels.length > 0 && (
         <Section id="popular">

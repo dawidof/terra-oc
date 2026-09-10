@@ -100,9 +100,9 @@ export function LeadForm({ answers, recommendations, onBack, csrfToken }: LeadFo
 
   if (submitted) {
     return (
-      <Card className="border-emerald-200 bg-emerald-50">
+      <Card className="border-brand/25 bg-brand-muted">
         <CardContent className="flex flex-col items-center py-12 text-center">
-          <CheckCircle className="mb-4 h-12 w-12 text-emerald-600" />
+          <CheckCircle className="mb-4 h-12 w-12 text-brand" />
           <h3 className="mb-2 text-lg font-semibold">Заявка отправлена!</h3>
           <p className="max-w-sm text-sm text-muted-foreground">
             Наш менеджер свяжется с вами для обсуждения деталей и подбора

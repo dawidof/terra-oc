@@ -1,17 +1,8 @@
-import Image from "next/image";
 import Link from "next/link";
-import {
-  ArrowRight,
-  FileCheck,
-  Gauge,
-  ShieldCheck,
-  Timer,
-} from "lucide-react";
+import { ArrowRight, FileCheck, Gauge, ShieldCheck, Timer } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Eyebrow, Heading } from "@/components/ui/section";
-import { formatUsd } from "@/lib/format";
-import type { FeaturedModel } from "@/lib/queries";
 
 const trustPoints = [
   { icon: Timer, label: "Доставка за 3 недели" },
@@ -20,14 +11,26 @@ const trustPoints = [
   { icon: FileCheck, label: "Полный цикл под ключ" },
 ];
 
-interface HomeHeroProps {
-  cars?: FeaturedModel[];
-}
+const heroStats = [
+  { value: "3+ года", label: "импорта автомобилей в Узбекистан" },
+  { value: "до 35%", label: "дешевле рынка" },
+  { value: "20–30 дней", label: "доставка под ключ" },
+  { value: "4 страны", label: "Китай, Корея, США, ОАЭ" },
+];
 
-export function HomeHero({ cars = [] }: HomeHeroProps) {
+export function HomeHero() {
   return (
-    <section aria-label="Главная — TerraAuto" className="bg-surface-dark">
-      <div className="container mx-auto px-4 sm:px-6">
+    <section
+      aria-label="Главная — TerraAuto"
+      className="relative overflow-hidden bg-surface-dark"
+    >
+      <div aria-hidden className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-48 right-[8%] size-[34rem] rounded-full bg-brand/15 blur-3xl" />
+        <div className="absolute -bottom-40 left-[2%] size-[26rem] rounded-full bg-brand/8 blur-3xl" />
+        <div className="absolute inset-0 [background-image:linear-gradient(to_right,rgba(255,255,255,0.045)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.045)_1px,transparent_1px)] [background-size:56px_56px] [mask-image:radial-gradient(ellipse_75%_80%_at_50%_40%,black_35%,transparent_100%)]" />
+      </div>
+
+      <div className="relative container mx-auto px-4 sm:px-6">
         <div className="grid gap-12 py-14 sm:py-20 lg:grid-cols-12 lg:items-center lg:gap-10 lg:py-24">
           <div className="lg:col-span-7">
             <Eyebrow tone="light">Прямой импорт · Ташкент</Eyebrow>
@@ -56,16 +59,16 @@ export function HomeHero({ cars = [] }: HomeHeroProps) {
                 size="lg"
                 variant="outline"
                 className="h-12 border-white/20 bg-transparent px-7 text-white hover:bg-white/10 hover:text-white"
-                render={<Link href="/calculator" />}
+                render={<Link href="/choose" />}
                 nativeButton={false}
               >
-                Рассчитать стоимость
+                Подбор за 2 минуты
               </Button>
             </div>
           </div>
 
           <div className="lg:col-span-5">
-            {cars.length > 0 ? <HeroCarStack cars={cars} /> : <HeroFallback />}
+            <HeroStats />
           </div>
         </div>
 
@@ -84,89 +87,23 @@ export function HomeHero({ cars = [] }: HomeHeroProps) {
   );
 }
 
-function HeroCarStack({ cars }: { cars: FeaturedModel[] }) {
+function HeroStats() {
   return (
-    <div className="relative">
-      <div
-        aria-hidden
-        className="absolute -inset-3 rounded-3xl bg-white/5 sm:-inset-4"
-      />
-      <div className="relative flex flex-col gap-4">
-        {cars.map((car) => (
-          <Link
-            key={car.modelId}
-            href={`/cars/${car.trimSlug}`}
-            className="group flex items-center gap-4 rounded-xl bg-card p-3 shadow-soft transition duration-200 hover:-translate-y-0.5 hover:shadow-soft-lg"
-          >
-            <div className="relative h-24 w-36 shrink-0 overflow-hidden rounded-lg bg-muted">
-              {car.imageUrl && (
-                <Image
-                  src={car.imageUrl}
-                  alt={`${car.brandName} ${car.modelName}`}
-                  fill
-                  priority
-                  sizes="144px"
-                  className="object-cover transition-transform duration-300 group-hover:scale-105"
-                />
-              )}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs tracking-wide text-muted-foreground uppercase">
-                {car.brandName}
-              </p>
-              <p className="mt-0.5 truncate text-sm font-bold tracking-tight text-foreground">
-                {car.modelName}{" "}
-                <span className="font-normal text-muted-foreground">
-                  {car.trimName}
-                </span>
-              </p>
-              <div className="mt-2 flex flex-wrap items-baseline gap-x-3">
-                <span className="text-base font-bold tracking-[-0.02em] tabular-nums text-foreground">
-                  {formatUsd(car.basePrice)}
-                </span>
-                {car.estimatedTotalUsd && (
-                  <span className="text-xs font-semibold tabular-nums text-brand">
-                    {formatUsd(car.estimatedTotalUsd)} под ключ
-                  </span>
-                )}
-              </div>
-            </div>
-            <ArrowRight className="size-4 shrink-0 text-brand transition-transform group-hover:translate-x-0.5" />
-          </Link>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function HeroFallback() {
-  return (
-    <div className="flex h-full flex-col justify-center rounded-2xl border border-white/10 bg-white/5 p-8 sm:p-10">
-      <Heading size="sm" tone="inverse">
-        Не знаете, с чего начать?
-      </Heading>
-      <p className="mt-3 max-w-md text-sm leading-relaxed text-white/70">
-        Ответьте на пять вопросов — подберём автомобиль под ваш бюджет и задачи
-        и покажем ориентировочную стоимость под ключ.
+    <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-7 py-8 sm:px-8">
+      <p className="text-xs font-semibold tracking-wide text-white/40 uppercase">
+        TerraAuto в цифрах
       </p>
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-        <Button
-          size="lg"
-          className="h-11 bg-brand px-6 text-brand-foreground hover:bg-brand-deep"
-          render={<Link href="/choose" />}
-          nativeButton={false}
-        >
-          Подобрать за 2 минуты
-        </Button>
-        <Button
-          size="lg"
-          variant="outline"
-          className="h-11 border-white/20 bg-transparent px-6 text-white hover:bg-white/10 hover:text-white"
-          render={<Link href="/compare" />}
-          nativeButton={false}
-        >
-          Сравнить модели
-        </Button>
+      <div className="mt-6 grid grid-cols-2 gap-x-6 gap-y-8">
+        {heroStats.map((stat) => (
+          <div key={stat.value}>
+            <p className="text-3xl leading-none font-bold tracking-tight text-brand sm:text-4xl">
+              {stat.value}
+            </p>
+            <p className="mt-2 text-sm leading-snug text-white/60">
+              {stat.label}
+            </p>
+          </div>
+        ))}
       </div>
     </div>
   );

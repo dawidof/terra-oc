@@ -1,7 +1,9 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Phone, MessageSquare, MapPin, Clock, Mail } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
+import { Section } from "@/components/ui/section";
 
 export const metadata = {
   title: "Контакты — TerraAuto",
@@ -41,81 +43,93 @@ const contacts = [
 
 export default async function ContactsPage() {
   return (
-    <div className="min-h-screen bg-white">
-      <div className="container mx-auto px-4 py-12">
-        <div className="mb-12 text-center">
-          <h1 className="mb-4 text-4xl font-bold">Контакты</h1>
-          <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-            Свяжитесь с нами удобным способом — мы всегда на связи
-          </p>
-        </div>
+    <>
+      <Section padding="spacious">
+        <PageHeader
+          eyebrow="Контакты"
+          title="Свяжитесь с нами"
+          description="Свяжитесь с нами удобным способом — мы всегда на связи"
+          size="2xl"
+        />
+      </Section>
 
-        <div className="mx-auto grid max-w-4xl gap-6 sm:grid-cols-2">
+      <Section background="muted">
+        <div className="mx-auto grid max-w-4xl gap-5 sm:grid-cols-2">
           {contacts.map((contact, i) => (
-            <Card key={i}>
-              <CardContent className="flex items-start gap-4 p-6">
-                <div className="rounded-full bg-emerald-100 p-3">
-                  <contact.icon className="h-5 w-5 text-emerald-600" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold">{contact.title}</h3>
-                  <a
-                    href={contact.link}
-                    target={contact.link.startsWith("http") ? "_blank" : undefined}
-                    rel={contact.link.startsWith("http") ? "noopener noreferrer" : undefined}
-                    className="text-emerald-600 hover:underline"
-                  >
-                    {contact.value}
-                  </a>
-                  <p className="mt-1 text-sm text-muted-foreground">{contact.description}</p>
-                </div>
-              </CardContent>
-            </Card>
+            <div
+              key={i}
+              className="flex items-start gap-4 rounded-xl bg-card p-6 shadow-soft transition duration-200 hover:-translate-y-0.5 hover:shadow-soft-lg"
+            >
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-brand shadow-sm">
+                <contact.icon className="size-5 text-white" aria-hidden />
+              </span>
+              <div className="flex-1">
+                <h3 className="font-bold tracking-tight">{contact.title}</h3>
+                <a
+                  href={contact.link}
+                  target={contact.link.startsWith("http") ? "_blank" : undefined}
+                  rel={contact.link.startsWith("http") ? "noopener noreferrer" : undefined}
+                  className="font-semibold text-brand hover:underline"
+                >
+                  {contact.value}
+                </a>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {contact.description}
+                </p>
+              </div>
+            </div>
           ))}
         </div>
 
-        {/* Address */}
-        <div className="mx-auto mt-12 max-w-4xl">
-          <Card>
-            <CardContent className="flex items-start gap-4 p-6">
-              <div className="rounded-full bg-emerald-100 p-3">
-                <MapPin className="h-5 w-5 text-emerald-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold">Наш офис</h3>
-                <p className="text-muted-foreground">
-                  г. Ташкент, ул. Амира Темура, 108
-                </p>
-                <p className="mt-2 flex items-center gap-1 text-sm text-muted-foreground">
-                  <Clock className="h-3 w-3" />
-                  Пн–Пт: 9:00–18:00, Сб: 10:00–15:00
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* CTA */}
-        <div className="mx-auto mt-12 max-w-4xl rounded-lg bg-emerald-50 py-12 text-center">
-          <h2 className="mb-4 text-2xl font-bold">Нужна консультация?</h2>
-          <p className="mb-6 text-muted-foreground">
-            Расскажем о процессе, поможем с выбором и рассчитаем стоимость
-          </p>
-          <div className="flex items-center justify-center gap-4">
-            <Link href="/choose">
-              <Button size="lg">
-                <MessageSquare className="mr-2 h-4 w-4" />
-                Помочь выбрать
-              </Button>
-            </Link>
-            <Link href="/calculator">
-              <Button variant="outline" size="lg">
-                Рассчитать стоимость
-              </Button>
-            </Link>
+        <div className="mx-auto mt-5 max-w-4xl">
+          <div className="flex items-start gap-4 rounded-xl bg-card p-6 shadow-soft">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-brand shadow-sm">
+              <MapPin className="size-5 text-white" aria-hidden />
+            </span>
+            <div>
+              <h3 className="font-bold tracking-tight">Наш офис</h3>
+              <p className="text-muted-foreground">
+                г. Ташкент, ул. Амира Темура, 108
+              </p>
+              <p className="mt-2 flex items-center gap-1.5 text-sm text-muted-foreground">
+                <Clock className="size-3.5" aria-hidden />
+                Пн–Пт: 9:00–18:00, Сб: 10:00–15:00
+              </p>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
+      </Section>
+
+      <Section background="dark" padding="spacious">
+        <div className="mx-auto max-w-2xl text-center">
+          <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+            Нужна консультация?
+          </h2>
+          <p className="mt-4 text-lg leading-relaxed text-white/70">
+            Расскажем о процессе, поможем с выбором и рассчитаем стоимость
+          </p>
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Button
+              size="lg"
+              className="h-12 bg-brand px-7 text-brand-foreground shadow-sm hover:bg-brand-deep hover:shadow-md"
+              render={<Link href="/choose" />}
+              nativeButton={false}
+            >
+              <MessageSquare className="size-4" />
+              Помочь выбрать
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="h-12 border-white/25 bg-transparent px-7 text-white hover:bg-white/10 hover:text-white"
+              render={<Link href="/calculator" />}
+              nativeButton={false}
+            >
+              Рассчитать стоимость
+            </Button>
+          </div>
+        </div>
+      </Section>
+    </>
   );
 }

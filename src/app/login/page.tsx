@@ -39,7 +39,10 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center px-4">
       <div className="flex w-full max-w-md flex-col gap-6">
         <div className="text-center">
-          <p className="text-2xl font-semibold tracking-[-0.03em]">TerraAuto</p>
+          <p className="flex items-center justify-center gap-2 text-2xl font-semibold tracking-[-0.03em]">
+            <span className="size-2.5 rounded-full bg-brand" aria-hidden />
+            TerraAuto
+          </p>
           <p className="mt-1 text-sm text-muted-foreground">Вход в CRM систему</p>
         </div>
 
@@ -72,7 +75,11 @@ export default function LoginPage() {
             />
           </div>
 
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button
+            type="submit"
+            className="w-full bg-brand text-brand-foreground shadow-sm hover:bg-brand-deep"
+            disabled={loading}
+          >
             {loading ? "Вход..." : "Войти"}
           </Button>
         </form>

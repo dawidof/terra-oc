@@ -2,7 +2,10 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { Metadata } from "next";
 import { getAllBrands, getCatalogCars } from "@/lib/queries";
+import { CarCard } from "@/components/car-card";
 import { FilterBar } from "@/components/filter-bar";
+import { PageHeader } from "@/components/ui/page-header";
+import { Section } from "@/components/ui/section";
 import type { SortOption, CatalogFilters } from "@/lib/queries";
 
 export const revalidate = 60;
@@ -62,120 +65,86 @@ export default async function CatalogPage({ searchParams }: Props) {
   );
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="mb-2 text-3xl font-bold">Каталог автомобилей</h1>
-          <p className="text-muted-foreground">
-            {total} {totalItemsText(total)} доступно
-          </p>
-        </div>
+    <Section padding="tight">
+      <PageHeader
+        eyebrow="Каталог"
+        title="Каталог автомобилей"
+        description={`${total} ${totalItemsText(total)} доступно`}
+        align="left"
+        size="xl"
+      />
 
-        <Suspense fallback={<div className="h-24 animate-pulse bg-gray-100 rounded-lg" />}>
+      <div className="mt-8">
+        <Suspense
+          fallback={<div className="h-24 animate-pulse rounded-lg bg-muted-section" />}
+        >
           <FilterBar brands={brands} total={total} />
         </Suspense>
+      </div>
 
-        {cars.length === 0 ? (
-          <div className="py-16 text-center">
-            <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-muted flex items-center justify-center text-4xl">
-              🔍
-            </div>
-            <h2 className="mb-2 text-xl font-semibold">Автомобили не найдены</h2>
-            <p className="text-muted-foreground">Попробуйте изменить параметры поиска или расширить фильтры</p>
+      {cars.length === 0 ? (
+        <div className="py-16 text-center">
+          <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-brand-muted text-4xl">
+            🔍
           </div>
-        ) : (
-          <>
-            <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {cars.map((car: CatalogCar) => (
-                <a
-                  key={car.trimId}
-                  href={`/cars/${car.trimSlug}`}
-                  className="block transition-transform hover:-translate-y-0.5"
-                >
-                  <CarCardPlaceholder car={car} />
-                </a>
-              ))}
-            </div>
-
-            {totalPages > 1 && (
-              <div className="mt-8 flex justify-center gap-2">
-                {page > 1 && (
-                  <Link
-                    href={`/cars?${new URLSearchParams({ ...params, page: String(page - 1) }).toString()}`}
-                    className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 text-sm font-medium hover:bg-muted"
-                  >
-                    Назад
-                  </Link>
-                )}
-                <span className="flex items-center px-4 text-sm text-muted-foreground">
-                  {page} из {totalPages}
-                </span>
-                {page < totalPages && (
-                  <Link
-                    href={`/cars?${new URLSearchParams({ ...params, page: String(page + 1) }).toString()}`}
-                    className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 text-sm font-medium hover:bg-muted"
-                  >
-                    Далее
-                  </Link>
-                )}
-              </div>
-            )}
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-interface CatalogCar {
-  trimId: string;
-  trimName: string;
-  trimSlug: string;
-  brandName: string;
-  modelName: string;
-  powertrainType: string | null;
-  drivetrain: string | null;
-  basePrice: string | null;
-  estimatedTotalUsd: string | null;
-  imageUrl: string | null;
-}
-
-function CarCardPlaceholder({ car }: { car: CatalogCar }) {
-  return (
-    <div className="overflow-hidden rounded-xl bg-card shadow-soft">
-      <div className="relative aspect-[4/3] bg-gray-100">
-        {car.imageUrl ? (
-          <img
-            src={car.imageUrl}
-            alt={`${car.brandName} ${car.modelName}`}
-            className="h-full w-full object-cover"
-            loading="lazy"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-gray-400">Фото скоро</div>
-        )}
-      </div>
-      <div className="space-y-3 p-4">
-        <div className="text-sm text-muted-foreground">{car.brandName}</div>
-        <h3 className="text-lg font-semibold">{car.modelName} <span className="font-normal text-muted-foreground">{car.trimName}</span></h3>
-        <div className="flex gap-2 text-sm text-muted-foreground">
-          {car.powertrainType && <span>{car.powertrainType}</span>}
-          {car.drivetrain && <span>{car.drivetrain}</span>}
+          <h2 className="mb-2 text-xl font-bold tracking-tight">
+            Автомобили не найдены
+          </h2>
+          <p className="text-muted-foreground">
+            Попробуйте изменить параметры поиска или расширить фильтры
+          </p>
         </div>
-        <div className="flex items-end justify-between">
-          <div>
-            <div className="text-xs text-muted-foreground">от</div>
-            <div className="text-xl font-bold">{car.basePrice ? `$${Number(car.basePrice).toLocaleString()}` : "Цена уточняется"}</div>
+      ) : (
+        <>
+          <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {cars.map((car) => (
+              <CarCard
+                key={car.trimId}
+                brandName={car.brandName}
+                brandSlug={car.brandSlug}
+                modelName={car.modelName}
+                modelSlug={car.modelSlug}
+                trimName={car.trimName}
+                trimSlug={car.trimSlug}
+                powertrainType={car.powertrainType}
+                drivetrain={car.drivetrain}
+                motorPowerKw={car.motorPowerKw}
+                enginePowerHp={car.enginePowerHp}
+                rangeKm={car.rangeKm}
+                basePrice={car.basePrice}
+                estimatedTotalUsd={car.estimatedTotalUsd}
+                imageUrl={car.imageUrl}
+                modelYear={car.modelYear}
+              />
+            ))}
           </div>
-          {car.estimatedTotalUsd && (
-            <div className="text-right">
-              <div className="text-xs text-muted-foreground">под ключ</div>
-              <div className="text-sm font-medium text-emerald-600">{`$${Number(car.estimatedTotalUsd).toLocaleString()}`}</div>
+
+          {totalPages > 1 && (
+            <div className="mt-8 flex items-center justify-center gap-3">
+              {page > 1 && (
+                <Link
+                  href={`/cars?${new URLSearchParams({ ...params, page: String(page - 1) }).toString()}`}
+                  className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-card px-4 text-sm font-semibold shadow-soft transition-colors hover:border-brand hover:bg-brand hover:text-brand-foreground"
+                >
+                  Назад
+                </Link>
+              )}
+              <span className="flex items-center px-2 text-sm tabular-nums text-muted-foreground">
+                {page} из {totalPages}
+              </span>
+              {page < totalPages && (
+                <Link
+                  href={`/cars?${new URLSearchParams({ ...params, page: String(page + 1) }).toString()}`}
+                  className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-card px-4 text-sm font-semibold shadow-soft transition-colors hover:border-brand hover:bg-brand hover:text-brand-foreground"
+                >
+                  Далее
+                </Link>
+              )}
             </div>
           )}
-        </div>
-      </div>
-    </div>
+        </>
+      )}
+    </Section>
   );
 }
 

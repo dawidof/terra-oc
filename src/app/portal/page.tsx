@@ -428,7 +428,7 @@ function PortalContent() {
                   </p>
                 </div>
                 {order.lead.estimatedTotalUsd && (
-                  <span className="text-sm font-semibold text-green-700">
+                  <span className="text-sm font-semibold text-brand">
                     {formatUsd(order.lead.estimatedTotalUsd)}
                   </span>
                 )}
@@ -445,8 +445,8 @@ function PortalContent() {
     <div className="min-h-screen bg-muted/40">
       <div className="mx-auto max-w-lg px-4 py-16">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-green-100">
-            <Car className="size-7 text-green-700" />
+          <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-brand-muted">
+            <Car className="size-7 text-brand" />
           </div>
           <h1 className="text-2xl font-bold">Отследить заказ</h1>
           <p className="mt-2 text-sm text-muted-foreground">
@@ -486,7 +486,7 @@ function PortalContent() {
         <button
           type="button"
           onClick={() => goTo({ orders: "demo", leadId: null })}
-          className="mb-4 flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-green-300 bg-green-50 px-4 py-3 text-sm font-medium text-green-700 transition-colors hover:bg-green-100"
+          className="mb-4 flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-brand/40 bg-brand-muted px-4 py-3 text-sm font-medium text-brand transition-colors hover:bg-brand-muted"
         >
           <Eye className="size-4" />
           Посмотреть демо-заказы
@@ -501,7 +501,7 @@ function PortalContent() {
                   onClick={() => setLookupType("phone")}
                   className={`flex flex-1 items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
                     lookupType === "phone"
-                      ? "border-green-600 bg-green-50 text-green-700"
+                      ? "border-brand bg-brand-muted text-brand"
                       : "border-border text-muted-foreground hover:bg-muted"
                   }`}
                 >
@@ -513,7 +513,7 @@ function PortalContent() {
                   onClick={() => setLookupType("quoteId")}
                   className={`flex flex-1 items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
                     lookupType === "quoteId"
-                      ? "border-green-600 bg-green-50 text-green-700"
+                      ? "border-brand bg-brand-muted text-brand"
                       : "border-border text-muted-foreground hover:bg-muted"
                   }`}
                 >

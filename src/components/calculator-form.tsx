@@ -597,7 +597,12 @@ export function CalculatorForm({
               </div>
             )}
 
-            <Button type="submit" className="w-full" size="lg" disabled={loading || !isFormValid}>
+            <Button
+              type="submit"
+              className="w-full bg-brand text-brand-foreground shadow-sm hover:bg-brand-deep"
+              size="lg"
+              disabled={loading || !isFormValid}
+            >
               {loading ? "Расчёт..." : "Рассчитать стоимость"}
             </Button>
           </form>
@@ -652,7 +657,9 @@ export function CalculatorForm({
                 <Separator />
                 <div className="flex justify-between text-lg font-bold">
                   <span>Итого ориентировочно</span>
-                  <span className="text-emerald-600">{formatUsd(Math.round(result.total))}</span>
+                  <span className="rounded-lg bg-brand-muted px-2.5 py-0.5 text-brand">
+                    {formatUsd(Math.round(result.total))}
+                  </span>
                 </div>
                 {result.exchangeRate > 0 && (
                   <div className="text-sm text-muted-foreground">
@@ -661,7 +668,7 @@ export function CalculatorForm({
                 )}
                 {exchangeRate && (
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-green-500" />
+                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-brand" />
                     <span>
                       Курс: 1 USD = {exchangeRate.rate.toLocaleString("uz-UZ")} UZS
                     </span>
@@ -673,10 +680,10 @@ export function CalculatorForm({
               </CardContent>
             </Card>
 
-            <Card className="border-amber-200 bg-amber-50">
+            <Card className="border-brand/20 bg-brand-muted">
               <CardContent className="flex gap-3 p-4">
-                <Info className="h-5 w-5 shrink-0 text-amber-600" />
-                <p className="text-sm text-amber-800">
+                <Info className="h-5 w-5 shrink-0 text-brand" />
+                <p className="text-sm text-brand-muted-foreground">
                   Расчёт носит ориентировочный характер. Итоговая стоимость зависит от фактической
                   цены автомобиля, курса валют, стоимости логистики и действующих на дату оформления
                   таможенных платежей.
@@ -686,9 +693,9 @@ export function CalculatorForm({
 
             {/* Lead form */}
             {leadSubmitted ? (
-              <Card className="border-emerald-200 bg-emerald-50">
+              <Card className="border-brand/25 bg-brand-muted">
                 <CardContent className="flex flex-col items-center py-8 text-center">
-                  <CheckCircle className="mb-4 h-12 w-12 text-emerald-600" />
+                  <CheckCircle className="mb-4 h-12 w-12 text-brand" />
                   <h3 className="mb-2 text-lg font-semibold">Заявка отправлена!</h3>
                   <p className="text-sm text-muted-foreground">
                     Наш менеджер свяжется с вами в ближайшее время для уточнения деталей.

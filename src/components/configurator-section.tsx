@@ -123,8 +123,8 @@ export function ConfiguratorSection({
   }
 
   return (
-    <section className="mt-12">
-      <h2 className="mb-6 text-2xl font-bold">Конфигурация и заявка</h2>
+    <section>
+      <h2 className="mb-6 text-2xl font-bold tracking-tight">Конфигурация и заявка</h2>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,800px)_minmax(0,500px)]">
         {/* Configurator */}
@@ -159,7 +159,7 @@ export function ConfiguratorSection({
             <Card>
               <CardContent className="py-6">
                 <div className="mb-4 flex items-center gap-2">
-                  <Calculator className="h-5 w-5 text-emerald-600" />
+                  <Calculator className="h-5 w-5 text-brand" />
                   <h3 className="text-lg font-semibold">Готовы к заказу?</h3>
                 </div>
                 <p className="mb-5 text-sm text-muted-foreground">
@@ -205,7 +205,7 @@ export function ConfiguratorSection({
 
                   <div className="flex justify-between text-base font-bold">
                     <span>Итого (ориентир.)</span>
-                    <span className="text-emerald-600">
+                    <span className="rounded-lg bg-brand-muted px-2.5 py-0.5 text-brand">
                       от {formatUsd(breakdown.total)}
                     </span>
                   </div>
@@ -217,8 +217,8 @@ export function ConfiguratorSection({
                   )}
                 </div>
 
-                <div className="mt-4 flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-xs text-amber-700">
-                  <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                <div className="mt-4 flex items-start gap-2 rounded-lg bg-brand-muted p-3 text-xs text-brand-muted-foreground">
+                  <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand" />
                   <span>
                     Точная стоимость рассчитывается менеджером после запроса с учётом всех опций и
                     текущих курсов.
@@ -227,7 +227,7 @@ export function ConfiguratorSection({
 
                 <Button
                   size="lg"
-                  className="mt-5 w-full"
+                  className="mt-5 w-full bg-brand text-brand-foreground shadow-sm hover:bg-brand-deep"
                   onClick={() => setShowLeadForm(true)}
                 >
                   Получить точный расчёт

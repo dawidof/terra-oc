@@ -179,7 +179,7 @@ export function Results({ answers, recommendations, onReset, onLeadForm, onSofte
         <Card className="mb-6">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-3">
-              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+              <CheckCircle2 className="h-4 w-4 text-brand" />
               <h3 className="text-sm font-semibold">Ваши предпочтения</h3>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -212,7 +212,7 @@ export function Results({ answers, recommendations, onReset, onLeadForm, onSofte
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
           <Card className="shadow-lg">
             <CardContent className="flex items-center gap-4 p-4">
-              <GitCompareArrows className="h-4 w-4 text-emerald-600" />
+              <GitCompareArrows className="h-4 w-4 text-brand" />
               {selectedCars.size >= 2 ? (
                 <>
                   <span className="text-sm text-muted-foreground">

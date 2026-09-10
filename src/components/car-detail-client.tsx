@@ -5,6 +5,7 @@ import { CarGallery } from "@/components/car-gallery";
 import { CarOptionsList } from "@/components/car-options-list";
 import { ConfiguratorSection } from "@/components/configurator-section";
 import { PurchaseProcess } from "@/components/purchase-process";
+import { Section } from "@/components/ui/section";
 
 interface GalleryImage {
   id: string;
@@ -91,33 +92,25 @@ export function CarDetailClient({
 
   return (
     <div>
-      {/* Hero section: two-column layout */}
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[3fr_2fr]">
-        {/* Left column: Gallery */}
-        <div>
-          <CarGallery
-            images={galleryImages}
-            brandName={brandName}
-            modelName={modelName}
-          />
+      <Section padding="tight">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[3fr_2fr]">
+          <div>
+            <CarGallery
+              images={galleryImages}
+              brandName={brandName}
+              modelName={modelName}
+            />
+          </div>
+          <div>{heroInfo}</div>
         </div>
 
-        {/* Right column: Hero info */}
-        <div>
-          {heroInfo}
+        <div className="mt-8 grid grid-cols-1 gap-8 md:grid-cols-2">
+          {specs}
+          <CarOptionsList optionGroups={optionGroups} />
         </div>
-      </div>
+      </Section>
 
-      {/* Specs & Options - full width below photos */}
-      <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-        {specs}
-        <CarOptionsList optionGroups={optionGroups} />
-      </div>
-
-      <hr className="my-10 border-border" />
-
-      {/* Configurator + Lead */}
-      <div id="configurator" className="mt-12">
+      <Section background="muted" id="configurator">
         {optionGroups.length > 0 ? (
           <ConfiguratorSection
             optionGroups={optionGroups}
@@ -139,18 +132,18 @@ export function CarDetailClient({
             onColorSelect={handleColorSelect}
           />
         ) : (
-          <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
+          <div className="rounded-xl border border-dashed bg-card p-8 text-center text-sm text-muted-foreground">
             Конфигуратор недоступен для этой комплектации
           </div>
         )}
-      </div>
+      </Section>
 
-      <div className="mt-10">
+      <Section>
         <PurchaseProcess />
-      </div>
+        {trimComparison}
+      </Section>
 
-      {trimComparison}
-      {similarCars}
+      {similarCars && <Section background="muted">{similarCars}</Section>}
     </div>
   );
 }
