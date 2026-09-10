@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -156,31 +156,33 @@ export function TrimComparisonTable({ trims, specs, currentSlug }: TrimCompariso
             </tr>
 
             {/* Spec groups */}
-            {Object.entries(grouped).map(([groupName, rows]) => [
-              <tr key={`group-${groupName}`} className="border-t-2">
-                <td
-                  colSpan={trims.length + 1}
-                  className="py-3 pr-4 font-semibold"
-                >
-                  {groupName}
-                </td>
-              </tr>,
-              ...rows.map((row) => (
-                <tr key={row.specSlug} className="border-b">
-                  <td className="py-2 pr-4 text-muted-foreground">{row.specName}</td>
-                  {row.values.map((value, i) => (
-                    <td
-                      key={i}
-                      className={`py-2 px-4 text-center ${
-                        trims[i]?.slug === currentSlug ? "bg-emerald-50" : ""
-                      }`}
-                    >
-                      {value || "—"}
-                    </td>
-                  ))}
+            {Object.entries(grouped).map(([groupName, rows]) => (
+              <Fragment key={`group-${groupName}`}>
+                <tr className="border-t-2">
+                  <td
+                    colSpan={trims.length + 1}
+                    className="py-3 pr-4 font-semibold"
+                  >
+                    {groupName}
+                  </td>
                 </tr>
-              )),
-            ])}
+                {rows.map((row) => (
+                  <tr key={row.specSlug} className="border-b">
+                    <td className="py-2 pr-4 text-muted-foreground">{row.specName}</td>
+                    {row.values.map((value, i) => (
+                      <td
+                        key={i}
+                        className={`py-2 px-4 text-center ${
+                          trims[i]?.slug === currentSlug ? "bg-emerald-50" : ""
+                        }`}
+                      >
+                        {value || "—"}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </Fragment>
+            ))}
           </tbody>
         </table>
       </div>

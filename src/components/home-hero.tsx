@@ -14,10 +14,10 @@ import { formatUsd, powerLabel, powertrainLabel } from "@/lib/format";
 import type { FeaturedModel } from "@/lib/queries";
 
 const trustPoints = [
-  { icon: ShieldCheck, label: "Официальный договор" },
-  { icon: FileCheck, label: "Прямой импорт" },
+  { icon: ShieldCheck, label: "Фиксированная цена в договоре" },
+  { icon: FileCheck, label: "Полный цикл под ключ" },
   { icon: Gauge, label: "Индивидуальная комплектация" },
-  { icon: Timer, label: "Доставка 20–30 дней" },
+  { icon: Timer, label: "Доставка за 20–30 дней" },
 ];
 
 interface HomeHeroProps {
@@ -26,20 +26,19 @@ interface HomeHeroProps {
 
 export function HomeHero({ featuredCar }: HomeHeroProps) {
   return (
-    <section className="border-b border-border">
+    <section aria-label="Главная — TerraAuto" className="border-b border-border">
       <div className="container mx-auto px-4 sm:px-6">
         <div className="grid gap-12 py-14 sm:py-20 lg:grid-cols-12 lg:gap-8 lg:py-24">
           <div className="flex flex-col justify-center lg:col-span-6">
             <Eyebrow tone="brand">Прямой импорт · Ташкент</Eyebrow>
 
             <Heading as="h1" size="2xl" className="mt-5">
-              Автомобили из Китая, Кореи, США и Дубая под заказ
+              Автомобиль вашей мечты — доставим в Ташкент под ключ
             </Heading>
 
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
-              Подберём, проверим, доставим и оформим автомобиль в Узбекистане.
-              Вы заранее видите комплектацию и ориентировочную стоимость под
-              ключ.
+              Подбираем, проверяем, доставляем и оформляем. Полная прозрачность
+              цены до оплаты — никаких скрытых платежей.
             </p>
 
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
@@ -48,7 +47,7 @@ export function HomeHero({ featuredCar }: HomeHeroProps) {
                 className="h-11 px-6"
                 render={<Link href="/cars" />}
               >
-                Смотреть автомобили
+                Подобрать автомобиль
                 <ArrowRight data-icon="inline-end" className="size-4" />
               </Button>
               <Button
@@ -173,16 +172,20 @@ function HeroFallbackCard() {
         и покажем ориентировочную стоимость под ключ.
       </p>
       <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-        <Button size="lg" className="h-10 px-5" render={<Link href="/choose" />}>
-          Помочь выбрать
+        <Button
+          size="lg"
+          className="h-11 px-6"
+          render={<Link href="/choose" />}
+        >
+          Подобрать за 2 минуты
         </Button>
         <Button
           size="lg"
           variant="outline"
-          className="h-10 px-5"
+          className="h-11 px-6"
           render={<Link href="/compare" />}
         >
-          Сравнить
+          Сравнить модели
         </Button>
       </div>
     </div>

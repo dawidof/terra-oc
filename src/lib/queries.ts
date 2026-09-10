@@ -7,6 +7,7 @@ import {
   trims,
   vehicleOffers,
   vehicleMedia,
+  vehicleInventory,
   usedVehicleDetails,
   specificationGroups,
   specificationDefinitions,
@@ -462,4 +463,40 @@ export async function getAllBrands() {
     .from(brands)
     .where(eq(brands.active, true))
     .orderBy(brands.sortOrder, brands.name);
+}
+
+export interface HomeStats {
+  brandsCount: number;
+  modelsCount: number;
+  trimsCount: number;
+  inStockCount: number;
+}
+
+export async function getHomeStats(): Promise<HomeStats> {
+  const [[brandsResult], [modelsResult], [trimsResult], [stockResult]] =
+    await Promise.all([
+      db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(brands)
+        .where(eq(brands.active, true)),
+      db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(carModels)
+        .where(eq(carModels.active, true)),
+      db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(trims)
+        .where(eq(trims.active, true)),
+      db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(vehicleInventory)
+        .where(eq(vehicleInventory.status, "in_stock")),
+    ]);
+
+  return {
+    brandsCount: brandsResult?.count ?? 0,
+    modelsCount: modelsResult?.count ?? 0,
+    trimsCount: trimsResult?.count ?? 0,
+    inStockCount: stockResult?.count ?? 0,
+  };
 }

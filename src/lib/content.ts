@@ -1,4 +1,4 @@
-import { eq, desc } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { db } from "@/db";
 import { reviews, contentPages, siteSettings } from "@/db/schema";
 
@@ -11,7 +11,7 @@ export async function getPublishedReviews(featuredOnly = false) {
   return db
     .select()
     .from(reviews)
-    .where(conditions.length > 0 ? conditions[0] : undefined)
+    .where(and(...conditions))
     .orderBy(reviews.sortOrder, desc(reviews.createdAt));
 }
 

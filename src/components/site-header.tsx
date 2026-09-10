@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/cars", label: "Автомобили" },
-  { href: "/choose", label: "Помочь выбрать" },
+  { href: "/choose", label: "Подбор" },
   { href: "/calculator", label: "Калькулятор" },
   { href: "/how-it-works", label: "Как купить" },
 ];
@@ -72,6 +72,13 @@ export function SiteHeader() {
 
         <div className="flex items-center gap-2">
           <AutocompleteSearch className="hidden w-56 xl:block" />
+          <a
+            href="tel:+998901234567"
+            className="hidden items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground lg:inline-flex"
+          >
+            <Phone className="size-3.5" aria-hidden />
+            +998 90 123 45 67
+          </a>
           {is_admin_user && <AdminToggle />}
           {isAdmin && <SettingsDrawer />}
           <Button variant="outline" size="sm" render={<Link href="/login" />}>
@@ -130,7 +137,7 @@ const footerColumns = [
     title: "Каталог",
     links: [
       { href: "/cars", label: "Автомобили" },
-      { href: "/choose", label: "Помочь выбрать" },
+      { href: "/choose", label: "Подбор" },
       { href: "/compare", label: "Сравнение" },
       { href: "/calculator", label: "Калькулятор" },
     ],

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Car, MapPin, Star } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -65,11 +66,12 @@ export function ReviewCard({ review }: { review: Review }) {
 
         {review.imageUrl && (
           <div className="mt-5 overflow-hidden rounded-lg">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src={review.imageUrl}
-              alt={review.name}
-              loading="lazy"
+              alt={`Фото автомобиля ${review.vehicleLabel || review.name}`}
+              width={640}
+              height={360}
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
               className="aspect-[16/9] w-full object-cover"
             />
           </div>

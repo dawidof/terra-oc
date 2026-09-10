@@ -45,7 +45,7 @@ interface ConfiguratorProps {
       groupType: string;
     }[];
   }) => void;
-  onColorSelect?: (groupId: string, optionId: string, images: ColorImage[]) => void;
+  onColorSelect?: (groupId: string, optionId: string, images: ColorImage[], groupType: string) => void;
 }
 
 function formatDelta(delta: number | null): string {
@@ -83,7 +83,7 @@ export function Configurator({
     const group = groups.find((g) => g.id === groupId);
     if (group && (group.type === "exterior_color" || group.type === "interior_color")) {
       const images = colorImages[optionId] || [];
-      onColorSelect?.(groupId, optionId, images);
+      onColorSelect?.(groupId, optionId, images, group.type);
     }
   }
 
@@ -196,7 +196,10 @@ export function Configurator({
                     return (
                       <button
                         key={option.id}
-                        onClick={() => handleGroupSelect(group.id, option.id)}
+                        onClick={() => {
+                          handleGroupSelect(group.id, option.id);
+                          setExpandedSwatch(expandedSwatch === option.id ? null : option.id);
+                        }}
                         className={`group relative flex items-center gap-2 rounded-lg border p-2 transition-all ${
                           isSelected
                             ? "border-emerald-600 bg-emerald-50 ring-1 ring-emerald-600"
@@ -239,7 +242,12 @@ export function Configurator({
                 {expandedSwatch && (() => {
                   const group2 = groups.find((g) => g.id === group.id);
                   const opt = group2?.options.find((o) => o.id === expandedSwatch);
-                  const images = colorImages[expandedSwatch] || [];
+                  const images = (colorImages[expandedSwatch] || []).filter((img) => {
+                    if (group.type === "interior_color") {
+                      return img.url.toLowerCase().includes("interior");
+                    }
+                    return !img.url.toLowerCase().includes("interior");
+                  });
                   if (!opt) return null;
 
                   return (

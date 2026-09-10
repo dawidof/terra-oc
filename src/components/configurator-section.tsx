@@ -53,7 +53,7 @@ interface ConfiguratorSectionProps {
   deliveryDays: number | null;
   colorImages?: Record<string, ColorImage[]>;
   defaultMedia?: MediaImage[];
-  onColorSelect?: (groupId: string, optionId: string, images: ColorImage[]) => void;
+  onColorSelect?: (groupId: string, optionId: string, images: ColorImage[], groupType: string) => void;
 }
 
 export function ConfiguratorSection({
@@ -98,7 +98,7 @@ export function ConfiguratorSection({
 
   const estimatedBase = estimatedTotalUsd ? Number(estimatedTotalUsd) : basePrice + 9000;
 
-  function handleColorSelect(_groupId: string, optionId: string, images: ColorImage[]) {
+  function handleColorSelect(_groupId: string, optionId: string, images: ColorImage[], groupType: string) {
     const galleryImages = images.length > 0
       ? images.map((img, i) => ({
           id: `${optionId}-${i}`,
@@ -107,7 +107,7 @@ export function ConfiguratorSection({
         }))
       : defaultMedia.map((m, i) => ({ id: `${optionId}-default-${i}`, url: m.url, alt: m.alt }));
 
-    onColorSelect?.(_groupId, optionId, galleryImages);
+    onColorSelect?.(_groupId, optionId, galleryImages, groupType);
   }
 
   return (

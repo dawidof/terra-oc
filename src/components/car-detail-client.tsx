@@ -73,17 +73,26 @@ export function CarDetailClient({
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>(initialMedia);
 
   const handleColorSelect = useCallback(
-    (_groupId: string, optionId: string, images: { url: string; alt?: string | null }[]) => {
-      if (images.length > 0) {
-        setGalleryImages(
-          images.map((img, i) => ({
-            id: `${optionId}-${i}`,
-            url: img.url,
-            alt: img.alt,
-          }))
-        );
+    (_groupId: string, optionId: string, images: { url: string; alt?: string | null }[], groupType: string) => {
+      const filterByType = (imgs: GalleryImage[]) => {
+        if (groupType === "interior_color") {
+          return imgs.filter((img) => img.url.toLowerCase().includes("interior"));
+        }
+        return imgs.filter((img) => !img.url.toLowerCase().includes("interior"));
+      };
+
+      const mapped = images.map((img, i) => ({
+        id: `${optionId}-${i}`,
+        url: img.url,
+        alt: img.alt,
+      }));
+
+      const filtered = filterByType(mapped);
+      if (filtered.length > 0) {
+        setGalleryImages(filtered);
       } else {
-        setGalleryImages(initialMedia);
+        const fallback = filterByType(initialMedia);
+        setGalleryImages(fallback.length > 0 ? fallback : initialMedia);
       }
     },
     [initialMedia]
