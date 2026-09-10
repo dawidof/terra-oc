@@ -3,7 +3,6 @@ import {
   ArrowRight,
   Calculator,
   ChevronRight,
-  FileCheck,
   Globe2,
   MessageCircle,
   Phone,
@@ -14,10 +13,13 @@ import { Button } from "@/components/ui/button";
 import { Eyebrow, Heading, Section } from "@/components/ui/section";
 import { HomeCarGrid } from "@/components/home-car-grid";
 import { HomeHero } from "@/components/home-hero";
+import { HomeSavings } from "@/components/home-savings";
+import { HomeReviews } from "@/components/home-reviews";
+import { HomeClientPhotos } from "@/components/home-client-photos";
 import { BrandLogos } from "@/components/home-brand-logos";
-import { ReviewList } from "@/components/reviews/review-list";
 import { getPublishedReviews } from "@/lib/content";
 import { getAllBrands, getFeaturedModels } from "@/lib/queries";
+import { client } from "@/db";
 
 export const revalidate = 300;
 
@@ -88,10 +90,58 @@ const faq = [
 const sectionLink =
   "group inline-flex items-center gap-1.5 text-sm font-medium text-foreground transition-colors hover:text-brand";
 
+const avatarMap: Record<string, string> = {
+  "Артём Ким": "/avatars/avatar1.jpg",
+  "Дилшод Рустамов": "/avatars/avatar2.jpg",
+  "Алексей Петров": "/avatars/avatar3.jpg",
+  "Нодирбек Турсунов": "/avatars/avatar4.jpg",
+  "Мария Сидорова": "/avatars/avatar5.jpg",
+};
+
+async function getReviewsWithImages() {
+  const reviews = await getPublishedReviews(true);
+
+  const enriched = await Promise.all(
+    reviews.map(async (review, index) => {
+      const avatarUrl = avatarMap[review.name] || `/avatars/avatar${(index % 5) + 1}.jpg`;
+
+      if (!review.vehicleLabel) {
+        return { ...review, imageUrls: review.imageUrl ? [review.imageUrl] : [], avatarUrl };
+      }
+
+      const vehicleName = review.vehicleLabel.split(" ")[0].toLowerCase();
+
+      const mediaRows = await client`
+        SELECT vm.url
+        FROM vehicle_media vm
+        JOIN model_versions mv ON vm.model_version_id = mv.id
+        JOIN car_models cm ON mv.car_model_id = cm.id
+        JOIN brands b ON cm.brand_id = b.id
+        WHERE vm.trim_id IS NULL
+        AND (
+          LOWER(cm.name) LIKE ${`%${vehicleName}%`}
+          OR LOWER(b.name) LIKE ${`%${vehicleName}%`}
+        )
+        ORDER BY vm.sort_order
+        LIMIT 4
+      `;
+
+      const imageUrls = mediaRows.map((r) => r.url as string);
+      if (review.imageUrl && !imageUrls.includes(review.imageUrl)) {
+        imageUrls.unshift(review.imageUrl);
+      }
+
+      return { ...review, imageUrls: imageUrls.slice(0, 4), avatarUrl };
+    })
+  );
+
+  return enriched;
+}
+
 export default async function HomePage() {
   const [featuredModels, reviews, allBrands] = await Promise.all([
     getFeaturedModels(),
-    getPublishedReviews(true),
+    getReviewsWithImages(),
     getAllBrands(),
   ]);
 
@@ -226,6 +276,8 @@ export default async function HomePage() {
         </div>
       </Section>
 
+      <HomeSavings />
+
       <BrandLogos brands={allBrands} />
 
       <Section id="choose" background="muted" divide>
@@ -276,44 +328,9 @@ export default async function HomePage() {
         </div>
       </Section>
 
-      {reviews.length > 0 && (
-        <Section id="reviews" divide>
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <Eyebrow>
-                <FileCheck className="size-3.5" aria-hidden />
-                Отзывы клиентов
-              </Eyebrow>
-              <Heading size="lg" className="mt-3">
-                Что говорят владельцы
-              </Heading>
-            </div>
-            <Link href="/reviews" className={sectionLink}>
-              Все отзывы
-              <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
-            </Link>
-          </div>
-          <div className="mt-10">
-            <ReviewList reviews={reviews.slice(0, 3)} />
-          </div>
-        </Section>
-      )}
+      <HomeReviews reviews={reviews.slice(0, 6)} />
 
-      {reviews.length === 0 && (
-        <Section id="reviews" divide>
-          <Eyebrow>
-            <FileCheck className="size-3.5" aria-hidden />
-            Отзывы клиентов
-          </Eyebrow>
-          <Heading size="lg" className="mt-3">
-            Что говорят владельцы
-          </Heading>
-          <p className="mt-4 text-muted-foreground">
-            Отзывы скоро появятся — пока что вы можете изучить каталог и
-            рассчитать стоимость.
-          </p>
-        </Section>
-      )}
+      <HomeClientPhotos />
 
       <Section id="cta" background="muted" divide>
         <div className="max-w-2xl text-center">

@@ -14,10 +14,10 @@ import { formatUsd, powerLabel, powertrainLabel } from "@/lib/format";
 import type { FeaturedModel } from "@/lib/queries";
 
 const trustPoints = [
-  { icon: ShieldCheck, label: "Фиксированная цена в договоре" },
+  { icon: Timer, label: "Доставка за 3 недели" },
+  { icon: Gauge, label: "Выгода до 35%" },
+  { icon: ShieldCheck, label: "По договору, с гарантией" },
   { icon: FileCheck, label: "Полный цикл под ключ" },
-  { icon: Gauge, label: "Индивидуальная комплектация" },
-  { icon: Timer, label: "Доставка за 20–30 дней" },
 ];
 
 interface HomeHeroProps {
@@ -33,12 +33,13 @@ export function HomeHero({ featuredCar }: HomeHeroProps) {
             <Eyebrow tone="brand">Прямой импорт · Ташкент</Eyebrow>
 
             <Heading as="h1" size="2xl" className="mt-5">
-              Автомобиль вашей мечты — доставим в Ташкент под ключ
+              Автомобили под заказ из Кореи, Китая и Японии — до 35% дешевле
+              рынка
             </Heading>
 
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
-              Подбираем, проверяем, доставляем и оформляем. Полная прозрачность
-              цены до оплаты — никаких скрытых платежей.
+              Подберём, выкупим и доставим авто в ваш город за 3 недели. По
+              договору, с гарантией и под ключ.
             </p>
 
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
