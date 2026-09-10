@@ -472,6 +472,68 @@ export interface HomeStats {
   inStockCount: number;
 }
 
+export interface CalculatorTrim {
+  trimId: string;
+  trimName: string;
+  trimSlug: string;
+  modelName: string;
+  modelSlug: string;
+  brandName: string;
+  brandSlug: string;
+  basePrice: number | null;
+  basePriceCurrency: string | null;
+  powertrainType: string | null;
+  engineDisplacementCc: number | null;
+  motorPowerKw: number | null;
+  batteryCapacityKwh: number | null;
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export async function getTrimForCalculator(
+  trimIdOrSlug: string
+): Promise<CalculatorTrim | null> {
+  const byId = UUID_RE.test(trimIdOrSlug)
+    ? eq(trims.id, trimIdOrSlug)
+    : undefined;
+
+  const [row] = await db
+    .select({
+      trimId: trims.id,
+      trimName: trims.name,
+      trimSlug: trims.slug,
+      modelName: carModels.name,
+      modelSlug: carModels.slug,
+      brandName: brands.name,
+      brandSlug: brands.slug,
+      basePrice: trims.basePrice,
+      basePriceCurrency: trims.basePriceCurrency,
+      powertrainType: trims.powertrainType,
+      engineDisplacementCc: trims.engineDisplacementCc,
+      motorPowerKw: trims.motorPowerKw,
+      batteryCapacityKwh: trims.batteryCapacityKwh,
+    })
+    .from(trims)
+    .innerJoin(modelVersions, eq(trims.modelVersionId, modelVersions.id))
+    .innerJoin(carModels, eq(modelVersions.carModelId, carModels.id))
+    .innerJoin(brands, eq(carModels.brandId, brands.id))
+    .where(
+      and(
+        eq(trims.active, true),
+        byId ? or(byId, eq(trims.slug, trimIdOrSlug)) : eq(trims.slug, trimIdOrSlug)
+      )
+    )
+    .limit(1);
+
+  if (!row) return null;
+
+  return {
+    ...row,
+    basePrice: row.basePrice != null ? Number(row.basePrice) : null,
+    batteryCapacityKwh: row.batteryCapacityKwh != null ? Number(row.batteryCapacityKwh) : null,
+  };
+}
+
 export async function getHomeStats(): Promise<HomeStats> {
   const [[brandsResult], [modelsResult], [trimsResult], [stockResult]] =
     await Promise.all([

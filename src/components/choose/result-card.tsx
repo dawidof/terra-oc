@@ -2,8 +2,8 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { GitCompareArrows, Gauge, MapPin, ArrowRight } from "lucide-react";
+import { GitCompareArrows, Gauge, Route, ArrowRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Recommendation {
   trimId: string;
@@ -34,11 +34,10 @@ function powertrainLabel(type: string | null): string {
   }
 }
 
-function scoreColor(score: number): string {
-  if (score >= 80) return "text-green-600";
-  if (score >= 60) return "text-brand";
-  if (score >= 40) return "text-yellow-600";
-  return "text-orange-600";
+function scoreTone(score: number): string {
+  if (score >= 80) return "bg-brand text-brand-foreground";
+  if (score >= 60) return "bg-brand-muted text-brand-muted-foreground";
+  return "bg-muted text-muted-foreground";
 }
 
 export function ResultCard({
@@ -50,105 +49,109 @@ export function ResultCard({
   selected?: boolean;
   onToggleSelect?: (trimSlug: string) => void;
 }) {
-  return (
-    <Card className={`overflow-hidden transition-all ${selected ? "ring-2 ring-brand" : ""}`}>
-      <CardContent className="p-6">
-        <div className="flex gap-5">
-          {/* Selection checkbox */}
-          <div className="flex flex-col items-center gap-2">
-            <label
-              className={`flex cursor-pointer flex-col items-center gap-1 rounded-lg border p-2 transition-all ${
-                selected
-                  ? "border-brand bg-brand-muted text-brand"
-                  : "border-transparent text-muted-foreground hover:bg-muted"
-              }`}
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleSelect?.(rec.trimSlug);
-              }}
-            >
-              <Checkbox
-                checked={selected}
-                onCheckedChange={() => onToggleSelect?.(rec.trimSlug)}
-                aria-label={`Сравнить ${rec.brandName} ${rec.modelName}`}
-              />
-              <span className="flex items-center gap-1 text-xs font-medium">
-                <GitCompareArrows className="h-3 w-3" />
-                Сравнить
-              </span>
-            </label>
-            {/* Car image */}
-            {rec.imageUrl && (
-              <div className="relative h-40 w-56 flex-shrink-0 overflow-hidden rounded-lg bg-muted">
-                <img
-                  src={rec.imageUrl}
-                  alt={`${rec.brandName} ${rec.modelName}`}
-                  className="h-full w-full object-cover"
-                />
-              </div>
-            )}
-          </div>
+  const compareChip = (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onToggleSelect?.(rec.trimSlug);
+      }}
+      aria-pressed={selected}
+      aria-label={`Сравнить ${rec.brandName} ${rec.modelName}`}
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium whitespace-nowrap shadow-sm transition-all",
+        selected
+          ? "bg-brand text-brand-foreground"
+          : "bg-background/90 text-foreground backdrop-blur hover:bg-background"
+      )}
+    >
+      <GitCompareArrows className="h-3.5 w-3.5" />
+      {selected ? "Выбрано" : "Сравнить"}
+    </button>
+  );
 
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="flex items-center gap-2">
+  return (
+    <Card
+      className={cn(
+        "gap-0 overflow-hidden py-0 transition duration-200",
+        selected ? "ring-2 ring-brand" : "hover:shadow-soft-lg"
+      )}
+    >
+      <CardContent className="p-0">
+        <div className="flex flex-col sm:flex-row">
+          {rec.imageUrl && (
+            <div className="relative aspect-[16/10] w-full flex-shrink-0 overflow-hidden bg-muted sm:aspect-auto sm:h-auto sm:w-64">
+              <img
+                src={rec.imageUrl}
+                alt={`${rec.brandName} ${rec.modelName}`}
+                loading="lazy"
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+              <div className="absolute left-3 top-3">{compareChip}</div>
+            </div>
+          )}
+
+          <div className="min-w-0 flex-1 p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
                   <h3 className="text-lg font-bold">
                     {rec.brandName} {rec.modelName}
                   </h3>
                   <Badge variant="outline">{rec.trimName}</Badge>
+                  {!rec.imageUrl && compareChip}
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {rec.bodyType || "—"} · {powertrainLabel(rec.powertrainType)}
                 </p>
               </div>
-              <div className="text-right">
-                <p className={`text-3xl font-bold ${scoreColor(rec.score)}`}>
-                  {rec.score}%
-                </p>
-                <p className="text-xs text-muted-foreground">совпадение</p>
+              <span
+                className={cn(
+                  "inline-flex flex-shrink-0 items-center rounded-full px-3 py-1 text-sm font-bold whitespace-nowrap",
+                  scoreTone(rec.score)
+                )}
+              >
+                {rec.score}% совпадение
+              </span>
+            </div>
+
+            {rec.reasons.length > 0 && (
+              <div className="mt-4 space-y-1">
+                {rec.reasons.map((reason, i) => (
+                  <div key={i} className="flex items-center gap-2 text-sm">
+                    <div className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-brand" />
+                    {reason}
+                  </div>
+                ))}
               </div>
-            </div>
+            )}
 
-            {/* Reasons */}
-            <div className="mt-4 space-y-1">
-              {rec.reasons.map((reason, i) => (
-                <div key={i} className="flex items-center gap-2 text-sm">
-                  <div className="h-1.5 w-1.5 rounded-full bg-brand" />
-                  {reason}
-                </div>
-              ))}
-            </div>
-
-            {/* Specs */}
-            <div className="mt-4 flex flex-wrap gap-4 text-sm text-muted-foreground">
+            <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
               {rec.rangeKm && (
                 <span className="flex items-center gap-1">
-                  <MapPin className="h-3 w-3" />
+                  <Route className="h-3.5 w-3.5" />
                   {rec.rangeKm} км
                 </span>
               )}
               {rec.acceleration0100 && (
                 <span className="flex items-center gap-1">
-                  <Gauge className="h-3 w-3" />
+                  <Gauge className="h-3.5 w-3.5" />
                   {rec.acceleration0100} сек
                 </span>
               )}
             </div>
 
-            {/* Price + Actions */}
-            <div className="mt-4 flex items-center justify-between border-t pt-4">
+            <div className="mt-4 flex items-center justify-between gap-3 border-t pt-4">
               <p className="text-xl font-bold text-brand">
                 {formatPrice(rec.estimatedTotalUsd)}
               </p>
-              <div className="flex gap-2">
-                <Link href={`/cars/${rec.trimSlug}`}>
-                  <Button variant="ghost" size="sm">
-                    Подробнее
-                    <ArrowRight className="ml-1 h-3 w-3" />
-                  </Button>
-                </Link>
-              </div>
+              <Link href={`/cars/${rec.trimSlug}`} className="flex-shrink-0">
+                <Button variant="outline" size="sm">
+                  Подробнее
+                  <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                </Button>
+              </Link>
             </div>
           </div>
         </div>

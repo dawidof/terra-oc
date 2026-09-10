@@ -186,6 +186,14 @@ export default async function CarDetailPage({ params }: Props) {
                     Отправить запрос
                   </Button>
                 </a>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  render={<Link href={`/calculator?trim=${car.trimId}`} />}
+                  nativeButton={false}
+                >
+                  Рассчитать стоимость
+                </Button>
                 <ContactButtons
                   brandName={car.brandName}
                   modelName={car.modelName}

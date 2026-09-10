@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -12,22 +12,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import { Calculator, Info, Search, X, Send, CheckCircle } from "lucide-react";
-import { formatUsd } from "@/lib/price-breakdown";
-
-interface CalculationResult {
-  vehiclePrice: number;
-  logistics: number;
-  customsDuty: number;
-  exciseTax: number;
-  vat: number;
-  certificationFees: number;
-  serviceFee: number;
-  total: number;
-  exchangeRate: number;
-  formulaVersion: string;
-}
+import { Calculator, Info, Search, X, Send, CheckCircle, Loader2, ReceiptText, RefreshCw, SlidersHorizontal } from "lucide-react";
+import {
+  CalculatorResultCard,
+  type CalculationResult,
+} from "@/components/calculator-result-card";
 
 interface CatalogTrim {
   trimId: string;
@@ -49,45 +38,153 @@ interface CalculatorFormProps {
   initialCountry?: string;
   initialCondition?: string;
   initialPrice?: number;
+  initialCurrency?: string;
   initialPowertrain?: string;
   initialDisplacement?: number;
   initialPower?: number;
+  initialYear?: number;
+  initialTrim?: CatalogTrim | null;
 }
 
 const EV_POWERTRAINS = ["bev", "phev", "reev"];
+
+const COUNTRIES = [
+  { value: "Китай", label: "Китай" },
+  { value: "Корея", label: "Корея" },
+  { value: "США", label: "США" },
+  { value: "ОАЭ", label: "ОАЭ (Дубай)" },
+];
+
+const CONDITIONS = [
+  { value: "new", label: "Новый автомобиль" },
+  { value: "used", label: "С пробегом" },
+];
+
+const CURRENCIES = [
+  { value: "USD", label: "USD" },
+  { value: "CNY", label: "CNY (Юань)" },
+  { value: "KRW", label: "KRW (Вона)" },
+  { value: "AED", label: "AED (Дирхам)" },
+];
+
+const POWERTRAINS = [
+  { value: "bev", label: "Электро (BEV)" },
+  { value: "phev", label: "Гибрид (PHEV)" },
+  { value: "hev", label: "Гибрид (HEV)" },
+  { value: "petrol", label: "Бензин" },
+  { value: "diesel", label: "Дизель" },
+];
+
+const CONTACT_METHODS = [
+  { value: "phone", label: "Телефон" },
+  { value: "telegram", label: "Telegram" },
+  { value: "whatsapp", label: "WhatsApp" },
+];
+
+const CURRENT_YEAR = new Date().getFullYear();
+const YEARS = Array.from(
+  { length: CURRENT_YEAR + 1 - 1990 },
+  (_, i) => String(CURRENT_YEAR + 1 - i)
+);
+
+const CALC_DEBOUNCE_MS = 700;
+
+function parseDigits(value: string): string {
+  return value.replace(/\D/g, "").slice(0, 9);
+}
+
+function formatDigits(value: string): string {
+  return value ? Number(value).toLocaleString("ru-RU") : "";
+}
+
+interface CalcPayload {
+  sourceCountry: string;
+  condition: string;
+  purchasePrice: number;
+  currency: string;
+  powertrain: string;
+  engineDisplacementCc?: number;
+  enginePowerHp?: number;
+  motorPowerKw?: number;
+  modelYear?: number;
+  trimId?: string;
+}
+
+function queryParamsFromPayload(payload: CalcPayload): string {
+  const params = new URLSearchParams();
+  if (payload.trimId) {
+    params.set("trim", payload.trimId);
+  } else {
+    if (payload.powertrain && payload.powertrain !== "bev") params.set("powertrain", payload.powertrain);
+    if (payload.engineDisplacementCc) params.set("displacement", String(payload.engineDisplacementCc));
+    if (payload.enginePowerHp) params.set("power", String(payload.enginePowerHp));
+    if (payload.motorPowerKw) params.set("power", String(payload.motorPowerKw));
+    if (payload.modelYear) params.set("year", String(payload.modelYear));
+  }
+  if (payload.purchasePrice > 0) params.set("price", String(Math.round(payload.purchasePrice)));
+  if (payload.currency && payload.currency !== "USD") params.set("currency", payload.currency);
+  if (payload.sourceCountry && payload.sourceCountry !== "Китай") params.set("country", payload.sourceCountry);
+  if (payload.condition && payload.condition !== "new") params.set("condition", payload.condition);
+  return params.toString();
+}
 
 export function CalculatorForm({
   initialCountry = "Китай",
   initialCondition = "new",
   initialPrice,
+  initialCurrency,
   initialPowertrain = "bev",
   initialDisplacement,
   initialPower,
+  initialYear,
+  initialTrim = null,
 }: CalculatorFormProps) {
-  const [mode, setMode] = useState<"catalog" | "manual">(initialPrice ? "catalog" : "manual");
+  const [mode, setMode] = useState<"catalog" | "manual">(initialTrim ? "catalog" : "manual");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<CalculationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Common fields
-  const [sourceCountry, setSourceCountry] = useState(initialCountry);
-  const [condition, setCondition] = useState(initialCondition);
+  const [sourceCountry, setSourceCountry] = useState(
+    COUNTRIES.some((c) => c.value === initialCountry) ? initialCountry : "Китай"
+  );
+  const [condition, setCondition] = useState(
+    initialCondition === "used" ? "used" : "new"
+  );
 
   // Manual mode fields
-  const [purchasePrice, setPurchasePrice] = useState(initialPrice?.toString() || "");
-  const [currency, setCurrency] = useState("USD");
-  const [powertrain, setPowertrain] = useState(initialPowertrain);
-  const [displacement, setDisplacement] = useState(initialDisplacement?.toString() || "");
-  const [power, setPower] = useState(initialPower?.toString() || "");
+  const [purchasePrice, setPurchasePrice] = useState(
+    initialPrice ? parseDigits(String(initialPrice)) : ""
+  );
+  const [currency, setCurrency] = useState(
+    CURRENCIES.some((c) => c.value === initialCurrency) ? (initialCurrency as string) : "USD"
+  );
+  const [powertrain, setPowertrain] = useState(
+    POWERTRAINS.some((p) => p.value === initialPowertrain) ? initialPowertrain : "bev"
+  );
+  const [displacement, setDisplacement] = useState(
+    initialDisplacement ? String(initialDisplacement) : ""
+  );
+  const [power, setPower] = useState(initialPower ? String(initialPower) : "");
+  const [modelYear, setModelYear] = useState(initialYear ? String(initialYear) : "none");
 
   // Catalog mode fields
-  const [catalogQuery, setCatalogQuery] = useState("");
+  const [catalogQuery, setCatalogQuery] = useState(
+    initialTrim ? `${initialTrim.brandName} ${initialTrim.modelName} — ${initialTrim.trimName}` : ""
+  );
   const [catalogResults, setCatalogResults] = useState<CatalogTrim[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(false);
-  const [selectedTrim, setSelectedTrim] = useState<CatalogTrim | null>(null);
+  const [selectedTrim, setSelectedTrim] = useState<CatalogTrim | null>(initialTrim);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [highlightIndex, setHighlightIndex] = useState(-1);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Calculation request tracking
+  const abortRef = useRef<AbortController | null>(null);
+  const lastPayloadRef = useRef<string | null>(null);
+  const resultColumnRef = useRef<HTMLDivElement>(null);
 
   // Lead form state
   const [showLeadForm, setShowLeadForm] = useState(false);
@@ -104,6 +201,26 @@ export function CalculatorForm({
   const [exchangeRate, setExchangeRate] = useState<{ rate: number; source: string; recordedAt: string } | null>(null);
 
   const isEv = EV_POWERTRAINS.includes(powertrain);
+  const refreshing = loading && result !== null;
+
+  // Fetch live exchange rate once
+  useEffect(() => {
+    void (async () => {
+      try {
+        const res = await fetch("/api/exchange-rate");
+        if (res.ok) {
+          const data = await res.json();
+          setExchangeRate({
+            rate: data.rate,
+            source: data.source,
+            recordedAt: data.recordedAt,
+          });
+        }
+      } catch {
+        // Silently fail - exchange rate is optional
+      }
+    })();
+  }, []);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -116,26 +233,100 @@ export function CalculatorForm({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Fetch live exchange rate when result is displayed
-  useEffect(() => {
-    if (result && result.exchangeRate > 0) {
-      void (async () => {
-        try {
-          const res = await fetch("/api/exchange-rate");
-          if (res.ok) {
-            const data = await res.json();
-            setExchangeRate({
-              rate: data.rate,
-              source: data.source,
-              recordedAt: data.recordedAt,
-            });
+  const scrollToResult = useCallback(() => {
+    if (typeof window === "undefined") return;
+    if (!window.matchMedia("(max-width: 1023px)").matches) return;
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    resultColumnRef.current?.scrollIntoView({
+      behavior: prefersReducedMotion ? "auto" : "smooth",
+      block: "start",
+    });
+  }, []);
+
+  const runCalculation = useCallback(
+    async (payload: CalcPayload, key: string, scrollAfter: boolean) => {
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+      setLoading(true);
+      setError(null);
+
+      try {
+        const res = await fetch("/api/calculate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          signal: controller.signal,
+        });
+        const data = await res.json();
+        if (controller.signal.aborted) return;
+
+        if (data.breakdown) {
+          setResult(data.breakdown);
+          lastPayloadRef.current = key;
+          if (typeof window !== "undefined") {
+            const qs = queryParamsFromPayload(payload);
+            window.history.replaceState(null, "", qs ? `/calculator?${qs}` : "/calculator");
           }
-        } catch {
-          // Silently fail - exchange rate is optional
+          if (scrollAfter) scrollToResult();
+        } else if (data.error) {
+          setError(data.error);
+        } else {
+          setError("Для выбранных параметров нет правил расчёта. Попробуйте изменить страну или тип привода.");
         }
-      })();
-    }
-  }, [result]);
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        setError("Ошибка при расчёте. Проверьте параметры и попробуйте ещё раз.");
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    },
+    [scrollToResult]
+  );
+
+  const calcPayload = useMemo<CalcPayload | null>(() => {
+    const price = Number(purchasePrice);
+    if (!price || price <= 0) return null;
+    if (mode === "catalog" && !selectedTrim) return null;
+    const isElectric = EV_POWERTRAINS.includes(powertrain);
+    return {
+      sourceCountry,
+      condition,
+      purchasePrice: price,
+      currency,
+      powertrain,
+      engineDisplacementCc: !isElectric && displacement ? Number(displacement) : undefined,
+      ...(isElectric
+        ? { motorPowerKw: power ? Number(power) : undefined }
+        : { enginePowerHp: power ? Number(power) : undefined }),
+      modelYear: modelYear !== "none" ? Number(modelYear) : undefined,
+      trimId: selectedTrim?.trimId,
+    };
+  }, [mode, purchasePrice, selectedTrim, sourceCountry, condition, currency, powertrain, displacement, power, modelYear]);
+
+  // Auto-calculate with debounce
+  useEffect(() => {
+    if (!calcPayload) return;
+    const key = JSON.stringify(calcPayload);
+    if (key === lastPayloadRef.current) return;
+    const timeoutId = setTimeout(() => {
+      void runCalculation(calcPayload, key, false);
+    }, CALC_DEBOUNCE_MS);
+    return () => clearTimeout(timeoutId);
+  }, [calcPayload, runCalculation]);
+
+  // Abort in-flight calculation on unmount
+  useEffect(() => {
+    return () => abortRef.current?.abort();
+  }, []);
+
+  // Scroll highlighted catalog option into view
+  useEffect(() => {
+    if (highlightIndex < 0 || !showDropdown) return;
+    document
+      .getElementById(`calculator-trim-option-${highlightIndex}`)
+      ?.scrollIntoView({ block: "nearest" });
+  }, [highlightIndex, showDropdown]);
 
   const searchCatalog = useCallback(async (query: string) => {
     if (query.length < 2) {
@@ -146,7 +337,13 @@ export function CalculatorForm({
     try {
       const res = await fetch(`/api/search-trims?q=${encodeURIComponent(query)}`);
       const data = await res.json();
-      setCatalogResults(data.trims || []);
+      const trims: CatalogTrim[] = (data.trims || []).map((t: CatalogTrim) => ({
+        ...t,
+        basePrice: t.basePrice != null ? Number(t.basePrice) : null,
+        batteryCapacityKwh: t.batteryCapacityKwh != null ? Number(t.batteryCapacityKwh) : null,
+      }));
+      setCatalogResults(trims);
+      setHighlightIndex(trims.length > 0 ? 0 : -1);
       setShowDropdown(true);
     } catch {
       setCatalogResults([]);
@@ -162,15 +359,35 @@ export function CalculatorForm({
     debounceRef.current = setTimeout(() => searchCatalog(value), 300);
   }
 
+  function handleSearchKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (!showDropdown || catalogResults.length === 0) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlightIndex((i) => (i + 1) % catalogResults.length);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlightIndex((i) => (i <= 0 ? catalogResults.length - 1 : i - 1));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      const index = highlightIndex >= 0 ? highlightIndex : 0;
+      const trim = catalogResults[index];
+      if (trim) selectCatalogTrim(trim);
+    } else if (e.key === "Escape") {
+      setShowDropdown(false);
+    }
+  }
+
   function selectCatalogTrim(trim: CatalogTrim) {
     setSelectedTrim(trim);
     setCatalogQuery(`${trim.brandName} ${trim.modelName} — ${trim.trimName}`);
+    setCatalogResults([]);
     setShowDropdown(false);
+    setHighlightIndex(-1);
+    searchInputRef.current?.blur();
 
     // Auto-fill fields from catalog data
-    if (trim.basePrice) {
-      setPurchasePrice(trim.basePrice.toString());
-    }
+    setPurchasePrice(trim.basePrice ? trim.basePrice.toString() : "");
     if (trim.basePriceCurrency) {
       setCurrency(trim.basePriceCurrency);
     }
@@ -193,55 +410,89 @@ export function CalculatorForm({
     setSelectedTrim(null);
     setCatalogQuery("");
     setCatalogResults([]);
+    setShowDropdown(false);
+    setHighlightIndex(-1);
     setPurchasePrice("");
     setCurrency("USD");
     setPowertrain(initialPowertrain);
     setDisplacement("");
     setPower("");
+    setModelYear("none");
+    searchInputRef.current?.focus();
   }
 
-  async function handleCalculate(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    const isElectric = EV_POWERTRAINS.includes(powertrain);
-
-    try {
-      const res = await fetch("/api/calculate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sourceCountry,
-          condition,
-          purchasePrice: Number(purchasePrice),
-          currency,
-          powertrain,
-          engineDisplacementCc: !isElectric && displacement ? Number(displacement) : undefined,
-          ...(isElectric
-            ? { motorPowerKw: power ? Number(power) : undefined }
-            : { enginePowerHp: power ? Number(power) : undefined }),
-          trimId: selectedTrim?.trimId,
-        }),
-      });
-
-      const data = await res.json();
-      if (data.breakdown) {
-        setResult(data.breakdown);
-      } else if (data.error) {
-        setError(data.error);
-      }
-    } catch {
-      setError("Ошибка при расчёте. Проверьте параметры и попробуйте ещё раз.");
-    } finally {
-      setLoading(false);
+  function switchMode(next: "manual" | "catalog") {
+    if (next === mode) return;
+    setMode(next);
+    if (next === "manual") {
+      setSelectedTrim(null);
+      setCatalogQuery("");
+      setCatalogResults([]);
+      setShowDropdown(false);
     }
   }
 
-  const isFormValid =
-    purchasePrice &&
-    Number(purchasePrice) > 0 &&
-    (mode === "manual" || selectedTrim);
+  function handleCalculate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!calcPayload) return;
+    void runCalculation(calcPayload, JSON.stringify(calcPayload), true);
+  }
+
+  const uzsRate = exchangeRate?.rate || result?.exchangeRate || 0;
+
+  const [shareCopied, setShareCopied] = useState(false);
+  const shareTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  async function handleCopyShare() {
+    if (typeof window === "undefined") return;
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setShareCopied(true);
+      if (shareTimerRef.current) clearTimeout(shareTimerRef.current);
+      shareTimerRef.current = setTimeout(() => setShareCopied(false), 2000);
+    } catch {
+      // Clipboard unavailable - ignore
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      if (shareTimerRef.current) clearTimeout(shareTimerRef.current);
+    };
+  }, []);
+
+  const isFormValid = Boolean(calcPayload);
+
+  const displacementNum = Number(displacement);
+  const powerNum = Number(power);
+  const displacementInvalid =
+    !isEv && displacement !== "" && (!Number.isFinite(displacementNum) || displacementNum < 500 || displacementNum > 8000);
+  const powerInvalid =
+    power !== "" &&
+    (isEv ? powerNum < 10 || powerNum > 1500 : powerNum < 20 || powerNum > 2000);
+
+  const yearField = (
+    <div className="space-y-2">
+      <Label htmlFor="year">Год выпуска</Label>
+      <Select
+        value={modelYear}
+        onValueChange={(v) => v && setModelYear(v)}
+        items={[{ value: "none", label: "Не указан" }, ...YEARS.map((y) => ({ value: y, label: y }))]}
+      >
+        <SelectTrigger id="year" className="w-full">
+          <SelectValue placeholder="Не указан" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="none" label="Не указан">Не указан</SelectItem>
+          {YEARS.map((y) => (
+            <SelectItem key={y} value={y} label={y}>
+              {y}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
 
   async function handleLeadSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -318,21 +569,20 @@ export function CalculatorForm({
         <CardContent>
           <form onSubmit={handleCalculate} className="space-y-4">
             {/* Mode toggle */}
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <Button
                 type="button"
                 variant={mode === "manual" ? "default" : "outline"}
-                onClick={() => {
-                  setMode("manual");
-                  clearCatalogSelection();
-                }}
+                aria-pressed={mode === "manual"}
+                onClick={() => switchMode("manual")}
               >
                 Вручную
               </Button>
               <Button
                 type="button"
                 variant={mode === "catalog" ? "default" : "outline"}
-                onClick={() => setMode("catalog")}
+                aria-pressed={mode === "catalog"}
+                onClick={() => switchMode("catalog")}
               >
                 Из каталога
               </Button>
@@ -344,21 +594,17 @@ export function CalculatorForm({
                 <Select
                   value={sourceCountry}
                   onValueChange={(v) => v && setSourceCountry(v)}
-                  items={[
-                    { value: "Китай", label: "Китай" },
-                    { value: "Корея", label: "Корея" },
-                    { value: "США", label: "США" },
-                    { value: "ОАЭ", label: "ОАЭ (Дубай)" },
-                  ]}
+                  items={COUNTRIES}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="country" className="w-full">
                     <SelectValue placeholder="Страна" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Китай" label="Китай">Китай</SelectItem>
-                    <SelectItem value="Корея" label="Корея">Корея</SelectItem>
-                    <SelectItem value="США" label="США">США</SelectItem>
-                    <SelectItem value="ОАЭ" label="ОАЭ (Дубай)">ОАЭ (Дубай)</SelectItem>
+                    {COUNTRIES.map((c) => (
+                      <SelectItem key={c.value} value={c.value} label={c.label}>
+                        {c.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -368,17 +614,17 @@ export function CalculatorForm({
                 <Select
                   value={condition}
                   onValueChange={(v) => v && setCondition(v)}
-                  items={[
-                    { value: "new", label: "Новый автомобиль" },
-                    { value: "used", label: "С пробегом" },
-                  ]}
+                  items={CONDITIONS}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="condition" className="w-full">
                     <SelectValue placeholder="Состояние" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="new" label="Новый автомобиль">Новый автомобиль</SelectItem>
-                    <SelectItem value="used" label="С пробегом">С пробегом</SelectItem>
+                    {CONDITIONS.map((c) => (
+                      <SelectItem key={c.value} value={c.value} label={c.label}>
+                        {c.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -387,14 +633,26 @@ export function CalculatorForm({
             {/* Catalog mode: search input */}
             {mode === "catalog" && (
               <div className="space-y-2" ref={dropdownRef}>
-                <Label>Автомобиль из каталога</Label>
+                <Label htmlFor="trim-search">Автомобиль из каталога</Label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
+                    id="trim-search"
+                    ref={searchInputRef}
                     type="text"
+                    role="combobox"
+                    aria-expanded={showDropdown}
+                    aria-controls="calculator-trim-listbox"
+                    aria-activedescendant={
+                      showDropdown && highlightIndex >= 0
+                        ? `calculator-trim-option-${highlightIndex}`
+                        : undefined
+                    }
+                    aria-autocomplete="list"
                     placeholder="Начните вводить марку или модель..."
                     value={catalogQuery}
                     onChange={(e) => handleCatalogSearch(e.target.value)}
+                    onKeyDown={handleSearchKeyDown}
                     onFocus={() => catalogResults.length > 0 && setShowDropdown(true)}
                     className="pl-9 pr-9"
                   />
@@ -402,18 +660,32 @@ export function CalculatorForm({
                     <button
                       type="button"
                       onClick={clearCatalogSelection}
+                      aria-label="Очистить выбор"
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                     >
                       <X className="h-4 w-4" />
                     </button>
                   )}
                   {showDropdown && catalogResults.length > 0 && (
-                    <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-md max-h-60 overflow-auto">
-                      {catalogResults.map((trim) => (
+                    <div
+                      id="calculator-trim-listbox"
+                      role="listbox"
+                      aria-label="Результаты поиска"
+                      className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-md max-h-60 overflow-auto"
+                    >
+                      {catalogResults.map((trim, index) => (
                         <button
                           key={trim.trimId}
+                          id={`calculator-trim-option-${index}`}
                           type="button"
-                          className="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground text-left"
+                          role="option"
+                          aria-selected={index === highlightIndex}
+                          className={`flex w-full items-center justify-between px-3 py-2 text-sm text-left ${
+                            index === highlightIndex
+                              ? "bg-accent text-accent-foreground"
+                              : "hover:bg-accent hover:text-accent-foreground"
+                          }`}
+                          onMouseEnter={() => setHighlightIndex(index)}
                           onClick={() => selectCatalogTrim(trim)}
                         >
                           <span className="font-medium">
@@ -456,63 +728,65 @@ export function CalculatorForm({
             {mode === "manual" && (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="price">Цена покупки ($)</Label>
+                  <Label htmlFor="price">Цена покупки</Label>
                   <Input
                     id="price"
-                    type="number"
-                    placeholder="35000"
-                    value={purchasePrice}
-                    onChange={(e) => setPurchasePrice(e.target.value)}
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="35 000"
+                    value={formatDigits(purchasePrice)}
+                    onChange={(e) => setPurchasePrice(parseDigits(e.target.value))}
                     required
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="currency">Валюта</Label>
-                <Select
-                  value={currency}
-                  onValueChange={(v) => v && setCurrency(v)}
-                  items={[
-                    { value: "USD", label: "USD" },
-                    { value: "CNY", label: "CNY (Юань)" },
-                    { value: "KRW", label: "KRW (Вона)" },
-                    { value: "AED", label: "AED (Дирхам)" },
-                  ]}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Валюта" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="USD" label="USD">USD</SelectItem>
-                    <SelectItem value="CNY" label="CNY (Юань)">CNY (Юань)</SelectItem>
-                    <SelectItem value="KRW" label="KRW (Вона)">KRW (Вона)</SelectItem>
-                    <SelectItem value="AED" label="AED (Дирхам)">AED (Дирхам)</SelectItem>
-                  </SelectContent>
-                </Select>
+                  <Select
+                    value={currency}
+                    onValueChange={(v) => v && setCurrency(v)}
+                    items={CURRENCIES}
+                  >
+                    <SelectTrigger id="currency" className="w-full">
+                      <SelectValue placeholder="Валюта" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CURRENCIES.map((c) => (
+                        <SelectItem key={c.value} value={c.value} label={c.label}>
+                          {c.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             )}
 
-            {/* Catalog mode: show auto-filled price (read-only) */}
+            {/* Catalog mode: price (auto-filled, adjustable) + currency */}
             {mode === "catalog" && selectedTrim && (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Цена покупки</Label>
+                  <Label htmlFor="catalog-price">
+                    Цена покупки{selectedTrim.basePrice ? " (из каталога)" : ""}
+                  </Label>
                   <Input
+                    id="catalog-price"
                     type="text"
-                    value={purchasePrice ? `$${Number(purchasePrice).toLocaleString("ru-RU")}` : ""}
-                    readOnly
-                    className="bg-muted"
+                    inputMode="numeric"
+                    placeholder="35 000"
+                    value={formatDigits(purchasePrice)}
+                    onChange={(e) => setPurchasePrice(parseDigits(e.target.value))}
+                    required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Валюта</Label>
-                  <Input type="text" value={currency} readOnly className="bg-muted" />
+                  <Label htmlFor="catalog-currency">Валюта</Label>
+                  <Input id="catalog-currency" type="text" value={currency} readOnly className="bg-muted" />
                 </div>
               </div>
             )}
 
-            {/* Manual mode: powertrain + displacement + power */}
+            {/* Manual mode: powertrain + displacement + power + year */}
             {mode === "manual" && (
               <>
                 <div className="grid grid-cols-2 gap-4">
@@ -521,23 +795,17 @@ export function CalculatorForm({
                     <Select
                       value={powertrain}
                       onValueChange={(v) => v && setPowertrain(v)}
-                      items={[
-                        { value: "bev", label: "Электро (BEV)" },
-                        { value: "phev", label: "Гибрид (PHEV)" },
-                        { value: "hev", label: "Гибрид (HEV)" },
-                        { value: "petrol", label: "Бензин" },
-                        { value: "diesel", label: "Дизель" },
-                      ]}
+                      items={POWERTRAINS}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger id="powertrain" className="w-full">
                         <SelectValue placeholder="Тип привода" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="bev" label="Электро (BEV)">Электро (BEV)</SelectItem>
-                        <SelectItem value="phev" label="Гибрид (PHEV)">Гибрид (PHEV)</SelectItem>
-                        <SelectItem value="hev" label="Гибрид (HEV)">Гибрид (HEV)</SelectItem>
-                        <SelectItem value="petrol" label="Бензин">Бензин</SelectItem>
-                        <SelectItem value="diesel" label="Дизель">Дизель</SelectItem>
+                        {POWERTRAINS.map((p) => (
+                          <SelectItem key={p.value} value={p.value} label={p.label}>
+                            {p.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -548,26 +816,67 @@ export function CalculatorForm({
                       <Input
                         id="displacement"
                         type="number"
+                        inputMode="numeric"
                         placeholder="2000"
+                        min={500}
+                        max={8000}
                         value={displacement}
                         onChange={(e) => setDisplacement(e.target.value)}
+                        aria-invalid={displacementInvalid || undefined}
+                      />
+                    </div>
+                  )}
+
+                  {isEv && (
+                    <div className="space-y-2">
+                      <Label htmlFor="power">Мощность двигателя (кВт)</Label>
+                      <Input
+                        id="power"
+                        type="number"
+                        inputMode="numeric"
+                        placeholder="150"
+                        min={10}
+                        max={1500}
+                        value={power}
+                        onChange={(e) => setPower(e.target.value)}
+                        aria-invalid={powerInvalid || undefined}
                       />
                     </div>
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="power">
-                    {isEv ? "Мощность двигателя (кВт)" : "Мощность (л.с.)"}
-                  </Label>
-                  <Input
-                    id="power"
-                    type="number"
-                    placeholder={isEv ? "150" : "250"}
-                    value={power}
-                    onChange={(e) => setPower(e.target.value)}
-                  />
-                </div>
+                {!isEv && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="power-ice">Мощность (л.с.)</Label>
+                      <Input
+                        id="power-ice"
+                        type="number"
+                        inputMode="numeric"
+                        placeholder="250"
+                        min={20}
+                        max={2000}
+                        value={power}
+                        onChange={(e) => setPower(e.target.value)}
+                        aria-invalid={powerInvalid || undefined}
+                      />
+                    </div>
+                    {yearField}
+                  </div>
+                )}
+
+                {isEv && <div className="grid grid-cols-2 gap-4">{yearField}</div>}
+
+                {displacementInvalid && (
+                  <p className="text-xs text-amber-600">
+                    Укажите объём двигателя от 500 до 8000 см³
+                  </p>
+                )}
+                {powerInvalid && (
+                  <p className="text-xs text-amber-600">
+                    Укажите мощность в допустимом диапазоне ({isEv ? "10–1500 кВт" : "20–2000 л.с."})
+                  </p>
+                )}
               </>
             )}
 
@@ -603,12 +912,17 @@ export function CalculatorForm({
               size="lg"
               disabled={loading || !isFormValid}
             >
+              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
               {loading ? "Расчёт..." : "Рассчитать стоимость"}
             </Button>
+
+            <p className="text-center text-xs text-muted-foreground">
+              Расчёт обновляется автоматически при изменении параметров
+            </p>
           </form>
 
           {error && (
-            <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+            <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600" role="alert">
               {error}
             </div>
           )}
@@ -616,69 +930,17 @@ export function CalculatorForm({
       </Card>
 
       {/* Results */}
-      <div className="space-y-6">
+      <div ref={resultColumnRef} className="space-y-6 scroll-mt-24">
         {result ? (
           <>
-            <Card>
-              <CardHeader>
-                <CardTitle>Ориентировочная стоимость под ключ</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Стоимость автомобиля</span>
-                  <span className="font-medium">{formatUsd(Math.round(result.vehiclePrice))}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Логистика</span>
-                  <span className="font-medium">{formatUsd(Math.round(result.logistics))}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Таможенные платежи</span>
-                  <span className="font-medium">{formatUsd(Math.round(result.customsDuty))}</span>
-                </div>
-                {result.exciseTax > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Акцизный налог</span>
-                    <span className="font-medium">{formatUsd(Math.round(result.exciseTax))}</span>
-                  </div>
-                )}
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">НДС (12%)</span>
-                  <span className="font-medium">{formatUsd(Math.round(result.vat))}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Сертификация / оформление</span>
-                  <span className="font-medium">{formatUsd(Math.round(result.certificationFees))}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Услуги компании</span>
-                  <span className="font-medium">{formatUsd(Math.round(result.serviceFee))}</span>
-                </div>
-                <Separator />
-                <div className="flex justify-between text-lg font-bold">
-                  <span>Итого ориентировочно</span>
-                  <span className="rounded-lg bg-brand-muted px-2.5 py-0.5 text-brand">
-                    {formatUsd(Math.round(result.total))}
-                  </span>
-                </div>
-                {result.exchangeRate > 0 && (
-                  <div className="text-sm text-muted-foreground">
-                    ≈ {(result.total * result.exchangeRate).toLocaleString("uz-UZ")} UZS
-                  </div>
-                )}
-                {exchangeRate && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-brand" />
-                    <span>
-                      Курс: 1 USD = {exchangeRate.rate.toLocaleString("uz-UZ")} UZS
-                    </span>
-                    <span className="text-muted-foreground/60">
-                      ({exchangeRate.source})
-                    </span>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <CalculatorResultCard
+              result={result}
+              refreshing={refreshing}
+              uzsRate={uzsRate}
+              rateSource={exchangeRate?.source || null}
+              shareCopied={shareCopied}
+              onCopyShare={handleCopyShare}
+            />
 
             <Card className="border-brand/20 bg-brand-muted">
               <CardContent className="flex gap-3 p-4">
@@ -754,19 +1016,17 @@ export function CalculatorForm({
                         <Select
                           value={leadPreferredContact}
                           onValueChange={(v) => v && setLeadPreferredContact(v)}
-                          items={[
-                            { value: "phone", label: "Телефон" },
-                            { value: "telegram", label: "Telegram" },
-                            { value: "whatsapp", label: "WhatsApp" },
-                          ]}
+                          items={CONTACT_METHODS}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger id="lead-contact" className="w-full">
                             <SelectValue placeholder="Телефон" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="phone" label="Телефон">Телефон</SelectItem>
-                            <SelectItem value="telegram" label="Telegram">Telegram</SelectItem>
-                            <SelectItem value="whatsapp" label="WhatsApp">WhatsApp</SelectItem>
+                            {CONTACT_METHODS.map((m) => (
+                              <SelectItem key={m.value} value={m.value} label={m.label}>
+                                {m.label}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
@@ -785,11 +1045,12 @@ export function CalculatorForm({
                     </div>
 
                     <Button type="submit" className="w-full" size="lg" disabled={leadLoading}>
+                      {leadLoading && <Loader2 className="h-4 w-4 animate-spin" />}
                       {leadLoading ? "Отправка..." : "Получить точный расчёт"}
                     </Button>
 
                     {leadError && (
-                      <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+                      <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600" role="alert">
                         {leadError}
                       </div>
                     )}
@@ -819,13 +1080,40 @@ export function CalculatorForm({
             )}
           </>
         ) : (
-          <Card className="flex flex-col items-center justify-center py-16 text-center">
-            <Calculator className="mb-4 h-12 w-12 text-muted-foreground" />
-            <h3 className="mb-2 text-lg font-semibold">Введите параметры</h3>
-            <p className="max-w-sm text-sm text-muted-foreground">
+          <Card className="flex flex-col items-center justify-center py-14 text-center">
+            <span className="flex size-14 items-center justify-center rounded-xl bg-brand-muted">
+              <Calculator className="h-7 w-7 text-brand" />
+            </span>
+            <h3 className="mt-5 text-lg font-semibold">Введите параметры</h3>
+            <p className="mt-2 max-w-sm text-sm text-muted-foreground">
               Укажите страну отправления, цену и тип автомобиля, чтобы увидеть ориентировочную
               стоимость под ключ в Узбекистане.
             </p>
+            <div className="mt-8 grid w-full max-w-md gap-4 text-left sm:grid-cols-3">
+              {[
+                {
+                  icon: SlidersHorizontal,
+                  title: "1. Параметры",
+                  desc: "Страна, цена и тип автомобиля",
+                },
+                {
+                  icon: RefreshCw,
+                  title: "2. Расчёт",
+                  desc: "Обновляется автоматически",
+                },
+                {
+                  icon: ReceiptText,
+                  title: "3. Заявка",
+                  desc: "Точный расчёт от менеджера",
+                },
+              ].map(({ icon: Icon, title, desc }) => (
+                <div key={title} className="rounded-lg bg-muted/60 p-3">
+                  <Icon className="h-4 w-4 text-brand" />
+                  <p className="mt-2 text-xs font-semibold">{title}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{desc}</p>
+                </div>
+              ))}
+            </div>
           </Card>
         )}
       </div>
