@@ -12,6 +12,7 @@ import { FollowUpSettings } from "@/components/crm/follow-up-settings";
 import { KanbanBoard } from "@/components/crm/kanban-board";
 import { LeadFilters } from "@/components/crm/lead-filters";
 import { LeadTable } from "@/components/crm/lead-table";
+import { NewLeadSheet } from "@/components/crm/new-lead-sheet";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -214,6 +215,7 @@ export function CrmClient({
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <NewLeadSheet />
           {viewMode === "table" && (
             <Button variant="outline" size="sm" onClick={exportCsv} disabled={exporting}>
               {exporting ? (

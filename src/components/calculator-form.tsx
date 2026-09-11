@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Calculator, Info, Search, X, Send, CheckCircle, Loader2, ReceiptText, RefreshCw, SlidersHorizontal } from "lucide-react";
+import { Calculator, Info, Search, X, Send, CheckCircle, Loader2, ReceiptText, RefreshCw, SlidersHorizontal, Car, ExternalLink } from "lucide-react";
 import {
   CalculatorResultCard,
   type CalculationResult,
@@ -32,6 +33,7 @@ interface CatalogTrim {
   engineDisplacementCc: number | null;
   motorPowerKw: number | null;
   batteryCapacityKwh: number | null;
+  imageUrl: string | null;
 }
 
 interface CalculatorFormProps {
@@ -44,6 +46,7 @@ interface CalculatorFormProps {
   initialPower?: number;
   initialYear?: number;
   initialTrim?: CatalogTrim | null;
+  popularTrims?: CatalogTrim[];
 }
 
 const EV_POWERTRAINS = ["bev", "phev", "reev"];
@@ -97,6 +100,24 @@ function formatDigits(value: string): string {
   return value ? Number(value).toLocaleString("ru-RU") : "";
 }
 
+function powertrainLabel(type: string | null): string {
+  switch (type) {
+    case "bev": return "Электро";
+    case "phev": return "Гибрид";
+    case "hev": return "Гибрид";
+    case "reev": return "REEV";
+    case "petrol": return "Бензин";
+    case "diesel": return "Дизель";
+    default: return "";
+  }
+}
+
+interface RuleCombo {
+  country: string;
+  condition: string;
+  powertrain: string;
+}
+
 interface CalcPayload {
   sourceCountry: string;
   condition: string;
@@ -138,11 +159,16 @@ export function CalculatorForm({
   initialPower,
   initialYear,
   initialTrim = null,
+  popularTrims = [],
 }: CalculatorFormProps) {
-  const [mode, setMode] = useState<"catalog" | "manual">(initialTrim ? "catalog" : "manual");
+  const hasManualParams = Boolean(initialPrice || initialDisplacement || initialPower);
+  const [mode, setMode] = useState<"catalog" | "manual">(
+    initialTrim || !hasManualParams ? "catalog" : "manual"
+  );
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<CalculationResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [ruleSuggestions, setRuleSuggestions] = useState<RuleCombo[] | null>(null);
 
   // Common fields
   const [sourceCountry, setSourceCountry] = useState(
@@ -268,6 +294,7 @@ export function CalculatorForm({
       abortRef.current = controller;
       setLoading(true);
       setError(null);
+      setRuleSuggestions(null);
 
       try {
         const res = await fetch("/api/calculate", {
@@ -281,6 +308,7 @@ export function CalculatorForm({
 
         if (data.breakdown) {
           setResult(data.breakdown);
+          setRuleSuggestions(null);
           lastPayloadRef.current = key;
           if (typeof window !== "undefined") {
             const qs = queryParamsFromPayload(payload);
@@ -289,6 +317,7 @@ export function CalculatorForm({
           if (scrollAfter) scrollToResult();
         } else if (data.error) {
           setError(data.error);
+          setRuleSuggestions(Array.isArray(data.available) ? data.available : null);
         } else {
           setError("Для выбранных параметров нет правил расчёта. Попробуйте изменить страну или тип привода.");
         }
@@ -481,6 +510,63 @@ export function CalculatorForm({
 
   const isFormValid = Boolean(calcPayload);
 
+  const ruleSuggestionGroups = useMemo(() => {
+    if (!ruleSuggestions || ruleSuggestions.length === 0) return null;
+    const conditionText = (c: string) => (c === "used" ? "С пробегом" : "Новый");
+
+    const sameEngine = ruleSuggestions.filter(
+      (r) => r.powertrain === powertrain && r.condition === condition
+    );
+    if (sameEngine.length > 0) {
+      return {
+        hint: "Этот тип двигателя рассчитывается из:",
+        options: [...new Set(sameEngine.map((r) => r.country))].map((country) => ({
+          label: country,
+          apply: () => setSourceCountry(country),
+        })),
+      };
+    }
+
+    const sameCountry = ruleSuggestions.filter(
+      (r) => r.country === sourceCountry && r.condition === condition
+    );
+    if (sameCountry.length > 0) {
+      return {
+        hint: "Для этой страны рассчитываются:",
+        options: sameCountry.map((r) => ({
+          label: powertrainLabel(r.powertrain) || r.powertrain,
+          apply: () => setPowertrain(r.powertrain),
+        })),
+      };
+    }
+
+    const sameCountryAnyCondition = ruleSuggestions.filter((r) => r.country === sourceCountry);
+    if (sameCountryAnyCondition.length > 0) {
+      return {
+        hint: "Ближайшие доступные варианты:",
+        options: sameCountryAnyCondition.slice(0, 3).map((r) => ({
+          label: `${conditionText(r.condition)} · ${powertrainLabel(r.powertrain) || r.powertrain}`,
+          apply: () => {
+            setCondition(r.condition);
+            setPowertrain(r.powertrain);
+          },
+        })),
+      };
+    }
+
+    return {
+      hint: "Доступные варианты:",
+      options: ruleSuggestions.slice(0, 3).map((r) => ({
+        label: `${r.country} · ${conditionText(r.condition)} · ${powertrainLabel(r.powertrain) || r.powertrain}`,
+        apply: () => {
+          setSourceCountry(r.country);
+          setCondition(r.condition);
+          setPowertrain(r.powertrain);
+        },
+      })),
+    };
+  }, [ruleSuggestions, powertrain, condition, sourceCountry]);
+
   const displacementNum = Number(displacement);
   const powerNum = Number(power);
   const displacementInvalid =
@@ -590,19 +676,19 @@ export function CalculatorForm({
             <div className="grid grid-cols-2 gap-2">
               <Button
                 type="button"
-                variant={mode === "manual" ? "default" : "outline"}
-                aria-pressed={mode === "manual"}
-                onClick={() => switchMode("manual")}
-              >
-                Вручную
-              </Button>
-              <Button
-                type="button"
                 variant={mode === "catalog" ? "default" : "outline"}
                 aria-pressed={mode === "catalog"}
                 onClick={() => switchMode("catalog")}
               >
                 Из каталога
+              </Button>
+              <Button
+                type="button"
+                variant={mode === "manual" ? "default" : "outline"}
+                aria-pressed={mode === "manual"}
+                onClick={() => switchMode("manual")}
+              >
+                Вручную
               </Button>
             </div>
 
@@ -698,7 +784,7 @@ export function CalculatorForm({
                           type="button"
                           role="option"
                           aria-selected={index === highlightIndex}
-                          className={`flex w-full items-center justify-between px-3 py-2 text-sm text-left ${
+                          className={`flex w-full items-center gap-3 px-3 py-2 text-left ${
                             index === highlightIndex
                               ? "bg-accent text-accent-foreground"
                               : "hover:bg-accent hover:text-accent-foreground"
@@ -706,13 +792,31 @@ export function CalculatorForm({
                           onMouseEnter={() => setHighlightIndex(index)}
                           onClick={() => selectCatalogTrim(trim)}
                         >
-                          <span className="font-medium">
-                            {trim.brandName} {trim.modelName}
+                          <span className="flex h-10 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
+                            {trim.imageUrl ? (
+                              <img
+                                src={trim.imageUrl}
+                                alt={`${trim.brandName} ${trim.modelName}`}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <Car className="size-4 text-muted-foreground/50" />
+                            )}
                           </span>
-                          <span className="text-muted-foreground text-xs ml-2">
-                            {trim.trimName}
-                            {trim.basePrice ? ` · $${trim.basePrice.toLocaleString("ru-RU")}` : ""}
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-sm font-medium">
+                              {trim.brandName} {trim.modelName}
+                            </span>
+                            <span className="block truncate text-xs text-muted-foreground">
+                              {trim.trimName}
+                              {trim.powertrainType && ` · ${powertrainLabel(trim.powertrainType)}`}
+                            </span>
                           </span>
+                          {trim.basePrice != null && (
+                            <span className="shrink-0 text-sm font-semibold text-emerald-600">
+                              ${trim.basePrice.toLocaleString("ru-RU")}
+                            </span>
+                          )}
                         </button>
                       ))}
                     </div>
@@ -726,17 +830,68 @@ export function CalculatorForm({
                 {catalogLoading && (
                   <p className="text-xs text-muted-foreground">Поиск...</p>
                 )}
+                {!selectedTrim && !catalogQuery && popularTrims.length > 0 && (
+                  <div className="space-y-2 pt-1">
+                    <p className="text-xs text-muted-foreground">Популярные модели</p>
+                    <div className="flex flex-wrap gap-2">
+                      {popularTrims.map((trim) => (
+                        <button
+                          key={trim.trimId}
+                          type="button"
+                          onClick={() => selectCatalogTrim(trim)}
+                          className="flex items-center gap-2 rounded-full border py-1 pl-1 pr-3 text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+                        >
+                          <span className="flex h-8 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted">
+                            {trim.imageUrl ? (
+                              <img
+                                src={trim.imageUrl}
+                                alt={`${trim.brandName} ${trim.modelName}`}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <Car className="size-4 text-muted-foreground/50" />
+                            )}
+                          </span>
+                          <span>
+                            {trim.brandName} {trim.modelName}
+                          </span>
+                          {trim.basePrice != null && (
+                            <span className="text-muted-foreground text-xs">
+                              ${trim.basePrice.toLocaleString("ru-RU")}
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {selectedTrim && (
-                  <div className="rounded-md bg-muted p-3 text-sm space-y-1">
-                    <p className="font-medium">
-                      {selectedTrim.brandName} {selectedTrim.modelName}
-                    </p>
-                    <p className="text-muted-foreground">
-                      {selectedTrim.trimName}
-                      {selectedTrim.powertrainType && ` · ${selectedTrim.powertrainType.toUpperCase()}`}
-                      {selectedTrim.motorPowerKw && ` · ${selectedTrim.motorPowerKw} кВт`}
-                      {selectedTrim.engineDisplacementCc && ` · ${selectedTrim.engineDisplacementCc} см³`}
-                    </p>
+                  <div className="flex items-start gap-3 rounded-md bg-muted p-3 text-sm">
+                    {selectedTrim.imageUrl && (
+                      <img
+                        src={selectedTrim.imageUrl}
+                        alt={`${selectedTrim.brandName} ${selectedTrim.modelName}`}
+                        className="h-12 w-16 shrink-0 rounded-md object-cover"
+                      />
+                    )}
+                    <div className="min-w-0 space-y-1">
+                      <p className="font-medium">
+                        {selectedTrim.brandName} {selectedTrim.modelName}
+                      </p>
+                      <p className="text-muted-foreground">
+                        {selectedTrim.trimName}
+                        {selectedTrim.powertrainType && ` · ${selectedTrim.powertrainType.toUpperCase()}`}
+                        {selectedTrim.motorPowerKw && ` · ${selectedTrim.motorPowerKw} кВт`}
+                        {selectedTrim.engineDisplacementCc && ` · ${selectedTrim.engineDisplacementCc} см³`}
+                      </p>
+                      <Link
+                        href={`/cars/${selectedTrim.trimSlug}`}
+                        className="inline-flex items-center gap-1 text-xs font-medium text-brand hover:text-brand-deep"
+                      >
+                        <ExternalLink className="size-3" />
+                        Открыть страницу автомобиля
+                      </Link>
+                    </div>
                   </div>
                 )}
               </div>
@@ -944,6 +1099,21 @@ export function CalculatorForm({
           {error && (
             <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600" role="alert">
               {error}
+              {ruleSuggestionGroups && (
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <span className="text-xs text-red-500">{ruleSuggestionGroups.hint}</span>
+                  {ruleSuggestionGroups.options.map((option) => (
+                    <button
+                      key={option.label}
+                      type="button"
+                      onClick={option.apply}
+                      className="rounded-md border border-red-200 bg-white px-2.5 py-1 text-xs text-red-700 hover:bg-red-100 transition-colors"
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </CardContent>

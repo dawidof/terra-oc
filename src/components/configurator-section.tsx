@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Calculator, Info } from "lucide-react";
 import { ContactButtons } from "@/components/contact-buttons";
-import { buildConfiguratorBreakdown, formatUsd } from "@/lib/price-breakdown";
+import { buildConfiguratorBreakdown, formatUsd, type DetailedBreakdown } from "@/lib/price-breakdown";
 
 interface ColorImage {
   url: string;
@@ -52,6 +52,7 @@ interface ConfiguratorSectionProps {
   logisticsCost: number | null;
   customsCost: number | null;
   serviceFee: number | null;
+  detailedBreakdown?: DetailedBreakdown | null;
   deliveryDays: number | null;
   colorImages?: Record<string, ColorImage[]>;
   defaultMedia?: MediaImage[];
@@ -72,6 +73,7 @@ export function ConfiguratorSection({
   logisticsCost,
   customsCost,
   serviceFee,
+  detailedBreakdown = null,
   deliveryDays,
   colorImages = {},
   defaultMedia = [],
@@ -106,6 +108,7 @@ export function ConfiguratorSection({
     logisticsCost,
     customsCost,
     serviceFee,
+    detailed: detailedBreakdown,
     optionsDelta: configuration.totalDelta,
     hasUnpricedOptions: configuration.unpriced_options.length > 0,
   });
@@ -180,25 +183,47 @@ export function ConfiguratorSection({
                     </div>
                   )}
 
-                  {breakdown.logisticsCost !== null && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Логистика</span>
-                      <span className="font-medium">{formatUsd(breakdown.logisticsCost)}</span>
-                    </div>
-                  )}
+                  {breakdown.detailed ? (
+                    <>
+                      {([
+                        ["Логистика", breakdown.detailed.logistics],
+                        ["Таможенные платежи", breakdown.detailed.customsDuty],
+                        ["Акцизный налог", breakdown.detailed.exciseTax],
+                        ["НДС", breakdown.detailed.vat],
+                        ["Сертификация / оформление", breakdown.detailed.certificationFees],
+                        ["Услуги компании", breakdown.detailed.serviceFee],
+                      ] as [string, number][])
+                        .filter(([, amount]) => amount > 0)
+                        .map(([label, amount]) => (
+                          <div key={label} className="flex justify-between">
+                            <span className="text-muted-foreground">{label}</span>
+                            <span className="font-medium tabular-nums">{formatUsd(Math.round(amount))}</span>
+                          </div>
+                        ))}
+                    </>
+                  ) : (
+                    <>
+                      {breakdown.logisticsCost !== null && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Логистика</span>
+                          <span className="font-medium">{formatUsd(breakdown.logisticsCost)}</span>
+                        </div>
+                      )}
 
-                  {breakdown.customsCost !== null && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Таможенные пошлины</span>
-                      <span className="font-medium">{formatUsd(breakdown.customsCost)}</span>
-                    </div>
-                  )}
+                      {breakdown.customsCost !== null && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Таможенные платежи</span>
+                          <span className="font-medium">{formatUsd(breakdown.customsCost)}</span>
+                        </div>
+                      )}
 
-                  {breakdown.serviceFee !== null && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Сервисный сбор</span>
-                      <span className="font-medium">{formatUsd(breakdown.serviceFee)}</span>
-                    </div>
+                      {breakdown.serviceFee !== null && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Сертификация и услуги</span>
+                          <span className="font-medium">{formatUsd(breakdown.serviceFee)}</span>
+                        </div>
+                      )}
+                    </>
                   )}
 
                   <Separator className="my-2" />
@@ -206,13 +231,29 @@ export function ConfiguratorSection({
                   <div className="flex justify-between text-base font-bold">
                     <span>Итого (ориентир.)</span>
                     <span className="rounded-lg bg-brand-muted px-2.5 py-0.5 text-brand">
-                      от {formatUsd(breakdown.total)}
+                      от {formatUsd(breakdown.detailed ? Math.round(breakdown.total) : breakdown.total)}
                     </span>
                   </div>
 
                   {breakdown.hasUnpricedOptions && (
                     <div className="text-xs text-muted-foreground">
                       + опции с уточняемой стоимостью
+                    </div>
+                  )}
+
+                  {breakdown.detailed && breakdown.detailed.exchangeRate > 0 && (
+                    <div className="space-y-1 pt-1 text-xs text-muted-foreground">
+                      <p className="tabular-nums">
+                        ≈ {Math.round(breakdown.total * breakdown.detailed.exchangeRate).toLocaleString("uz-UZ")} UZS
+                      </p>
+                      <p className="tabular-nums">
+                        Курс: 1 USD = {breakdown.detailed.exchangeRate.toLocaleString("uz-UZ")} UZS
+                        {breakdown.detailed.exchangeRateSource && (
+                          <span className="text-muted-foreground/60">
+                            {" "}({breakdown.detailed.exchangeRateSource})
+                          </span>
+                        )}
+                      </p>
                     </div>
                   )}
                 </div>

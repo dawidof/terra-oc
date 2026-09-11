@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { BatteryCharging, ChevronDown } from "lucide-react";
+import { Battery, BatteryCharging, ChevronDown, Flame, Fuel, Zap } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,6 +24,19 @@ interface CarCardProps {
   modelYear: number | null;
   onExpand?: () => void;
   isExpanded?: boolean;
+}
+
+function powertrainIcon(type: string) {
+  const cls = "size-3";
+  switch (type) {
+    case "bev": return <Zap className={cls} />;
+    case "phev":
+    case "hev": return <Battery className={cls} />;
+    case "petrol": return <Flame className={cls} />;
+    case "diesel": return <Fuel className={cls} />;
+    case "reev": return <Zap className={cls} />;
+    default: return null;
+  }
 }
 
 export function CarCard({
@@ -71,6 +84,7 @@ export function CarCard({
                   : undefined
               }
             >
+              {powertrainIcon(powertrainType)}
               {powertrainLabel(powertrainType)}
             </Badge>
           )}

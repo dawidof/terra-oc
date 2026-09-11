@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { updateLeadStatus, assignLead, setFollowUp, updateLeadEstimate } from "@/lib/crm";
+import { updateLeadStatus, assignLead, setFollowUp, updateLeadEstimate, updateLeadSource } from "@/lib/crm";
 import { leadUpdateSchema } from "@/lib/validation-schemas";
 
 export async function PATCH(
@@ -28,6 +28,10 @@ export async function PATCH(
   try {
     if (data.status) {
       await updateLeadStatus(id, data.status, userId);
+    }
+
+    if (data.source !== undefined) {
+      await updateLeadSource(id, data.source || null, userId);
     }
 
     if (data.assignedManagerId !== undefined) {

@@ -43,6 +43,13 @@ export const quoteStatusEnum = pgEnum("quote_status", [
   "expired",
 ]);
 
+export const proposedCarStatusEnum = pgEnum("proposed_car_status", [
+  "proposed",
+  "considered",
+  "rejected",
+  "ordered",
+]);
+
 // ─── Users ───────────────────────────────────────────────────────────────────
 
 export const users = pgTable("users", {
@@ -571,3 +578,25 @@ export const quotes = pgTable("quotes", {
     .defaultNow(),
   sentAt: timestamp("sent_at", { withTimezone: true }),
 });
+
+// ─── Lead Proposed Cars ───────────────────────────────────────────────────
+
+export const leadProposedCars = pgTable(
+  "lead_proposed_cars",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    leadId: uuid("lead_id")
+      .notNull()
+      .references(() => leads.id),
+    trimId: uuid("trim_id")
+      .notNull()
+      .references(() => trims.id),
+    status: proposedCarStatusEnum("status").notNull().default("proposed"),
+    notes: text("notes"),
+    addedBy: uuid("added_by").references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [uniqueIndex("lead_proposed_cars_lead_trim_idx").on(t.leadId, t.trimId)],
+);

@@ -262,15 +262,22 @@ export function WizardClient({ csrfToken }: WizardClientProps) {
   function handleSelect(value: string) {
     const current = answers[currentStep.key as keyof WizardAnswers];
 
-    if (!current?.primary || current.primary === value) {
+    if (current?.primary === value && current?.fallback) {
       setAnswers((prev) => ({
         ...prev,
-        [currentStep.key]: { primary: value, fallback: undefined },
+        [currentStep.key]: { primary: current.fallback, fallback: undefined },
       }));
-    } else if (current.fallback === value) {
+    } else if (current?.primary === value) {
+      // already primary with no fallback — do nothing
+    } else if (current?.fallback === value) {
       setAnswers((prev) => ({
         ...prev,
         [currentStep.key]: { ...current, fallback: undefined },
+      }));
+    } else if (!current?.primary) {
+      setAnswers((prev) => ({
+        ...prev,
+        [currentStep.key]: { primary: value, fallback: undefined },
       }));
     } else {
       setAnswers((prev) => ({

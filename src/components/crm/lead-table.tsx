@@ -16,6 +16,7 @@ import {
 import { formatDate, formatUsd } from "@/lib/format";
 
 import { StatusBadge } from "./status-badge";
+import { SourceTag } from "./lead-source";
 
 interface Lead {
   id: string;
@@ -97,6 +98,7 @@ export function LeadTable({
             <TableHead>Автомобиль</TableHead>
             <TableHead className="text-right">Сумма</TableHead>
             <TableHead>Статус</TableHead>
+            <TableHead>Источник</TableHead>
             <TableHead>Менеджер</TableHead>
             <TableHead>Создана</TableHead>
             <TableHead>Звонок</TableHead>
@@ -137,6 +139,9 @@ export function LeadTable({
                 </TableCell>
                 <TableCell>
                   <StatusBadge status={lead.status} />
+                </TableCell>
+                <TableCell>
+                  <SourceTag source={lead.source} />
                 </TableCell>
                 <TableCell>{lead.assignedManagerName || "—"}</TableCell>
                 <TableCell className="text-muted-foreground whitespace-nowrap">

@@ -1,8 +1,10 @@
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, CheckCircle, CheckCheck, Clock, MessageSquare, Phone, User } from "lucide-react";
+import { ArrowRight, Car, CheckCircle, CheckCheck, Clock, MessageSquare, Phone, User } from "lucide-react";
 
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { getStatusLabel } from "@/components/crm/status-badge";
+import { sourceLabel } from "@/components/crm/lead-source";
 
 interface Activity {
   id: string;
@@ -16,10 +18,14 @@ const activityIcons: Record<string, { icon: typeof User; className: string }> = 
   lead_created: { icon: CheckCircle, className: "text-blue-500" },
   assigned: { icon: User, className: "text-muted-foreground" },
   status_changed: { icon: ArrowRight, className: "text-purple-500" },
+  source_changed: { icon: ArrowRight, className: "text-sky-500" },
   note_added: { icon: MessageSquare, className: "text-brand" },
   follow_up_set: { icon: Clock, className: "text-amber-500" },
   follow_up_completed: { icon: CheckCheck, className: "text-brand" },
   called: { icon: Phone, className: "text-blue-500" },
+  proposed_car_added: { icon: Car, className: "text-brand" },
+  proposed_car_removed: { icon: Car, className: "text-red-500" },
+  proposed_car_status_changed: { icon: Car, className: "text-amber-500" },
 };
 
 function activityIcon(type: string) {
@@ -37,7 +43,7 @@ function activityLabel(type: string, metadata: Record<string, unknown> | null) {
     case "assigned":
       return "Назначен менеджер";
     case "status_changed":
-      return `Статус изменён на «${(metadata?.newStatus as string) || "—"}»`;
+      return `Статус изменён на «${getStatusLabel((metadata?.newStatus as string) || "")}»`;
     case "note_added":
       return "Добавлена заметка";
     case "follow_up_set":
@@ -46,6 +52,18 @@ function activityLabel(type: string, metadata: Record<string, unknown> | null) {
       return "Звонок выполнен";
     case "called":
       return "Совершён звонок";
+    case "notification_sent":
+      return "Отправлено уведомление";
+    case "estimate_updated":
+      return "Обновлена смета";
+    case "source_changed":
+      return `Источник изменён на «${sourceLabel(metadata?.newSource as string)}»`;
+    case "proposed_car_added":
+      return "Добавлен предложенный автомобиль";
+    case "proposed_car_removed":
+      return "Удалён предложенный автомобиль";
+    case "proposed_car_status_changed":
+      return `Статус предложения изменён`;
     default:
       return type;
   }

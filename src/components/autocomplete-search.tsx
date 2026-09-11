@@ -73,7 +73,7 @@ function ResultItem({ r, onClick }: { r: SearchResult; onClick: () => void }) {
       </div>
       {r.basePrice && (
         <div className="shrink-0 text-right text-sm font-semibold text-emerald-600">
-          {formatPrice(r.basePrice)}
+          от {formatPrice(r.basePrice)}
         </div>
       )}
     </Link>
@@ -168,14 +168,16 @@ export function AutocompleteSearch({
   return (
     <div ref={wrapperRef} className={`relative ${className}`}>
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder={placeholder}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onFocus={handleFocus}
-          className="h-9 pl-9 pr-8 text-sm"
-        />
+        <Search className="absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <div className="rounded-lg bg-muted/60">
+          <Input
+            placeholder={placeholder}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onFocus={handleFocus}
+            className="h-9 border-0 bg-transparent pl-9 pr-8 text-sm placeholder:text-muted-foreground/60 focus-visible:bg-muted/40 focus-visible:ring-1 focus-visible:ring-border"
+          />
+        </div>
         {query && (
           <button
             onClick={() => {

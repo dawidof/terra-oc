@@ -6,8 +6,10 @@ import { LeadCostEditor } from "@/components/crm/lead-cost-editor";
 import { LeadDetailActions } from "@/components/crm/lead-detail-actions";
 import { LeadNotes } from "@/components/crm/lead-notes";
 import { LeadTimeline } from "@/components/crm/lead-timeline";
+import { SelectorComment } from "@/components/crm/selector-comment";
 import { sourceLabel } from "@/components/crm/lead-source";
 import { StatusBadge } from "@/components/crm/status-badge";
+import { ProposedCarsSection } from "@/components/crm/proposed-cars-section";
 import { Heading } from "@/components/ui/section";
 import { Separator } from "@/components/ui/separator";
 import { getAllManagers, getLeadById } from "@/lib/crm";
@@ -243,13 +245,11 @@ export default async function LeadDetailPage({ params }: Props) {
 
           {/* Comment */}
           {lead.comment && (
-            <div className="flex flex-col gap-3 rounded-xl bg-card p-5 ring-1 ring-foreground/10">
-              <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                Комментарий клиента
-              </p>
-              <p className="whitespace-pre-wrap text-sm">{lead.comment}</p>
-            </div>
+            <SelectorComment comment={lead.comment} source={lead.source} />
           )}
+
+          {/* Proposed Cars */}
+          <ProposedCarsSection leadId={lead.id} />
 
           {/* UTM */}
           {(lead.utmSource || lead.utmMedium || lead.utmCampaign) && (
@@ -288,6 +288,7 @@ export default async function LeadDetailPage({ params }: Props) {
           <LeadDetailActions
             leadId={lead.id}
             currentStatus={lead.status}
+            currentSource={lead.source}
             currentManagerId={lead.assignedManagerId}
             managers={managers}
             userRole={"manager"}

@@ -1,13 +1,13 @@
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, desc } from "drizzle-orm";
 import { db } from "@/db";
-import { calculationRuleVersions, exchangeRates } from "@/db/schema";
+import { calculationRuleVersions, exchangeRates, trims } from "@/db/schema";
 
 export interface CalculatorInput {
   sourceCountry: string;
   condition: "new" | "used";
   purchasePrice: number;
   currency: string;
-  powertrain: "bev" | "phev" | "petrol" | "diesel" | "hev" | "reev";
+  powertrain?: "bev" | "phev" | "petrol" | "diesel" | "hev" | "reev";
   engineDisplacementCc?: number;
   enginePowerHp?: number;
   motorPowerKw?: number;
@@ -67,19 +67,84 @@ async function getExchangeRate(fromCurrency: string, toCurrency: string) {
         eq(exchangeRates.toCurrency, toCurrency)
       )
     )
-    .orderBy(exchangeRates.recordedAt)
+    .orderBy(desc(exchangeRates.recordedAt))
     .limit(1);
 
   return rates[0] || null;
 }
 
+export interface RuleCombination {
+  country: string;
+  condition: string;
+  powertrain: string;
+}
+
+export async function getAvailableRuleCombinations(): Promise<RuleCombination[]> {
+  const now = new Date().toISOString();
+  return db
+    .selectDistinct({
+      country: calculationRuleVersions.country,
+      condition: calculationRuleVersions.condition,
+      powertrain: calculationRuleVersions.powertrain,
+    })
+    .from(calculationRuleVersions)
+    .where(
+      and(
+        eq(calculationRuleVersions.active, true),
+        sql`${calculationRuleVersions.validFrom} <= ${now}::timestamp`,
+        sql`(${calculationRuleVersions.validTo} IS NULL OR ${calculationRuleVersions.validTo} >= ${now}::timestamp)`
+      )
+    )
+    .orderBy(calculationRuleVersions.country, calculationRuleVersions.condition, calculationRuleVersions.powertrain);
+}
+
 export async function calculate(
   input: CalculatorInput
 ): Promise<CalculationBreakdown | null> {
+  let powertrain = input.powertrain;
+  let motorPowerKw = input.motorPowerKw;
+  let engineDisplacementCc = input.engineDisplacementCc;
+  let enginePowerHp = input.enginePowerHp;
+  let batteryCapacityKwh = input.batteryCapacityKwh;
+
+  if (input.trimId) {
+    const [trim] = await db
+      .select({
+        powertrainType: trims.powertrainType,
+        motorPowerKw: trims.motorPowerKw,
+        engineDisplacementCc: trims.engineDisplacementCc,
+        enginePowerHp: trims.enginePowerHp,
+        batteryCapacityKwh: trims.batteryCapacityKwh,
+      })
+      .from(trims)
+      .where(eq(trims.id, input.trimId))
+      .limit(1);
+
+    if (trim) {
+      if (!powertrain && trim.powertrainType) {
+        powertrain = trim.powertrainType as NonNullable<CalculatorInput["powertrain"]>;
+      }
+      if (!motorPowerKw && trim.motorPowerKw) {
+        motorPowerKw = trim.motorPowerKw;
+      }
+      if (!engineDisplacementCc && trim.engineDisplacementCc) {
+        engineDisplacementCc = trim.engineDisplacementCc;
+      }
+      if (!enginePowerHp && trim.enginePowerHp) {
+        enginePowerHp = trim.enginePowerHp;
+      }
+      if (!batteryCapacityKwh && trim.batteryCapacityKwh) {
+        batteryCapacityKwh = Number(trim.batteryCapacityKwh);
+      }
+    }
+  }
+
+  if (!powertrain) return null;
+
   const rule = await getActiveRule(
     input.sourceCountry,
     input.condition,
-    input.powertrain
+    powertrain
   );
 
   if (!rule) return null;
@@ -112,19 +177,19 @@ export async function calculate(
 
   // Excise tax (for petrol/diesel with large engines, or high-power EVs)
   let exciseTax = 0;
-  if (input.powertrain === "petrol" || input.powertrain === "diesel") {
+  if (powertrain === "petrol" || powertrain === "diesel") {
     if (
       params.exciseThresholdCc &&
-      input.engineDisplacementCc &&
-      input.engineDisplacementCc > params.exciseThresholdCc
+      engineDisplacementCc &&
+      engineDisplacementCc > params.exciseThresholdCc
     ) {
       exciseTax = (customsValue + customsDuty) * (params.excisePercent / 100);
     }
-  } else if (input.powertrain === "bev" || input.powertrain === "phev") {
+  } else if (powertrain === "bev" || powertrain === "phev") {
     if (
       params.exciseThresholdKw &&
-      input.motorPowerKw &&
-      input.motorPowerKw > params.exciseThresholdKw
+      motorPowerKw &&
+      motorPowerKw > params.exciseThresholdKw
     ) {
       exciseTax = (customsValue + customsDuty) * (params.excisePercent / 100);
     }

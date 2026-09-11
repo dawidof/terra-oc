@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { GitCompareArrows, Gauge, Route, ArrowRight } from "lucide-react";
+import { GitCompareArrows, Gauge, Route, ArrowRight, Zap, Battery, Flame, Fuel } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Recommendation {
@@ -30,7 +30,24 @@ function powertrainLabel(type: string | null): string {
   switch (type) {
     case "bev": return "Электро";
     case "phev": return "Гибрид";
+    case "hev": return "Гибрид";
+    case "petrol": return "Бензин";
+    case "diesel": return "Дизель";
+    case "reev": return "REEV";
     default: return type || "";
+  }
+}
+
+function powertrainIcon(type: string | null) {
+  const cls = "h-3.5 w-3.5";
+  switch (type) {
+    case "bev": return <Zap className={cls} />;
+    case "phev":
+    case "hev": return <Battery className={cls} />;
+    case "petrol": return <Flame className={cls} />;
+    case "diesel": return <Fuel className={cls} />;
+    case "reev": return <Zap className={cls} />;
+    default: return null;
   }
 }
 
@@ -102,8 +119,8 @@ export function ResultCard({
                   <Badge variant="outline">{rec.trimName}</Badge>
                   {!rec.imageUrl && compareChip}
                 </div>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {rec.bodyType || "—"} · {powertrainLabel(rec.powertrainType)}
+                <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+                  {rec.bodyType || "—"} · {powertrainIcon(rec.powertrainType)} {powertrainLabel(rec.powertrainType)}
                 </p>
               </div>
               <span

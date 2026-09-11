@@ -29,6 +29,7 @@ import {
 import { toDateInputValue } from "@/lib/format";
 
 import { getStatusOptions } from "./status-badge";
+import { SOURCE_OPTIONS } from "./lead-source";
 
 interface Manager {
   id: string;
@@ -38,6 +39,7 @@ interface Manager {
 interface LeadDetailActionsProps {
   leadId: string;
   currentStatus: string;
+  currentSource: string | null;
   currentManagerId: string | null;
   managers: Manager[];
   userRole: string;
@@ -47,6 +49,7 @@ interface LeadDetailActionsProps {
 export function LeadDetailActions({
   leadId,
   currentStatus,
+  currentSource,
   currentManagerId,
   managers,
   userRole,
@@ -54,6 +57,7 @@ export function LeadDetailActions({
 }: LeadDetailActionsProps) {
   const router = useRouter();
   const [status, setStatus] = useState(currentStatus);
+  const [source, setSource] = useState(currentSource || "");
   const [managerId, setManagerId] = useState(currentManagerId || "");
   const [followUpDate, setFollowUpDate] = useState(toDateInputValue(nextFollowUpAt));
   const [loading, setLoading] = useState(false);
@@ -69,6 +73,9 @@ export function LeadDetailActions({
 
       if (status !== currentStatus) {
         updates.status = status;
+      }
+      if (source !== (currentSource || "")) {
+        updates.source = source || null;
       }
       if (userRole === "admin" && managerId !== currentManagerId) {
         updates.assignedManagerId = managerId || null;
@@ -142,6 +149,31 @@ export function LeadDetailActions({
           </SelectContent>
         </Select>
       </div>
+
+      {(userRole === "admin") && (
+        <div className="flex flex-col gap-1.5">
+          <Label className="text-xs text-muted-foreground">Источник</Label>
+          <Select
+            value={source}
+            onValueChange={(v) => setSource(v || "")}
+            items={[{ value: "", label: "Не указан" }, ...SOURCE_OPTIONS]}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Источник" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="" label="Не указан">
+                Не указан
+              </SelectItem>
+              {SOURCE_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value} label={opt.label}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       {userRole === "admin" && (
         <div className="flex flex-col gap-1.5">

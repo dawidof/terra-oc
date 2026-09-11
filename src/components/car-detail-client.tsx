@@ -6,6 +6,7 @@ import { CarOptionsList } from "@/components/car-options-list";
 import { ConfiguratorSection } from "@/components/configurator-section";
 import { PurchaseProcess } from "@/components/purchase-process";
 import { Section } from "@/components/ui/section";
+import type { DetailedBreakdown } from "@/lib/price-breakdown";
 
 interface GalleryImage {
   id: string;
@@ -46,6 +47,7 @@ interface CarDetailClientProps {
   logisticsCost: number | null;
   customsCost: number | null;
   serviceFee: number | null;
+  detailedBreakdown?: DetailedBreakdown | null;
   deliveryDays: number | null;
   colorImages?: Record<string, { url: string; alt?: string | null }[]>;
   specs?: React.ReactNode;
@@ -69,6 +71,7 @@ export function CarDetailClient({
   logisticsCost,
   customsCost,
   serviceFee,
+  detailedBreakdown = null,
   deliveryDays,
   colorImages = {},
   specs,
@@ -126,6 +129,7 @@ export function CarDetailClient({
             logisticsCost={logisticsCost}
             customsCost={customsCost}
             serviceFee={serviceFee}
+            detailedBreakdown={detailedBreakdown}
             deliveryDays={deliveryDays}
             colorImages={colorImages}
             defaultMedia={initialMedia}

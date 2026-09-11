@@ -11,6 +11,10 @@ import {
   trims,
   configurationOptionGroups,
   configurationOptions,
+  carModels,
+  brands,
+  modelVersions,
+  vehicleMedia,
 } from "@/db/schema";
 import { calculate, type CalculatorInput } from "@/lib/calculator";
 
@@ -349,6 +353,20 @@ export async function assignLead(leadId: string, managerId: string, adminId: str
   });
 }
 
+export async function updateLeadSource(leadId: string, source: string | null, userId: string) {
+  await db
+    .update(leads)
+    .set({ source, updatedAt: new Date() })
+    .where(eq(leads.id, leadId));
+
+  await db.insert(leadActivities).values({
+    leadId,
+    userId,
+    type: "source_changed",
+    metadataJson: { newSource: source },
+  });
+}
+
 export async function addNote(leadId: string, userId: string, body: string) {
   const [note] = await db
     .insert(leadNotes)
@@ -542,4 +560,135 @@ export async function completeFollowUp(leadId: string, userId: string) {
     type: "follow_up_completed",
     metadataJson: {},
   });
+}
+
+export interface SelectorTrimResult {
+  trimId: string;
+  trimName: string;
+  trimSlug: string;
+  modelName: string;
+  modelSlug: string;
+  brandName: string;
+  bodyType: string | null;
+  powertrainType: string | null;
+  rangeKm: number | null;
+  acceleration0100: string | null;
+  estimatedTotalUsd: string | null;
+  imageUrl: string | null;
+  score: number;
+}
+
+interface RecLookup {
+  text: string;
+  score: number;
+  trimId?: string;
+  reasons?: string[];
+}
+
+const trimSelectFields = {
+  trimId: trims.id,
+  trimName: trims.name,
+  trimSlug: trims.slug,
+  modelName: carModels.name,
+  modelSlug: carModels.slug,
+  brandName: brands.name,
+  bodyType: carModels.bodyType,
+  powertrainType: trims.powertrainType,
+  rangeKm: trims.rangeKm,
+  acceleration0100: trims.acceleration0100,
+  estimatedTotalUsd: vehicleOffers.estimatedTotalUsd,
+  imageUrl: vehicleMedia.url,
+};
+
+function trimQuery() {
+  return db
+    .select(trimSelectFields)
+    .from(trims)
+    .innerJoin(modelVersions, eq(trims.modelVersionId, modelVersions.id))
+    .innerJoin(carModels, eq(modelVersions.carModelId, carModels.id))
+    .innerJoin(brands, eq(carModels.brandId, brands.id))
+    .leftJoin(vehicleOffers, eq(trims.id, vehicleOffers.trimId))
+    .leftJoin(
+      vehicleMedia,
+      and(
+        eq(modelVersions.id, vehicleMedia.modelVersionId),
+        eq(vehicleMedia.sortOrder, 0)
+      )
+    );
+}
+
+export async function lookupSelectorTrims(
+  recTexts: RecLookup[]
+): Promise<SelectorTrimResult[]> {
+  if (recTexts.length === 0) return [];
+
+  const withIds = recTexts.filter((r) => r.trimId);
+  const withoutIds = recTexts.filter((r) => !r.trimId);
+
+  const results: SelectorTrimResult[] = [];
+
+  for (const rec of withIds) {
+    const [match] = await trimQuery()
+      .where(eq(trims.id, rec.trimId!))
+      .limit(1);
+
+    if (match) {
+      results.push(formatMatch(match, rec));
+    }
+  }
+
+  for (const rec of withoutIds) {
+    const match = await fuzzyMatchTrim(rec.text);
+    if (match) {
+      results.push(formatMatch(match, rec));
+    }
+  }
+
+  return results;
+}
+
+async function fuzzyMatchTrim(text: string) {
+  const parts = text.trim().split(/\s+/);
+  if (parts.length < 3) return null;
+
+  const brand = parts[0];
+  const rest = parts.slice(1).join(" ");
+
+  const brandTrims = await trimQuery().where(ilike(brands.name, brand));
+
+  for (const t of brandTrims) {
+    const modelLower = t.modelName.toLowerCase();
+    const trimLower = t.trimName.toLowerCase();
+    const restLower = rest.toLowerCase();
+
+    if (restLower.startsWith(modelLower)) {
+      const afterModel = restLower.slice(modelLower.length).trim();
+      if (afterModel === trimLower) {
+        return t;
+      }
+    }
+  }
+
+  return null;
+}
+
+function formatMatch(
+  match: any,
+  rec: RecLookup
+): SelectorTrimResult {
+  return {
+    trimId: match.trimId,
+    trimName: match.trimName,
+    trimSlug: match.trimSlug,
+    modelName: match.modelName,
+    modelSlug: match.modelSlug,
+    brandName: match.brandName,
+    bodyType: match.bodyType,
+    powertrainType: match.powertrainType,
+    rangeKm: match.rangeKm,
+    acceleration0100: match.acceleration0100 ? String(match.acceleration0100) : null,
+    estimatedTotalUsd: match.estimatedTotalUsd ? String(match.estimatedTotalUsd) : null,
+    imageUrl: match.imageUrl,
+    score: rec.score,
+  };
 }

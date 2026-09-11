@@ -10,21 +10,12 @@ export function AdminToggle() {
   return (
     <Button
       variant={isAdmin ? "default" : "ghost"}
-      size="sm"
+      size="icon"
       onClick={toggleAdmin}
-      className={`gap-1 ${isAdmin ? "bg-emerald-600 text-white" : ""}`}
+      title={isAdmin ? "Выйти из режима редактирования" : "Войти в режим редактирования"}
+      className={isAdmin ? "bg-emerald-600 text-white" : ""}
     >
-      {isAdmin ? (
-        <>
-          <EyeOff className="h-3 w-3" />
-          Режим редактирования
-        </>
-      ) : (
-        <>
-          <Pencil className="h-3 w-3" />
-          Редактирование
-        </>
-      )}
+      {isAdmin ? <EyeOff className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
     </Button>
   );
 }

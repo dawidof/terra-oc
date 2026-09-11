@@ -16,15 +16,23 @@ import {
 } from "@/components/ui/select";
 import { Send, CheckCircle, ArrowLeft } from "lucide-react";
 
+interface LeadFormAnswers {
+  budget?: string;
+  budgetFallback?: string;
+  bodyType?: string;
+  bodyTypeFallback?: string;
+  powertrain?: string;
+  powertrainFallback?: string;
+  seats?: string;
+  seatsFallback?: string;
+  priority?: string;
+  priorityFallback?: string;
+  usage?: string;
+  usageFallback?: string;
+}
+
 interface LeadFormProps {
-  answers: {
-    budget?: string;
-    bodyType?: string;
-    powertrain?: string;
-    seats?: string;
-    priority?: string;
-    usage?: string;
-  };
+  answers: LeadFormAnswers;
   recommendations: any[];
   onBack: () => void;
   csrfToken: string;
@@ -49,7 +57,6 @@ export function LeadForm({ answers, recommendations, onBack, csrfToken }: LeadFo
     e.preventDefault();
     setError(null);
 
-    // Phone validation
     const phoneRegex = /^\+?[\d\s\-\(\)]{10,}$/;
     if (!phoneRegex.test(phone)) {
       setError("Введите корректный номер телефона");
@@ -59,6 +66,52 @@ export function LeadForm({ answers, recommendations, onBack, csrfToken }: LeadFo
     setLoading(true);
 
     try {
+      const metadata = {
+        answers: {
+          budget: answers.budget,
+          budgetFallback: answers.budgetFallback,
+          bodyType: answers.bodyType,
+          bodyTypeFallback: answers.bodyTypeFallback,
+          powertrain: answers.powertrain,
+          powertrainFallback: answers.powertrainFallback,
+          seats: answers.seats,
+          seatsFallback: answers.seatsFallback,
+          priority: answers.priority,
+          priorityFallback: answers.priorityFallback,
+          usage: answers.usage,
+          usageFallback: answers.usageFallback,
+        },
+        recommendations: recommendations.map((r) => ({
+          trimId: r.trimId,
+          text: `${r.brandName} ${r.modelName} ${r.trimName}`,
+          score: r.score,
+          reasons: r.reasons || [],
+        })),
+        contact: {
+          preferredContactMethod: preferredContact,
+          telegram: telegram || undefined,
+          comment: comment || undefined,
+        },
+      };
+
+      const metadataComment = `<!--SELECTOR_DATA:${JSON.stringify(metadata)}-->`;
+
+      const textLines = [
+        `Бюджет: ${answers.budget || "—"}`,
+        answers.budgetFallback && `Бюджет (альт): ${answers.budgetFallback}`,
+        `Кузов: ${answers.bodyType || "—"}`,
+        answers.bodyTypeFallback && `Кузов (альт): ${answers.bodyTypeFallback}`,
+        `Привод: ${answers.powertrain || "—"}`,
+        answers.powertrainFallback && `Привод (альт): ${answers.powertrainFallback}`,
+        `Мест: ${answers.seats || "—"}`,
+        answers.seatsFallback && `Мест (альт): ${answers.seatsFallback}`,
+        `Приоритет: ${answers.priority || "—"}`,
+        answers.priorityFallback && `Приоритет (альт): ${answers.priorityFallback}`,
+        `Использование: ${answers.usage || "—"}`,
+        answers.usageFallback && `Использование (альт): ${answers.usageFallback}`,
+        `Рекомендации: ${recommendations.map((r) => `${r.brandName} ${r.modelName} ${r.trimName} (${r.score}%)`).join(", ")}`,
+      ].filter(Boolean);
+
       const res = await fetch("/api/leads/selector", {
         method: "POST",
         headers: {
@@ -74,15 +127,7 @@ export function LeadForm({ answers, recommendations, onBack, csrfToken }: LeadFo
           utmMedium,
           utmCampaign,
           referrer: typeof document !== "undefined" ? document.referrer : undefined,
-          comment: [
-            `Бюджет: ${answers.budget || "—"}`,
-            `Кузов: ${answers.bodyType || "—"}`,
-            `Привод: ${answers.powertrain || "—"}`,
-            `Мест: ${answers.seats || "—"}`,
-            `Приоритет: ${answers.priority || "—"}`,
-            `Использование: ${answers.usage || "—"}`,
-            `Рекомендации: ${recommendations.map((r) => `${r.brandName} ${r.modelName} ${r.trimName} (${r.score}%)`).join(", ")}`,
-          ].join("\n"),
+          comment: textLines.join("\n") + "\n\n" + metadataComment,
         }),
       });
 

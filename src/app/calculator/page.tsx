@@ -1,7 +1,7 @@
 import { CalculatorForm } from "@/components/calculator-form";
 import { PageHeader } from "@/components/ui/page-header";
 import { Section } from "@/components/ui/section";
-import { getTrimForCalculator } from "@/lib/queries";
+import { getPopularTrimsForCalculator, getTrimForCalculator } from "@/lib/queries";
 
 export const metadata = {
   title: "Калькулятор стоимости — TerraAuto",
@@ -29,7 +29,10 @@ export default async function CalculatorPage({ searchParams }: Props) {
   const sp = await searchParams;
 
   const trimParam = firstParam(sp.trim);
-  const initialTrim = trimParam ? await getTrimForCalculator(trimParam) : null;
+  const [initialTrim, popularTrims] = await Promise.all([
+    trimParam ? getTrimForCalculator(trimParam) : Promise.resolve(null),
+    getPopularTrimsForCalculator(),
+  ]);
 
   const country = firstParam(sp.country);
   const powertrain = firstParam(sp.powertrain);
@@ -57,6 +60,7 @@ export default async function CalculatorPage({ searchParams }: Props) {
         initialPower={positiveInt(firstParam(sp.power))}
         initialYear={positiveInt(firstParam(sp.year))}
         initialTrim={initialTrim}
+        popularTrims={popularTrims}
       />
     </Section>
   );

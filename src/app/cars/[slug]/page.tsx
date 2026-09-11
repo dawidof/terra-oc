@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getCarBySlug, getCarOffers, getCarMedia, getAllTrims, getSimilarCars, getUsedVehicleDetails } from "@/lib/queries";
+import { calculate, type CalculatorInput } from "@/lib/calculator";
 import { getComparisonSpecs } from "@/lib/compare";
 import { getConfigurationOptions, getCarColorImages } from "@/lib/leads";
 import { generateCsrfToken } from "@/lib/csrf-actions";
@@ -59,6 +60,32 @@ export default async function CarDetailPage({ params }: Props) {
 
   const offer = offers[0];
   const trimIds = allTrims.map((t) => t.id);
+
+  const computedBreakdown = await calculate({
+    sourceCountry: offer?.sourceCountry || "Китай",
+    condition: offer?.condition === "used" ? "used" : "new",
+    purchasePrice: Number(car.basePrice),
+    currency: "USD",
+    powertrain: car.powertrainType as CalculatorInput["powertrain"],
+    trimId: car.trimId,
+  });
+
+  const totalUsd =
+    computedBreakdown?.total ??
+    (offer?.estimatedTotalUsd ? Number(offer.estimatedTotalUsd) : null);
+  const logisticsCost =
+    computedBreakdown?.logistics ??
+    (offer?.estimatedLogistics ? Number(offer.estimatedLogistics) : null);
+  const customsCost = computedBreakdown
+    ? computedBreakdown.customsDuty + computedBreakdown.exciseTax + computedBreakdown.vat
+    : offer?.estimatedCustoms
+      ? Number(offer.estimatedCustoms)
+      : null;
+  const serviceCost = computedBreakdown
+    ? computedBreakdown.certificationFees + computedBreakdown.serviceFee
+    : offer?.estimatedServiceFee
+      ? Number(offer.estimatedServiceFee)
+      : null;
 
   const colorOptionIds = optionGroups
     .filter((g) => g.type === "exterior_color" || g.type === "interior_color")
@@ -130,15 +157,16 @@ export default async function CarDetailPage({ params }: Props) {
           modelName={car.modelName}
           optionGroups={optionGroups}
           basePrice={Number(car.basePrice)}
-          estimatedTotalUsd={offer?.estimatedTotalUsd || null}
+          estimatedTotalUsd={totalUsd != null ? String(totalUsd) : null}
           trimId={car.trimId}
           trimName={car.trimName}
           sourceCountry={offer?.sourceCountry || "Китай"}
           condition={offer?.condition || "new"}
           csrfToken={csrfToken}
-          logisticsCost={offer?.estimatedLogistics ? Number(offer.estimatedLogistics) : null}
-          customsCost={offer?.estimatedCustoms ? Number(offer.estimatedCustoms) : null}
-          serviceFee={offer?.estimatedServiceFee ? Number(offer.estimatedServiceFee) : null}
+          logisticsCost={logisticsCost}
+          customsCost={customsCost}
+          serviceFee={serviceCost}
+          detailedBreakdown={computedBreakdown}
           deliveryDays={offer?.deliveryDays || null}
           colorImages={colorImagesMap}
           heroInfo={
@@ -173,7 +201,7 @@ export default async function CarDetailPage({ params }: Props) {
                   {offer?.deliveryDays && <> • ~{offer.deliveryDays} дней доставка</>}
                 </div>
                 <div className="mt-1 text-3xl font-bold tracking-[-0.02em] tabular-nums text-foreground">
-                  {formatPrice(offer?.estimatedTotalUsd)}
+                  {formatPrice(totalUsd != null ? String(totalUsd) : null)}
                 </div>
               </div>
 
@@ -189,7 +217,13 @@ export default async function CarDetailPage({ params }: Props) {
                 <Button
                   size="lg"
                   variant="outline"
-                  render={<Link href={`/calculator?trim=${car.trimId}`} />}
+                  render={
+                    <Link
+                      href={`/calculator?trim=${car.trimId}&country=${encodeURIComponent(
+                        offer?.sourceCountry || "Китай"
+                      )}${offer?.condition === "used" ? "&condition=used" : ""}`}
+                    />
+                  }
                   nativeButton={false}
                 >
                   Рассчитать стоимость
@@ -198,7 +232,7 @@ export default async function CarDetailPage({ params }: Props) {
                   brandName={car.brandName}
                   modelName={car.modelName}
                   trimName={car.trimName}
-                  estimatedTotal={offer?.estimatedTotalUsd ? Number(offer.estimatedTotalUsd) : undefined}
+                  estimatedTotal={totalUsd ?? undefined}
                   variant="inline"
                 />
               </div>

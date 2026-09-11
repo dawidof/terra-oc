@@ -113,6 +113,7 @@ const leadStatusValues = [
 
 export const leadUpdateSchema = z.object({
   status: z.enum(leadStatusValues).optional(),
+  source: z.string().max(100).optional(),
   assignedManagerId: z.string().uuid().nullable().optional(),
   nextFollowUpAt: z.string().datetime().nullable().optional(),
   estimatedTotal: z.number().positive().optional(),

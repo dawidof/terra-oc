@@ -23,6 +23,10 @@ const sourceStyles: Record<string, { label: string; className: string }> = {
     label: "WhatsApp",
     className: "bg-brand-muted text-brand-muted-foreground ring-1 ring-brand/25",
   },
+  selector: {
+    label: "Селектор",
+    className: "bg-muted text-muted-foreground",
+  },
 };
 
 export function sourceLabel(source: string | null | undefined): string {

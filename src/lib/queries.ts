@@ -1,4 +1,4 @@
-import { eq, and, ilike, or, sql, desc, asc, SQL } from "drizzle-orm";
+import { eq, and, ilike, or, sql, desc, asc, inArray, SQL } from "drizzle-orm";
 import { db } from "@/db";
 import {
   brands,
@@ -486,6 +486,7 @@ export interface CalculatorTrim {
   engineDisplacementCc: number | null;
   motorPowerKw: number | null;
   batteryCapacityKwh: number | null;
+  imageUrl: string | null;
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -512,11 +513,17 @@ export async function getTrimForCalculator(
       engineDisplacementCc: trims.engineDisplacementCc,
       motorPowerKw: trims.motorPowerKw,
       batteryCapacityKwh: trims.batteryCapacityKwh,
+      imageUrl: vehicleMedia.url,
     })
     .from(trims)
     .innerJoin(modelVersions, eq(trims.modelVersionId, modelVersions.id))
     .innerJoin(carModels, eq(modelVersions.carModelId, carModels.id))
     .innerJoin(brands, eq(carModels.brandId, brands.id))
+    .leftJoin(vehicleMedia, and(
+      eq(vehicleMedia.modelVersionId, modelVersions.id),
+      eq(vehicleMedia.type, "exterior"),
+      eq(vehicleMedia.sortOrder, 0)
+    ))
     .where(
       and(
         eq(trims.active, true),
@@ -532,6 +539,61 @@ export async function getTrimForCalculator(
     basePrice: row.basePrice != null ? Number(row.basePrice) : null,
     batteryCapacityKwh: row.batteryCapacityKwh != null ? Number(row.batteryCapacityKwh) : null,
   };
+}
+
+export const POPULAR_TRIM_SLUGS = [
+  "byd-atto3-comfort",
+  "zeekr-7x-awd",
+  "byd-seal-design",
+  "cs55-plus-flagship",
+  "byd-dolphin-comfort",
+  "tesla-modely-lr",
+];
+
+export async function getPopularTrimsForCalculator(): Promise<CalculatorTrim[]> {
+  const rows = await db
+    .select({
+      trimId: trims.id,
+      trimName: trims.name,
+      trimSlug: trims.slug,
+      modelName: carModels.name,
+      modelSlug: carModels.slug,
+      brandName: brands.name,
+      brandSlug: brands.slug,
+      basePrice: trims.basePrice,
+      basePriceCurrency: trims.basePriceCurrency,
+      powertrainType: trims.powertrainType,
+      engineDisplacementCc: trims.engineDisplacementCc,
+      motorPowerKw: trims.motorPowerKw,
+      batteryCapacityKwh: trims.batteryCapacityKwh,
+      imageUrl: vehicleMedia.url,
+    })
+    .from(trims)
+    .innerJoin(modelVersions, eq(trims.modelVersionId, modelVersions.id))
+    .innerJoin(carModels, eq(modelVersions.carModelId, carModels.id))
+    .innerJoin(brands, eq(carModels.brandId, brands.id))
+    .leftJoin(vehicleMedia, and(
+      eq(vehicleMedia.modelVersionId, modelVersions.id),
+      eq(vehicleMedia.type, "exterior"),
+      eq(vehicleMedia.sortOrder, 0)
+    ))
+    .where(and(eq(brands.active, true), eq(trims.active, true), inArray(trims.slug, POPULAR_TRIM_SLUGS)));
+
+  const bySlug = new Map(
+    rows.map((row) => [
+      row.trimSlug,
+      {
+        ...row,
+        basePrice: row.basePrice != null ? Number(row.basePrice) : null,
+        batteryCapacityKwh: row.batteryCapacityKwh != null ? Number(row.batteryCapacityKwh) : null,
+      },
+    ])
+  );
+
+  return POPULAR_TRIM_SLUGS.flatMap((slug) => {
+    const trim = bySlug.get(slug);
+    return trim ? [trim] : [];
+  });
 }
 
 export async function getHomeStats(): Promise<HomeStats> {

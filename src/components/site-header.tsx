@@ -43,12 +43,12 @@ export function SiteHeader() {
           scrolled && "shadow-sm"
         )}
       >
-        <div className="container mx-auto flex h-14 items-center justify-between gap-3 px-4 sm:px-6">
+        <div className="container mx-auto flex h-16 items-center justify-between gap-6 px-4 sm:px-6">
           <Link href="/" aria-label="TerraAuto — на главную">
             <BrandMark />
           </Link>
 
-          <nav className="hidden items-center gap-0.5 md:flex">
+          <nav className="hidden items-center gap-1 md:flex">
             {navItems.map((item) => {
               const isActive =
                 pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -69,14 +69,14 @@ export function SiteHeader() {
             })}
           </nav>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             <Link
               href="/cars"
-              className="hidden rounded-lg bg-surface-dark px-3.5 py-1.5 text-xs font-semibold text-surface-dark-foreground transition-opacity hover:opacity-90 md:inline-flex"
+              className="hidden rounded-lg bg-surface-dark px-4 py-2 text-xs font-semibold text-surface-dark-foreground transition-opacity hover:opacity-90 md:inline-flex"
             >
               Каталог авто
             </Link>
-            <AutocompleteSearch className="hidden w-48 xl:block" />
+            <AutocompleteSearch className="hidden w-52 xl:block" />
             <a
               href="tel:+998901234567"
               className="hidden items-center gap-1.5 text-sm font-medium text-foreground/70 transition-colors hover:text-foreground lg:inline-flex"
