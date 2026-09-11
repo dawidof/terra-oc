@@ -2,20 +2,27 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useSyncExternalStore } from "react";
 import {
   Car,
   ExternalLink,
+  Home,
   LayoutDashboard,
+  ListTodo,
   LogOut,
   PanelLeftClose,
   PanelLeftOpen,
-  Users,
+  ScrollText,
+  Settings,
+  Star,
   User,
+  Users,
+  UsersRound,
 } from "lucide-react";
 
 import { BrandMark } from "@/components/brand-mark";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { logout } from "@/lib/actions";
 import { cn } from "@/lib/utils";
 
@@ -24,19 +31,69 @@ interface NavItem {
   label: string;
   icon: typeof LayoutDashboard;
   exact?: boolean;
+  adminOnly?: boolean;
 }
 
-const navItems: NavItem[] = [
-  { href: "/crm", label: "Дашборд", icon: LayoutDashboard, exact: true },
-  { href: "/crm/leads", label: "Заявки", icon: Users },
-  { href: "/crm/inventory", label: "Инвентарь", icon: Car },
-  { href: "/portal", label: "Портал клиента", icon: User },
+interface NavGroup {
+  label: string;
+  items: NavItem[];
+}
+
+const navGroups: NavGroup[] = [
+  {
+    label: "Основное",
+    items: [
+      { href: "/crm", label: "Дашборд", icon: LayoutDashboard, exact: true },
+      { href: "/crm/leads", label: "Заявки", icon: Users },
+      { href: "/crm/tasks", label: "Задачи", icon: ListTodo },
+      { href: "/crm/deliveries", label: "Поставки", icon: Car },
+      { href: "/portal", label: "Портал клиента", icon: User },
+    ],
+  },
+  {
+    label: "Администрирование",
+    items: [
+      { href: "/crm/users", label: "Команда", icon: UsersRound, adminOnly: true },
+      { href: "/crm/reviews", label: "Отзывы", icon: Star, adminOnly: true },
+      { href: "/crm/audit", label: "Аудит", icon: ScrollText, adminOnly: true },
+      { href: "/crm/settings", label: "Настройки", icon: Settings, adminOnly: true },
+    ],
+  },
 ];
+
+const allNavItems = navGroups.flatMap((group) => group.items);
 
 const roleLabels: Record<string, string> = {
   admin: "Администратор",
   manager: "Менеджер",
 };
+
+const STORAGE_KEY = "crm-sidebar-collapsed";
+const STORAGE_EVENT = "crm-sidebar-collapsed-change";
+
+function subscribeToSidebar(callback: () => void) {
+  window.addEventListener(STORAGE_EVENT, callback);
+  window.addEventListener("storage", callback);
+  return () => {
+    window.removeEventListener(STORAGE_EVENT, callback);
+    window.removeEventListener("storage", callback);
+  };
+}
+
+function useSidebarCollapsed(): [boolean, () => void] {
+  const collapsed = useSyncExternalStore(
+    subscribeToSidebar,
+    () => window.localStorage.getItem(STORAGE_KEY) === "1",
+    () => false
+  );
+
+  function toggle() {
+    window.localStorage.setItem(STORAGE_KEY, collapsed ? "0" : "1");
+    window.dispatchEvent(new Event(STORAGE_EVENT));
+  }
+
+  return [collapsed, toggle];
+}
 
 interface CrmShellProps {
   userName?: string | null;
@@ -51,8 +108,9 @@ export function CrmShell({
   userRole,
   children,
 }: CrmShellProps) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, toggleCollapsed] = useSidebarCollapsed();
   const pathname = usePathname();
+  const isAdmin = userRole === "admin";
 
   const isActive = (item: NavItem) =>
     item.exact
@@ -60,8 +118,17 @@ export function CrmShell({
       : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
   const currentLabel =
-    navItems.find(isActive)?.label ??
+    allNavItems.find(isActive)?.label ??
     (pathname.startsWith("/crm") ? "CRM" : "");
+
+  const visibleGroups = navGroups
+    .map((group) => ({
+      ...group,
+      items: isAdmin ? group.items : group.items.filter((item) => !item.adminOnly),
+    }))
+    .filter((group) => group.items.length > 0);
+
+  const mobileItems = allNavItems.filter((item) => isAdmin || !item.adminOnly);
 
   return (
     <div className="min-h-screen bg-muted/40">
@@ -84,7 +151,7 @@ export function CrmShell({
           )}
           <button
             type="button"
-            onClick={() => setCollapsed((value) => !value)}
+            onClick={toggleCollapsed}
             className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
             aria-label={collapsed ? "Развернуть меню" : "Свернуть меню"}
           >
@@ -96,33 +163,43 @@ export function CrmShell({
           </button>
         </div>
 
-        <nav className="flex-1 space-y-1 overflow-y-auto p-2">
-          {navItems.map((item) => {
-            const active = isActive(item);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                title={collapsed ? item.label : undefined}
-                className={cn(
-                  "relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
-                  collapsed && "justify-center px-2",
-                  active
-                    ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
-                    : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
-                )}
-              >
-                {active && (
-                  <span
-                    className="absolute top-1/2 left-0 h-5 w-0.5 -translate-y-1/2 rounded-r-full bg-brand"
-                    aria-hidden
-                  />
-                )}
-                <item.icon className="size-4 shrink-0" aria-hidden />
-                {!collapsed && <span className="truncate">{item.label}</span>}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 space-y-4 overflow-y-auto p-2">
+          {visibleGroups.map((group) => (
+            <div key={group.label} className="flex flex-col gap-1">
+              {!collapsed && (
+                <p className="px-3 pt-1 pb-0.5 text-[11px] font-medium tracking-wide text-muted-foreground/70 uppercase">
+                  {group.label}
+                </p>
+              )}
+              {collapsed && <div className="mx-3 border-t border-sidebar-border" />}
+              {group.items.map((item) => {
+                const active = isActive(item);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    title={collapsed ? item.label : undefined}
+                    className={cn(
+                      "relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
+                      collapsed && "justify-center px-2",
+                      active
+                        ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+                        : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
+                    )}
+                  >
+                    {active && (
+                      <span
+                        className="absolute top-1/2 left-0 h-5 w-0.5 -translate-y-1/2 rounded-r-full bg-brand"
+                        aria-hidden
+                      />
+                    )}
+                    <item.icon className="size-4 shrink-0" aria-hidden />
+                    {!collapsed && <span className="truncate">{item.label}</span>}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </nav>
 
         <div className="shrink-0 border-t border-sidebar-border p-2">
@@ -157,6 +234,17 @@ export function CrmShell({
           </div>
 
           <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              render={<Link href="/" />}
+              nativeButton={false}
+              aria-label="На главную"
+              title="На главную"
+            >
+              <Home className="size-4" />
+            </Button>
+            <ThemeToggle />
             <div className="hidden min-w-0 text-right sm:block">
               <p className="truncate text-sm font-medium">
                 {userName || userEmail || "Пользователь"}
@@ -175,7 +263,7 @@ export function CrmShell({
         </header>
 
         <nav className="flex gap-1 overflow-x-auto border-b border-border bg-background px-3 py-2 lg:hidden">
-          {navItems.map((item) => {
+          {mobileItems.map((item) => {
             const active = isActive(item);
             return (
               <Link

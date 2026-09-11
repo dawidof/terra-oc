@@ -26,25 +26,24 @@ interface TrimResult {
   powertrainType: string | null;
 }
 
-interface InventoryAddFormProps {
+interface DeliveryAddFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated: () => void;
 }
 
 const STATUS_OPTIONS = [
-  { value: "in_stock", label: "В наличии" },
   { value: "in_transit", label: "В пути" },
   { value: "on_order", label: "Под заказ" },
   { value: "reserved", label: "Забронирован" },
   { value: "sold", label: "Продан" },
 ];
 
-export function InventoryAddForm({
+export function DeliveryAddForm({
   open,
   onOpenChange,
   onCreated,
-}: InventoryAddFormProps) {
+}: DeliveryAddFormProps) {
   const [trimQuery, setTrimQuery] = useState("");
   const [trimResults, setTrimResults] = useState<TrimResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -124,13 +123,13 @@ export function InventoryAddForm({
       });
 
       if (res.ok) {
-        toast.success("Позиция добавлена в инвентарь");
+        toast.success("Автомобиль добавлен");
         resetForm();
         onOpenChange(false);
         onCreated();
       } else {
         const data = await res.json();
-        toast.error(data.error || "Не удалось добавить позицию");
+        toast.error(data.error || "Не удалось добавить автомобиль");
       }
     } catch {
       toast.error("Ошибка сети");
@@ -143,7 +142,7 @@ export function InventoryAddForm({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right">
         <SheetHeader>
-          <SheetTitle>Добавить в инвентарь</SheetTitle>
+          <SheetTitle>Добавить автомобиль</SheetTitle>
           <SheetDescription>
             Выберите комплектацию и заполните данные
           </SheetDescription>

@@ -23,6 +23,7 @@ import {
   customers,
   leads,
   leadConfigurations,
+  vehicleInventory,
 } from "../src/db/schema";
 
 const connectionString = process.env.DATABASE_URL!;
@@ -1270,6 +1271,41 @@ async function seed() {
     }
   }
   console.log(`✓ Lead configurations: ${trimAssignments.length}`);
+
+  // ─── Demo Inventory ────────────────────────────────────────────────────
+  const existingInventory = await db.select({ id: vehicleInventory.id }).from(vehicleInventory).limit(1);
+  if (existingInventory.length === 0) {
+    const inDays = (n: number) => new Date(Date.now() + n * 24 * 60 * 60 * 1000);
+    const wonLead = demoLeads.find((l) => l.status === "won");
+
+    const inventoryRows = [
+      ...(zeekr7xTrim
+        ? [{ trimId: zeekr7xTrim.id, status: "in_stock" as const, location: "Склад Ташкент, Сергели", vin: "LCEKSADF2H5000123", notes: "Белый перламутр, готов к выдаче" }]
+        : []),
+      ...(bydAtto3Trim
+        ? [{ trimId: bydAtto3Trim.id, status: "in_stock" as const, location: "Склад Ташкент, Сергели", vin: "LGXC16DF0M0044551", notes: "Серый металлик, зимняя комплектация" }]
+        : []),
+      ...(zeekr001Trims[0]
+        ? [{ trimId: zeekr001Trims[0].id, status: "in_transit" as const, location: "Море · порт Циндао", expectedDate: inDays(25), notes: "Отплыл, транзит через Кашгар" }]
+        : []),
+      ...(hyundaiIoniq5Trim
+        ? [{ trimId: hyundaiIoniq5Trim.id, status: "in_transit" as const, location: "Море · порт Пусан", expectedDate: inDays(30), notes: "Ожидается таможенная очистка" }]
+        : []),
+      ...(kiaEv6Trim
+        ? [{ trimId: kiaEv6Trim.id, status: "on_order" as const, location: "Заказ у дилера, Корея", expectedDate: inDays(60) }]
+        : []),
+      ...(bydDolphinTrim
+        ? [{ trimId: bydDolphinTrim.id, status: "on_order" as const, location: "Заказ на заводе, Китай", expectedDate: inDays(75), notes: "Комплектация с панорамной крышей" }]
+        : []),
+      ...(teslaModelYTrim && wonLead
+        ? [{ trimId: teslaModelYTrim.id, status: "reserved" as const, location: "Склад Ташкент, Сергели", vin: "5YJ3E1EA0MF850321", reservedBy: wonLead.id, reservedAt: new Date(), notes: "Бронь по выигранной заявке" }]
+        : []),
+    ];
+    await db.insert(vehicleInventory).values(inventoryRows);
+    console.log(`✓ Demo inventory: ${inventoryRows.length}`);
+  } else {
+    console.log("✓ Inventory already seeded, skipping");
+  }
 
   const allTrimArrays = [
     zeekr7xTrims, zeekr001Trims, atto3Trims, sealTrims, hanTrims,

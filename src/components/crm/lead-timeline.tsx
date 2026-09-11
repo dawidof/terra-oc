@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, CheckCircle, Clock, MessageSquare, Phone, User } from "lucide-react";
+import { ArrowRight, CheckCircle, CheckCheck, Clock, MessageSquare, Phone, User } from "lucide-react";
 
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -18,6 +18,7 @@ const activityIcons: Record<string, { icon: typeof User; className: string }> = 
   status_changed: { icon: ArrowRight, className: "text-purple-500" },
   note_added: { icon: MessageSquare, className: "text-brand" },
   follow_up_set: { icon: Clock, className: "text-amber-500" },
+  follow_up_completed: { icon: CheckCheck, className: "text-brand" },
   called: { icon: Phone, className: "text-blue-500" },
 };
 
@@ -41,6 +42,8 @@ function activityLabel(type: string, metadata: Record<string, unknown> | null) {
       return "Добавлена заметка";
     case "follow_up_set":
       return "Установлен звонок";
+    case "follow_up_completed":
+      return "Звонок выполнен";
     case "called":
       return "Совершён звонок";
     default:

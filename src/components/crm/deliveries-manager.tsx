@@ -7,7 +7,7 @@ import { Package, Plus, Trash2 } from "lucide-react";
 
 import { AvailabilityBadge } from "@/components/availability-badge";
 import { Button } from "@/components/ui/button";
-import { InventoryAddForm } from "@/components/crm/inventory-add-form";
+import { DeliveryAddForm } from "@/components/crm/delivery-add-form";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
@@ -23,7 +23,7 @@ import {
 import { Heading } from "@/components/ui/section";
 import { formatUsd } from "@/lib/format";
 
-interface InventoryItem {
+interface DeliveryItem {
   id: string;
   trimId: string;
   status: string;
@@ -45,16 +45,15 @@ interface InventoryItem {
 }
 
 const STATUS_OPTIONS = [
-  { value: "in_stock", label: "В наличии" },
   { value: "in_transit", label: "В пути" },
   { value: "on_order", label: "Под заказ" },
   { value: "reserved", label: "Забронирован" },
   { value: "sold", label: "Продан" },
 ];
 
-export function InventoryManager() {
+export function DeliveriesManager() {
   const router = useRouter();
-  const [items, setItems] = useState<InventoryItem[]>([]);
+  const [items, setItems] = useState<DeliveryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<string>("");
   const [addFormOpen, setAddFormOpen] = useState(false);
@@ -88,7 +87,7 @@ export function InventoryManager() {
         body: JSON.stringify({ id, status: newStatus }),
       });
       if (res.ok) {
-        toast.success("Статус инвентаря обновлён");
+        toast.success("Статус автомобиля обновлён");
         fetchItems();
         router.refresh();
       } else {
@@ -103,11 +102,11 @@ export function InventoryManager() {
     try {
       const res = await fetch(`/api/admin/inventory?id=${id}`, { method: "DELETE" });
       if (res.ok) {
-        toast.success("Позиция удалена");
+        toast.success("Автомобиль удалён");
         fetchItems();
         router.refresh();
       } else {
-        toast.error("Не удалось удалить позицию");
+        toast.error("Не удалось удалить автомобиль");
       }
     } catch {
       toast.error("Ошибка сети при удалении");
@@ -117,7 +116,7 @@ export function InventoryManager() {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <Heading size="md">Инвентарь</Heading>
+        <Heading size="md">Поставки</Heading>
         <Button onClick={() => setAddFormOpen(true)}>
           <Plus data-icon="inline-start" className="size-4" />
           Добавить
@@ -155,7 +154,7 @@ export function InventoryManager() {
       ) : items.length === 0 ? (
         <div className="flex flex-col items-center rounded-xl bg-card px-6 py-16 text-center ring-1 ring-foreground/10">
           <Package className="mb-4 size-10 text-muted-foreground" aria-hidden />
-          <p className="text-sm text-muted-foreground">Инвентарь пуст</p>
+          <p className="text-sm text-muted-foreground">Поставок пока нет</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -208,7 +207,7 @@ export function InventoryManager() {
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>Удалить позицию?</AlertDialogTitle>
+                      <AlertDialogTitle>Удалить автомобиль?</AlertDialogTitle>
                       <AlertDialogDescription>
                         {item.brandName} {item.modelName} — {item.trimName}. Это действие
                         нельзя отменить.
@@ -237,7 +236,7 @@ export function InventoryManager() {
         </div>
       )}
 
-      <InventoryAddForm
+      <DeliveryAddForm
         open={addFormOpen}
         onOpenChange={setAddFormOpen}
         onCreated={() => {

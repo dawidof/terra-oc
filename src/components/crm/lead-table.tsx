@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowUpRight, Clock, Phone } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -50,7 +51,23 @@ function followUpStatus(date: Date | null): { label: string; className: string }
   return { label: formatDate(followUp), className: "text-muted-foreground" };
 }
 
-export function LeadTable({ leads }: { leads: Lead[] }) {
+interface LeadTableProps {
+  leads: Lead[];
+  selectedIds?: string[];
+  onToggleSelect?: (id: string) => void;
+  onToggleSelectAll?: (checked: boolean) => void;
+}
+
+export function LeadTable({
+  leads,
+  selectedIds,
+  onToggleSelect,
+  onToggleSelectAll,
+}: LeadTableProps) {
+  const selectable = onToggleSelect !== undefined;
+  const selected = new Set(selectedIds ?? []);
+  const allSelected = leads.length > 0 && leads.every((lead) => selected.has(lead.id));
+
   if (leads.length === 0) {
     return (
       <div className="rounded-xl bg-card px-6 py-12 text-center ring-1 ring-foreground/10">
@@ -64,6 +81,17 @@ export function LeadTable({ leads }: { leads: Lead[] }) {
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
+            {selectable && (
+              <TableHead className="w-10">
+                <Checkbox
+                  checked={allSelected}
+                  onCheckedChange={(checked) =>
+                    onToggleSelectAll?.(checked === true)
+                  }
+                  aria-label="Выбрать все заявки"
+                />
+              </TableHead>
+            )}
             <TableHead>Клиент</TableHead>
             <TableHead>Телефон</TableHead>
             <TableHead>Автомобиль</TableHead>
@@ -78,8 +106,18 @@ export function LeadTable({ leads }: { leads: Lead[] }) {
         <TableBody>
           {leads.map((lead) => {
             const followUp = followUpStatus(lead.nextFollowUpAt);
+            const isSelected = selected.has(lead.id);
             return (
-              <TableRow key={lead.id}>
+              <TableRow key={lead.id} className={ isSelected ? "bg-accent/50" : undefined}>
+                {selectable && (
+                  <TableCell>
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={() => onToggleSelect?.(lead.id)}
+                      aria-label={`Выбрать заявку ${lead.customerName}`}
+                    />
+                  </TableCell>
+                )}
                 <TableCell className="font-medium">{lead.customerName}</TableCell>
                 <TableCell>
                   {lead.customerPhone ? (

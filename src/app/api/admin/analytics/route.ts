@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { leads, leadConfigurations, users } from "@/db/schema";
-import { eq, and, gte, sql, desc } from "drizzle-orm";
+import { eq, and, gte, lt, sql, desc } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   const session = await auth();
@@ -140,7 +140,7 @@ export async function GET(request: NextRequest) {
       { status: "qualified", label: "Квалифицированы" },
       { status: "quote_sent", label: "Расчёт отправлен" },
       { status: "negotiation", label: "Переговоры" },
-      { status: "won", label: "Выиграны" },
+      { status: "won", label: "Продажи" },
     ];
 
     const revenuePipeline = await db
@@ -179,7 +179,7 @@ export async function GET(request: NextRequest) {
       .where(
         and(
           gte(leads.createdAt, previousDateFrom),
-          sql`${leads.createdAt} < ${dateFrom}`
+          lt(leads.createdAt, dateFrom)
         )
       );
 
@@ -189,7 +189,7 @@ export async function GET(request: NextRequest) {
       .where(
         and(
           gte(leads.createdAt, previousDateFrom),
-          sql`${leads.createdAt} < ${dateFrom}`,
+          lt(leads.createdAt, dateFrom),
           eq(leads.status, "won")
         )
       );
@@ -202,7 +202,7 @@ export async function GET(request: NextRequest) {
       .where(
         and(
           gte(leads.createdAt, previousDateFrom),
-          sql`${leads.createdAt} < ${dateFrom}`,
+          lt(leads.createdAt, dateFrom),
           eq(leads.status, "won")
         )
       );

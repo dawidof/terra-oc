@@ -13,6 +13,7 @@ import {
   SheetFooter,
   SheetClose,
 } from "@/components/ui/sheet";
+import { getStatusStyle } from "@/components/crm/status-badge";
 
 interface AnalyticsData {
   leadsTrend: { date: string; count: number }[];
@@ -35,18 +36,6 @@ interface ExportDialogProps {
   data: AnalyticsData | null;
   dateRange: string;
 }
-
-const STATUS_LABELS: Record<string, string> = {
-  new: "Новые",
-  assigned: "Назначены",
-  contacted: "Связались",
-  needs_follow_up: "Follow-up",
-  qualified: "Квалифицированы",
-  quote_sent: "Расчёт отправлен",
-  negotiation: "Переговоры",
-  won: "Выиграны",
-  lost: "Проиграны",
-};
 
 function downloadCSV(filename: string, csv: string) {
   const BOM = "\uFEFF";
@@ -73,7 +62,7 @@ function leadsTrendToCSV(data: AnalyticsData["leadsTrend"]): string {
 function conversionFunnelToCSV(data: AnalyticsData["conversionFunnel"]): string {
   const header = "Статус;Количество";
   const rows = data.map(
-    (r) => `${STATUS_LABELS[r.status] || r.status};${r.count}`
+    (r) => `${getStatusStyle(r.status).plural || r.status};${r.count}`
   );
   return [header, ...rows].join("\n");
 }

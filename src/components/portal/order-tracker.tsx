@@ -3,6 +3,7 @@
 import { CheckCircle, Clock, Circle, Truck, FileText, Phone, MessageSquare, Package } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/crm/status-badge";
+import { AvailabilityBadge } from "@/components/availability-badge";
 import { formatDate, formatUsd } from "@/lib/format";
 
 interface OrderData {
@@ -13,6 +14,12 @@ interface OrderData {
     estimatedTotalUsd: string | null;
     createdAt: string;
   };
+  vehicle: {
+    status: string;
+    vin: string | null;
+    location: string | null;
+    expectedDate: string | null;
+  } | null;
   configuration: {
     brandName: string | null;
     modelName: string | null;
@@ -82,7 +89,7 @@ function ConfigDetail({ label, value }: { label: string; value: string }) {
 }
 
 export function OrderTracker({ order }: { order: OrderData }) {
-  const { lead, configuration, quotes } = order;
+  const { lead, vehicle, configuration, quotes } = order;
   const currentStepIndex = STATUS_ORDER.indexOf(lead.status);
 
   const configJson = configuration?.configurationJson as Record<string, string> | null;
@@ -156,6 +163,27 @@ export function OrderTracker({ order }: { order: OrderData }) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Vehicle delivery status */}
+      {vehicle && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Статус автомобиля</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            <AvailabilityBadge
+              status={vehicle.status}
+              location={vehicle.location}
+              expectedDate={vehicle.expectedDate}
+            />
+            {vehicle.vin && (
+              <p className="text-sm text-muted-foreground">
+                VIN: <span className="font-mono">{vehicle.vin}</span>
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Vehicle Info */}
       {configuration && (

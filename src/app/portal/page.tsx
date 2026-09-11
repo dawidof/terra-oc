@@ -27,6 +27,12 @@ interface OrderData {
     estimatedTotalUsd: string | null;
     createdAt: string;
   };
+  vehicle: {
+    status: string;
+    vin: string | null;
+    location: string | null;
+    expectedDate: string | null;
+  } | null;
   configuration: {
     brandName: string | null;
     modelName: string | null;
@@ -54,6 +60,7 @@ const DEMO_ORDERS: OrderData[] = [
       estimatedTotalUsd: "42500",
       createdAt: "2026-06-10T10:30:00Z",
     },
+    vehicle: null,
     configuration: {
       brandName: "BYD",
       modelName: "Song Plus",
@@ -104,6 +111,12 @@ const DEMO_ORDERS: OrderData[] = [
       estimatedTotalUsd: "38900",
       createdAt: "2026-07-05T09:15:00Z",
     },
+    vehicle: {
+      status: "in_transit",
+      vin: "LSVAA26E7NS012345",
+      location: "Море · порт Пусан",
+      expectedDate: "2026-09-20T00:00:00Z",
+    },
     configuration: {
       brandName: "Changan",
       modelName: "CS75 Plus",
@@ -145,6 +158,12 @@ const DEMO_ORDERS: OrderData[] = [
       customerName: "Дмитрий Чой",
       estimatedTotalUsd: "51200",
       createdAt: "2026-05-20T16:45:00Z",
+    },
+    vehicle: {
+      status: "sold",
+      vin: "L6T78Z4U0PN012345",
+      location: "Ташкент, склад Сергели",
+      expectedDate: null,
     },
     configuration: {
       brandName: "Geely",

@@ -1,10 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { leads, customers, leadConfigurations, quotes } from "@/db/schema";
+import { leads, customers, leadConfigurations, quotes, vehicleInventory } from "@/db/schema";
 import { eq, or, desc } from "drizzle-orm";
 
 function normalizePhone(p: string): string {
   return p.replace(/\D/g, "");
+}
+
+async function fetchVehicleForLead(leadId: string) {
+  const [vehicle] = await db
+    .select({
+      status: vehicleInventory.status,
+      vin: vehicleInventory.vin,
+      location: vehicleInventory.location,
+      expectedDate: vehicleInventory.expectedDate,
+    })
+    .from(vehicleInventory)
+    .where(eq(vehicleInventory.reservedBy, leadId))
+    .limit(1);
+  return vehicle ?? null;
 }
 
 export async function GET(request: NextRequest) {
@@ -63,6 +77,7 @@ export async function GET(request: NextRequest) {
         },
         configuration: config || null,
         quotes: leadQuotes,
+        vehicle: await fetchVehicleForLead(leadId),
       });
     }
 
@@ -132,6 +147,7 @@ export async function GET(request: NextRequest) {
             sentAt: quote.sentAt,
           },
         ],
+        vehicle: await fetchVehicleForLead(quote.leadId),
       });
     }
 
@@ -203,6 +219,7 @@ export async function GET(request: NextRequest) {
           },
           configuration: config || null,
           quotes: leadQuotes,
+          vehicle: await fetchVehicleForLead(lead.id),
         });
       }
 

@@ -1,9 +1,5 @@
-import { InventoryManager } from "@/components/crm/inventory-manager";
-
-export const metadata = {
-  title: "Инвентарь — CRM — TerraAuto",
-};
+import { redirect } from "next/navigation";
 
 export default function InventoryPage() {
-  return <InventoryManager />;
+  redirect("/crm/deliveries");
 }

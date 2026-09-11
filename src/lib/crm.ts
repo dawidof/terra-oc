@@ -1,4 +1,4 @@
-import { eq, and, or, sql, desc, asc, ilike, gte, lte, count } from "drizzle-orm";
+import { eq, and, or, sql, desc, asc, ilike, gte, lte, count, isNotNull, notInArray } from "drizzle-orm";
 import { db } from "@/db";
 import {
   leads,
@@ -47,7 +47,13 @@ export async function getLeads(filters: LeadFilters = {}) {
   if (assignedManagerId) conditions.push(eq(leads.assignedManagerId, assignedManagerId));
   if (source) conditions.push(eq(leads.source, source));
   if (dateFrom) conditions.push(gte(leads.createdAt, new Date(dateFrom)));
-  if (dateTo) conditions.push(lte(leads.createdAt, new Date(dateTo)));
+  if (dateTo) {
+    const endOfDay = new Date(dateTo);
+    if (endOfDay.getHours() === 0 && endOfDay.getMinutes() === 0 && endOfDay.getSeconds() === 0) {
+      endOfDay.setHours(23, 59, 59, 999);
+    }
+    conditions.push(lte(leads.createdAt, endOfDay));
+  }
   if (budgetMin) conditions.push(gte(leads.estimatedTotalUsd, String(budgetMin)));
   if (budgetMax) conditions.push(lte(leads.estimatedTotalUsd, String(budgetMax)));
 
@@ -490,4 +496,50 @@ export async function getAllManagers() {
     .from(users)
     .where(eq(users.active, true))
     .orderBy(asc(users.name));
+}
+
+export async function getFollowUpTasks(limit = 100) {
+  const now = new Date();
+  const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+  return db
+    .select({
+      id: leads.id,
+      status: leads.status,
+      estimatedTotalUsd: leads.estimatedTotalUsd,
+      nextFollowUpAt: leads.nextFollowUpAt,
+      customerName: customers.name,
+      customerPhone: customers.phone,
+      assignedManagerName: users.name,
+      brandName: leadConfigurations.brandName,
+      modelName: leadConfigurations.modelName,
+      trimName: leadConfigurations.trimName,
+    })
+    .from(leads)
+    .innerJoin(customers, eq(leads.customerId, customers.id))
+    .leftJoin(leadConfigurations, eq(leads.id, leadConfigurations.leadId))
+    .leftJoin(users, eq(leads.assignedManagerId, users.id))
+    .where(
+      and(
+        isNotNull(leads.nextFollowUpAt),
+        lte(leads.nextFollowUpAt, endOfDay),
+        notInArray(leads.status, ["won", "lost"])
+      )
+    )
+    .orderBy(asc(leads.nextFollowUpAt))
+    .limit(limit);
+}
+
+export async function completeFollowUp(leadId: string, userId: string) {
+  await db
+    .update(leads)
+    .set({ nextFollowUpAt: null, lastContactAt: new Date(), updatedAt: new Date() })
+    .where(eq(leads.id, leadId));
+
+  await db.insert(leadActivities).values({
+    leadId,
+    userId,
+    type: "follow_up_completed",
+    metadataJson: {},
+  });
 }

@@ -12,6 +12,10 @@ interface PageProps {
     assignedManagerId?: string;
     source?: string;
     search?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    budgetMin?: string;
+    budgetMax?: string;
     page?: string;
   }>;
 }
@@ -30,6 +34,10 @@ async function LeadsContent({ searchParams }: PageProps) {
     assignedManagerId: params?.assignedManagerId || undefined,
     source: params?.source || undefined,
     search: params?.search || undefined,
+    dateFrom: params?.dateFrom || undefined,
+    dateTo: params?.dateTo || undefined,
+    budgetMin: params?.budgetMin ? Number(params.budgetMin) : undefined,
+    budgetMax: params?.budgetMax ? Number(params.budgetMax) : undefined,
     page,
     pageSize: PAGE_SIZE,
   };

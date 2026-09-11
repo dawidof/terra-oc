@@ -20,45 +20,22 @@ import {
   CHART_AXIS_TICK,
 } from "@/lib/chart-colors";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  STATUS_ORDER,
+  getStatusStyle,
+  statusChartColor,
+} from "@/components/crm/status-badge";
 
 interface ConversionFunnelProps {
   data: { status: string; count: number }[];
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  new: "Новые",
-  assigned: "Назначены",
-  contacted: "Связались",
-  needs_follow_up: "Follow-up",
-  qualified: "Квалифицированы",
-  quote_sent: "Расчёт отправлен",
-  negotiation: "Переговоры",
-  won: "Выиграны",
-  lost: "Проиграны",
-};
-
-const STATUS_ORDER = [
-  "new",
-  "assigned",
-  "contacted",
-  "needs_follow_up",
-  "qualified",
-  "quote_sent",
-  "negotiation",
-  "won",
-  "lost",
-] as const;
-
-const STATUS_COLOR_MAP: Record<string, string> = Object.fromEntries(
-  STATUS_ORDER.map((key, i) => [key, CHART_CATEGORIES[i % CHART_CATEGORIES.length]])
-);
-
 export function ConversionFunnel({ data }: ConversionFunnelProps) {
   const ordered = [...data]
-    .sort((a, b) => STATUS_ORDER.indexOf(a.status as typeof STATUS_ORDER[number]) - STATUS_ORDER.indexOf(b.status as typeof STATUS_ORDER[number]))
+    .sort((a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status))
     .filter((item) => item.status !== "lost")
     .map((item) => ({
-      name: STATUS_LABELS[item.status] || item.status,
+      name: getStatusStyle(item.status).plural || item.status,
       count: item.count,
       status: item.status,
     }));
@@ -88,7 +65,7 @@ export function ConversionFunnel({ data }: ConversionFunnelProps) {
                 {ordered.map((entry, index) => (
                   <Cell
                     key={`cell-${index}`}
-                    fill={STATUS_COLOR_MAP[entry.status] ?? CHART_CATEGORIES[index % CHART_CATEGORIES.length]}
+                    fill={statusChartColor(entry.status) ?? CHART_CATEGORIES[index % CHART_CATEGORIES.length]}
                   />
                 ))}
               </Bar>

@@ -336,7 +336,7 @@ export default async function HomePage() {
       <HomeClientPhotos />
 
       <Section id="cta" background="dark" padding="spacious">
-        <div className="max-w-2xl text-center">
+        <div className="mx-auto max-w-2xl text-center">
           <Heading size="2xl" tone="inverse">
             Готовы найти свой автомобиль?
           </Heading>

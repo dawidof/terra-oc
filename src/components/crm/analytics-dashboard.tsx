@@ -7,7 +7,6 @@ import { StatCard, StatGrid } from "@/components/ui/stat-card";
 import { formatUsd } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Heading } from "@/components/ui/section";
 import { ExportDialog } from "@/components/crm/export-dialog";
 import { LeadsTrend } from "./charts/leads-trend";
 import { ConversionFunnel } from "./charts/conversion-funnel";
@@ -55,6 +54,14 @@ interface AnalyticsData {
 
 interface AnalyticsDashboardProps {
   dateRange?: string;
+}
+
+function dealsPlural(n: number): string {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return "сделка";
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return "сделки";
+  return "сделок";
 }
 
 export function AnalyticsDashboard({ dateRange = "30d" }: AnalyticsDashboardProps) {
@@ -115,7 +122,17 @@ export function AnalyticsDashboard({ dateRange = "30d" }: AnalyticsDashboardProp
       <StatGrid>
         <StatCard label="Всего заявок" value={data.summary.totalLeads} icon={TrendingUp} tone="info" />
         <StatCard label="Конверсия" value={`${data.summary.conversionRate.toFixed(1)}%`} icon={Users} tone="success" />
-        <StatCard label="Средний чек" value={formatUsd(data.summary.avgDealSize)} icon={DollarSign} tone="brand" />
+        <StatCard
+          label="Выручка"
+          value={formatUsd(
+            data.revenuePipeline?.find((s) => s.status === "won")?.totalValue ?? 0
+          )}
+          icon={DollarSign}
+          tone="brand"
+          hint={`${
+            data.comparison?.current?.wonLeads ?? 0
+          } ${dealsPlural(data.comparison?.current?.wonLeads ?? 0)} · оценка за период`}
+        />
         <StatCard label="Время ответа" value={`${data.summary.avgResponseTime}ч`} icon={Clock} tone="warning" />
       </StatGrid>
 

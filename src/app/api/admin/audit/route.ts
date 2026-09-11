@@ -4,7 +4,10 @@ import { getAuditLogs } from "@/lib/admin";
 
 export async function GET(request: NextRequest) {
   const session = await auth();
-  if (!session?.user || (session.user as any).role !== "admin") {
+  if (
+    !session?.user ||
+    (session.user as { role?: string }).role !== "admin"
+  ) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -14,8 +17,8 @@ export async function GET(request: NextRequest) {
   const limit = Number(searchParams.get("limit")) || 50;
 
   try {
-    const logs = await getAuditLogs({ entityType, entityId, limit });
-    return NextResponse.json({ logs });
+    const result = await getAuditLogs({ entityType, entityId, limit });
+    return NextResponse.json(result);
   } catch (error) {
     console.error("Audit log error:", error);
     return NextResponse.json({ error: "Failed to fetch logs" }, { status: 500 });

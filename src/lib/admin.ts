@@ -1,7 +1,8 @@
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, count } from "drizzle-orm";
 import { db } from "@/db";
 import {
   trims,
+  users,
   vehicleOffers,
   carModels,
   reviews,
@@ -43,6 +44,8 @@ const REVIEW_UPDATABLE_FIELDS = new Set([
   "sortOrder",
 ]);
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function logAudit(
   userId: string,
   entityType: string,
@@ -51,6 +54,11 @@ export async function logAudit(
   before: any,
   after: any
 ) {
+  if (!UUID_RE.test(entityId)) {
+    console.warn(`Audit skipped for non-uuid entity ${entityType}/${entityId}`);
+    return;
+  }
+
   await db.insert(auditLogs).values({
     userId,
     entityType,
@@ -153,21 +161,49 @@ export async function getAuditLogs(options: {
   entityType?: string;
   entityId?: string;
   limit?: number;
+  offset?: number;
 } = {}) {
-  const { entityType, entityId, limit = 50 } = options;
+  const { entityType, entityId, limit = 50, offset = 0 } = options;
 
   const conditions = [];
   if (entityType) conditions.push(eq(auditLogs.entityType, entityType));
   if (entityId) conditions.push(eq(auditLogs.entityId, entityId));
 
-  const where = conditions.length > 0 ? conditions[0] : undefined;
+  const where = conditions.length > 0 ? and(...conditions) : undefined;
 
-  return db
-    .select()
+  const [totalResult] = await db
+    .select({ total: count() })
     .from(auditLogs)
+    .where(where);
+
+  const logs = await db
+    .select({
+      id: auditLogs.id,
+      userId: auditLogs.userId,
+      userName: users.name,
+      entityType: auditLogs.entityType,
+      entityId: auditLogs.entityId,
+      action: auditLogs.action,
+      beforeJson: auditLogs.beforeJson,
+      afterJson: auditLogs.afterJson,
+      createdAt: auditLogs.createdAt,
+    })
+    .from(auditLogs)
+    .leftJoin(users, eq(auditLogs.userId, users.id))
     .where(where)
     .orderBy(desc(auditLogs.createdAt))
-    .limit(limit);
+    .limit(limit)
+    .offset(offset);
+
+  return { logs, total: totalResult?.total || 0 };
+}
+
+export async function getAuditEntityTypes() {
+  const rows = await db
+    .selectDistinct({ entityType: auditLogs.entityType })
+    .from(auditLogs)
+    .orderBy(auditLogs.entityType);
+  return rows.map((r) => r.entityType);
 }
 
 export async function getTrimWithOffer(trimId: string) {

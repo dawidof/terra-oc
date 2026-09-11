@@ -53,7 +53,7 @@ export default async function RootLayout({
   const userRole = (session?.user as any)?.role;
 
   return (
-    <html lang="ru">
+    <html lang="ru" suppressHydrationWarning>
       <body className={`${inter.variable} ${inter.className}`}>
         <Analytics />
         <Providers userRole={userRole}>
