@@ -3,21 +3,19 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, Phone, X } from "lucide-react";
+import { LogIn, Menu, Phone, X } from "lucide-react";
 
 import { AdminToggle } from "@/components/admin/admin-toggle";
-import { SettingsDrawer } from "@/components/admin/settings-drawer";
 import { AutocompleteSearch } from "@/components/autocomplete-search";
 import { BrandMark } from "@/components/brand-mark";
-import { Button } from "@/components/ui/button";
 import { useAdmin } from "@/contexts/admin-context";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { href: "/cars", label: "Автомобили" },
   { href: "/choose", label: "Подбор" },
   { href: "/calculator", label: "Калькулятор" },
   { href: "/how-it-works", label: "Как купить" },
+  { href: "/portal", label: "Отследить заказ" },
 ];
 
 export function SiteHeader() {
@@ -38,97 +36,129 @@ export function SiteHeader() {
   }, [pathname]);
 
   return (
-    <header
-      className={cn(
-        "sticky top-0 z-50 border-b border-border bg-background/85 backdrop-blur-xl transition-shadow duration-200",
-        scrolled && "shadow-sm"
-      )}
-    >
-      <div className="container mx-auto flex h-16 items-center justify-between gap-4 px-4 sm:px-6">
-        <Link href="/" aria-label="TerraAuto — на главную">
-          <BrandMark />
-        </Link>
+    <>
+      <header
+        className={cn(
+          "sticky top-0 z-50 border-b border-border bg-background/85 backdrop-blur-xl transition-shadow duration-200",
+          scrolled && "shadow-sm"
+        )}
+      >
+        <div className="container mx-auto flex h-14 items-center justify-between gap-3 px-4 sm:px-6">
+          <Link href="/" aria-label="TerraAuto — на главную">
+            <BrandMark />
+          </Link>
 
-        <nav className="hidden items-center gap-0.5 md:flex">
-          {navItems.map((item) => {
-            const isActive =
-              pathname === item.href || pathname.startsWith(`${item.href}/`);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "rounded-lg px-3 py-2 text-sm transition-colors",
-                  isActive
-                    ? "font-medium text-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                )}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
+          <nav className="hidden items-center gap-0.5 md:flex">
+            {navItems.map((item) => {
+              const isActive =
+                pathname === item.href || pathname.startsWith(`${item.href}/`);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors",
+                    isActive
+                      ? "text-foreground"
+                      : "text-foreground/60 hover:bg-muted hover:text-foreground"
+                  )}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
 
-        <div className="flex items-center gap-2">
-          <AutocompleteSearch className="hidden w-56 xl:block" />
-          <a
-            href="tel:+998901234567"
-            className="hidden items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground lg:inline-flex"
-          >
-            <Phone className="size-3.5" aria-hidden />
-            +998 90 123 45 67
-          </a>
-          {is_admin_user && <AdminToggle />}
-          {isAdmin && <SettingsDrawer />}
-          <Button variant="outline" size="sm" render={<Link href="/login" />} nativeButton={false}>
-            Вход в CRM
-          </Button>
-          <button
-            type="button"
-            className="-mr-1 rounded-lg p-2 text-foreground transition-colors hover:bg-muted md:hidden"
-            onClick={() => setMobileOpen((open) => !open)}
-            aria-label="Меню"
-            aria-expanded={mobileOpen}
-          >
-            {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
-          </button>
+          <div className="flex items-center gap-1.5">
+            <Link
+              href="/cars"
+              className="hidden rounded-lg bg-surface-dark px-3.5 py-1.5 text-xs font-semibold text-surface-dark-foreground transition-opacity hover:opacity-90 md:inline-flex"
+            >
+              Каталог авто
+            </Link>
+            <AutocompleteSearch className="hidden w-48 xl:block" />
+            <a
+              href="tel:+998901234567"
+              className="hidden items-center gap-1.5 text-sm font-medium text-foreground/70 transition-colors hover:text-foreground lg:inline-flex"
+            >
+              <Phone className="size-3.5" aria-hidden />
+              +998 90 123 45 67
+            </a>
+            {is_admin_user && <AdminToggle />}
+            <Link
+              href="/login"
+              className="hidden items-center rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:inline-flex"
+              title="Вход в CRM"
+            >
+              <LogIn className="size-4" />
+            </Link>
+            <button
+              type="button"
+              className="-mr-1 rounded-lg p-2 text-foreground transition-colors hover:bg-muted md:hidden"
+              onClick={() => setMobileOpen((open) => !open)}
+              aria-label="Меню"
+              aria-expanded={mobileOpen}
+            >
+              {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+            </button>
+          </div>
         </div>
-      </div>
 
-      {mobileOpen && (
-        <nav className="border-t border-border bg-background px-4 py-4 md:hidden">
-          <div className="flex flex-col gap-1">
-            {navItems.map((item) => (
+        {mobileOpen && (
+          <nav className="border-t border-border bg-background px-4 py-4 md:hidden">
+            <div className="flex flex-col gap-1">
               <Link
-                key={item.href}
-                href={item.href}
-                className="rounded-lg px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                href="/cars"
+                className="rounded-lg bg-surface-dark px-3 py-2.5 text-sm font-semibold text-surface-dark-foreground"
               >
-                {item.label}
+                Каталог авто
               </Link>
-            ))}
-          </div>
-          <div className="mt-3 flex items-center gap-2 border-t border-border pt-4">
-            <div className="min-w-0 flex-1">
-              <AutocompleteSearch className="w-full" />
+              {navItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="rounded-lg px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  {item.label}
+                </Link>
+              ))}
             </div>
-          </div>
-          {is_admin_user && (
-            <div className="mt-3 flex items-center gap-2">
-              <AdminToggle />
-              {isAdmin && <SettingsDrawer />}
+            <div className="mt-3 flex items-center gap-2 border-t border-border pt-4">
+              <div className="min-w-0 flex-1">
+                <AutocompleteSearch className="w-full" />
+              </div>
             </div>
-          )}
-        </nav>
-      )}
+            {is_admin_user && (
+              <div className="mt-3 flex items-center gap-2">
+                <AdminToggle />
+              </div>
+            )}
+            <div className="mt-3 flex items-center gap-3 border-t border-border pt-3">
+              <a
+                href="tel:+998901234567"
+                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground"
+              >
+                <Phone className="size-3.5" aria-hidden />
+                +998 90 123 45 67
+              </a>
+              <Link
+                href="/login"
+                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground"
+              >
+                <LogIn className="size-3.5" />
+                Вход в CRM
+              </Link>
+            </div>
+          </nav>
+        )}
+      </header>
 
       {isAdmin && (
-        <div className="border-t border-brand/20 bg-brand-muted px-4 py-1.5 text-center text-xs font-medium text-brand-muted-foreground">
-          Режим редактирования включён — нажмите на значения для редактирования
+        <div className="fixed bottom-4 left-4 z-50 rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white shadow-lg">
+          Режим редактирования
         </div>
       )}
-    </header>
+    </>
   );
 }
 
@@ -146,6 +176,7 @@ const footerColumns = [
     title: "Информация",
     links: [
       { href: "/how-it-works", label: "Как купить" },
+      { href: "/portal", label: "Отследить заказ" },
       { href: "/about", label: "О компании" },
       { href: "/reviews", label: "Отзывы" },
       { href: "/contacts", label: "Контакты" },

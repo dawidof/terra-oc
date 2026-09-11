@@ -214,7 +214,7 @@ async function main() {
 
       // Map families to options
       for (const [family, mediaItems] of byFamily) {
-        const opt = findBestOption(family, colorOpts);
+        const opt = findBestOption(family, colorOpts.filter((o): o is { id: string; code: string; name: string; groupId: string; groupType: string; modelVersionId: string } => o.code !== null));
         if (!opt) {
           skipped += mediaItems.length;
           continue;

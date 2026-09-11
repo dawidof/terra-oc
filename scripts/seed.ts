@@ -1136,14 +1136,19 @@ async function seed() {
   console.log("  ✓ Tesla Model Y: all trims configured");
 
   // ─── Reviews ────────────────────────────────────────────────────────────
-  await db.insert(reviews).values([
-    { name: "Артём Ким", city: "Ташкент", rating: 5, vehicleLabel: "Zeekr 7X AWD", text: "Отличный сервис! Машина приехала в идеальном состоянии. Менеджер всё объяснил, помог с выбором. Доставка заняла 22 дня.", published: true, featured: true, sortOrder: 1 },
-    { name: "Дилшод Рустамов", city: "Самарканд", rating: 5, vehicleLabel: "BYD Seal", text: "Долго выбирал между BYD и Zeekr. В итоге взял Seal — отличная машина для города. Калькулятор на сайте показал точную сумму.", published: true, featured: true, sortOrder: 2 },
-    { name: "Алексей Петров", city: "Ташкент", rating: 4, vehicleLabel: "Changan CS55 Plus", text: "Хороший кроссовер за свои деньги. Единственное — пришлось подождать чуть дольше обещанного срока. Но в целом доволен.", published: true, featured: true, sortOrder: 3 },
-    { name: "Нодирбек Турсунов", city: "Бухара", rating: 5, vehicleLabel: "Zeekr 001 Performance", text: "Мечтал о мощном электромобиле. 001 превзошёл ожидания — разгон бешеный, запас хода отличный. Спасибо TerraAuto за подбор!", published: true, featured: true, sortOrder: 4 },
-    { name: "Мария Сидорова", city: "Ташкент", rating: 5, vehicleLabel: "BYD Atto 3", text: "Выбрали Atto 3 для жены — компактный, удобный, экономичный. Ребята помогли с документами, всё быстро оформили.", published: true, featured: false, sortOrder: 5 },
-  ]);
-  console.log("✓ Reviews: 5 entries");
+  const existingReviews = await db.select({ id: reviews.id }).from(reviews).limit(1);
+  if (existingReviews.length === 0) {
+    await db.insert(reviews).values([
+      { name: "Артём Ким", city: "Ташкент", rating: 5, vehicleLabel: "Zeekr 7X AWD", text: "Отличный сервис! Машина приехала в идеальном состоянии. Менеджер всё объяснил, помог с выбором. Доставка заняла 22 дня.", published: true, featured: true, sortOrder: 1 },
+      { name: "Дилшод Рустамов", city: "Самарканд", rating: 5, vehicleLabel: "BYD Seal", text: "Долго выбирал между BYD и Zeekr. В итоге взял Seal — отличная машина для города. Калькулятор на сайте показал точную сумму.", published: true, featured: true, sortOrder: 2 },
+      { name: "Алексей Петров", city: "Ташкент", rating: 4, vehicleLabel: "Changan CS55 Plus", text: "Хороший кроссовер за свои деньги. Единственное — пришлось подождать чуть дольше обещанного срока. Но в целом доволен.", published: true, featured: true, sortOrder: 3 },
+      { name: "Нодирбек Турсунов", city: "Бухара", rating: 5, vehicleLabel: "Zeekr 001 Performance", text: "Мечтал о мощном электромобиле. 001 превзошёл ожидания — разгон бешеный, запас хода отличный. Спасибо TerraAuto за подбор!", published: true, featured: true, sortOrder: 4 },
+      { name: "Мария Сидорова", city: "Ташкент", rating: 5, vehicleLabel: "BYD Atto 3", text: "Выбрали Atto 3 для жены — компактный, удобный, экономичный. Ребята помогли с документами, всё быстро оформили.", published: true, featured: false, sortOrder: 5 },
+    ]);
+    console.log("✓ Reviews: 5 entries");
+  } else {
+    console.log("✓ Reviews already seeded, skipping");
+  }
 
   // ─── Content Pages ──────────────────────────────────────────────────────
   await db.insert(contentPages).values([
@@ -1261,7 +1266,6 @@ async function seed() {
     if (assignment.trim) {
       await db.insert(leadConfigurations).values({
         leadId: demoLeads[assignment.leadIdx].id,
-        trimId: assignment.trim.id,
         brandName: assignment.trim.slug.includes("zeekr") ? "Zeekr" : assignment.trim.slug.includes("byd") ? "BYD" : assignment.trim.slug.includes("tesla") ? "Tesla" : assignment.trim.slug.includes("kia") ? "Kia" : assignment.trim.slug.includes("hyundai") ? "Hyundai" : assignment.trim.slug.includes("changan") ? "Changan" : "Haval",
         modelName: assignment.trim.slug.includes("7x") ? "7X" : assignment.trim.slug.includes("atto") ? "Atto 3" : assignment.trim.slug.includes("dolphin") ? "Dolphin" : assignment.trim.slug.includes("model-y") ? "Model Y" : assignment.trim.slug.includes("ev6") ? "EV6" : assignment.trim.slug.includes("ioniq") ? "Ioniq 5" : assignment.trim.slug.includes("deepal") ? "Deepal S7" : "H6",
         trimName: assignment.trim.name,

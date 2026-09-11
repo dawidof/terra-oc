@@ -9,6 +9,7 @@ import {
   integer,
   numeric,
   pgEnum,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 // ─── Enums ───────────────────────────────────────────────────────────────────
@@ -353,7 +354,9 @@ export const reviews = pgTable("reviews", {
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-});
+}, (t) => [
+  uniqueIndex("reviews_name_text_idx").on(t.name, t.text),
+]);
 
 // ─── Calculation Rule Versions ──────────────────────────────────────────────
 

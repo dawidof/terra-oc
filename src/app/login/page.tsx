@@ -3,14 +3,21 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
+const demoAccounts = [
+  { label: "Админ", email: "admin@terraauto.uz", password: "admin123" },
+  { label: "Менеджер", email: "manager@terraauto.uz", password: "manager123" },
+];
 
 export default function LoginPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -33,6 +40,12 @@ export default function LoginPage() {
       router.push("/crm");
       router.refresh();
     }
+  }
+
+  function copyCredentials(email: string, password: string, idx: number) {
+    navigator.clipboard.writeText(`${email}\n${password}`);
+    setCopiedIdx(idx);
+    setTimeout(() => setCopiedIdx(null), 1500);
   }
 
   return (
@@ -83,6 +96,34 @@ export default function LoginPage() {
             {loading ? "Вход..." : "Войти"}
           </Button>
         </form>
+
+        <div className="rounded-xl bg-muted/50 p-4 ring-1 ring-foreground/5">
+          <p className="mb-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            Демо-данные
+          </p>
+          <div className="flex flex-col gap-2">
+            {demoAccounts.map((acc, i) => (
+              <button
+                key={acc.email}
+                type="button"
+                onClick={() => copyCredentials(acc.email, acc.password, i)}
+                className="flex items-center justify-between rounded-lg bg-background px-3 py-2 text-left ring-1 ring-foreground/5 transition-colors hover:ring-foreground/20"
+              >
+                <div className="min-w-0">
+                  <span className="text-sm font-medium">{acc.label}</span>
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    {acc.email} / {acc.password}
+                  </span>
+                </div>
+                {copiedIdx === i ? (
+                  <Check className="size-3.5 shrink-0 text-green-600" />
+                ) : (
+                  <Copy className="size-3.5 shrink-0 text-muted-foreground" />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
