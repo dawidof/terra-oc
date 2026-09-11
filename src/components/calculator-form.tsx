@@ -154,18 +154,36 @@ export function CalculatorForm({
 
   // Manual mode fields
   const [purchasePrice, setPurchasePrice] = useState(
-    initialPrice ? parseDigits(String(initialPrice)) : ""
+    initialPrice
+      ? parseDigits(String(initialPrice))
+      : initialTrim?.basePrice
+        ? initialTrim.basePrice.toString()
+        : ""
   );
   const [currency, setCurrency] = useState(
-    CURRENCIES.some((c) => c.value === initialCurrency) ? (initialCurrency as string) : "USD"
+    CURRENCIES.some((c) => c.value === initialCurrency)
+      ? (initialCurrency as string)
+      : initialTrim?.basePriceCurrency || "USD"
   );
   const [powertrain, setPowertrain] = useState(
-    POWERTRAINS.some((p) => p.value === initialPowertrain) ? initialPowertrain : "bev"
+    POWERTRAINS.some((p) => p.value === initialPowertrain)
+      ? initialPowertrain
+      : initialTrim?.powertrainType || "bev"
   );
   const [displacement, setDisplacement] = useState(
-    initialDisplacement ? String(initialDisplacement) : ""
+    initialDisplacement
+      ? String(initialDisplacement)
+      : initialTrim?.engineDisplacementCc
+        ? String(initialTrim.engineDisplacementCc)
+        : ""
   );
-  const [power, setPower] = useState(initialPower ? String(initialPower) : "");
+  const [power, setPower] = useState(
+    initialPower
+      ? String(initialPower)
+      : initialTrim?.motorPowerKw
+        ? initialTrim.motorPowerKw.toString()
+        : ""
+  );
   const [modelYear, setModelYear] = useState(initialYear ? String(initialYear) : "none");
 
   // Catalog mode fields
@@ -882,7 +900,7 @@ export function CalculatorForm({
 
             {/* Catalog mode: show auto-filled specs (read-only) */}
             {mode === "catalog" && selectedTrim && (
-              <div className="grid grid-cols-3 gap-4 text-sm">
+              <div className={`grid ${isEv ? "grid-cols-3" : "grid-cols-2"} gap-4 text-sm`}>
                 <div>
                   <span className="text-muted-foreground">Привод</span>
                   <p className="font-medium">{selectedTrim.powertrainType?.toUpperCase() || "—"}</p>
@@ -897,12 +915,14 @@ export function CalculatorForm({
                       : (selectedTrim.engineDisplacementCc ? `${selectedTrim.engineDisplacementCc} см³` : "—")}
                   </p>
                 </div>
-                <div>
-                  <span className="text-muted-foreground">Батарея</span>
-                  <p className="font-medium">
-                    {selectedTrim.batteryCapacityKwh ? `${selectedTrim.batteryCapacityKwh} кВт·ч` : "—"}
-                  </p>
-                </div>
+                {isEv && (
+                  <div>
+                    <span className="text-muted-foreground">Батарея</span>
+                    <p className="font-medium">
+                      {selectedTrim.batteryCapacityKwh ? `${selectedTrim.batteryCapacityKwh} кВт·ч` : "—"}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 

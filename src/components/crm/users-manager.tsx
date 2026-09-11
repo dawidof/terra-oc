@@ -188,7 +188,7 @@ export function UsersManager({
                     <DropdownMenu>
                       <DropdownMenuTrigger
                         render={
-                          <Button variant="ghost" size="icon-sm" nativeButton={false} />
+                          <Button variant="ghost" size="icon-sm" />
                         }
                         aria-label={`Действия для ${user.name}`}
                         disabled={isSelf}
