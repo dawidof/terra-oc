@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Configurator } from "@/components/configurator";
+import { useEffect, useState } from "react";
+import { Configurator, type TrimConfigSnapshot } from "@/components/configurator";
 import { LeadForm } from "@/components/lead-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -43,12 +43,12 @@ interface ConfiguratorSectionProps {
   basePrice: number;
   estimatedTotalUsd: string | null;
   trimId: string;
+  modelVersionId: string;
   brandName: string;
   modelName: string;
   trimName: string;
   sourceCountry: string | null;
   condition: string;
-  csrfToken: string;
   logisticsCost: number | null;
   customsCost: number | null;
   serviceFee: number | null;
@@ -64,12 +64,12 @@ export function ConfiguratorSection({
   basePrice,
   estimatedTotalUsd,
   trimId,
+  modelVersionId,
   brandName,
   modelName,
   trimName,
   sourceCountry,
   condition,
-  csrfToken,
   logisticsCost,
   customsCost,
   serviceFee,
@@ -80,6 +80,18 @@ export function ConfiguratorSection({
   onColorSelect,
 }: ConfiguratorSectionProps) {
   const [showLeadForm, setShowLeadForm] = useState(false);
+  const [restoredConfig] = useState<TrimConfigSnapshot | null>(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = sessionStorage.getItem(`trim-config:${modelVersionId}`);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object" && Array.isArray(parsed.options)) return parsed;
+      return null;
+    } catch {
+      return null;
+    }
+  });
   const [configuration, setConfiguration] = useState<{
     exterior_color?: string;
     interior_color?: string;
@@ -99,6 +111,28 @@ export function ConfiguratorSection({
     totalDelta: 0,
     options_with_prices: [],
   });
+
+  useEffect(() => {
+    if (
+      !configuration.exterior_color &&
+      !configuration.interior_color &&
+      !configuration.wheels &&
+      configuration.options.length === 0
+    ) {
+      return;
+    }
+    try {
+      sessionStorage.setItem(
+        `trim-config:${modelVersionId}`,
+        JSON.stringify({
+          exterior_color: configuration.exterior_color,
+          interior_color: configuration.interior_color,
+          wheels: configuration.wheels,
+          options: configuration.options,
+        })
+      );
+    } catch {}
+  }, [configuration, modelVersionId]);
 
   const estimatedBase = estimatedTotalUsd ? Number(estimatedTotalUsd) : basePrice + 9000;
 
@@ -134,6 +168,7 @@ export function ConfiguratorSection({
         <Configurator
           groups={optionGroups}
           colorImages={colorImages}
+          restoredConfig={restoredConfig}
           onConfigurationChange={setConfiguration}
           onColorSelect={handleColorSelect}
         />
@@ -152,7 +187,6 @@ export function ConfiguratorSection({
               sourceCountry={sourceCountry || "Китай"}
               condition={condition}
               sourcePrice={basePrice}
-              csrfToken={csrfToken}
               logisticsCost={logisticsCost}
               customsCost={customsCost}
               serviceFee={serviceFee}

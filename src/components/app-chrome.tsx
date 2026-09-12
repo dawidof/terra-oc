@@ -9,7 +9,7 @@ import { SiteFooter, SiteHeader } from "@/components/site-header";
  * Routes that render their own application shell (sidebar + topbar) and must
  * not inherit the public marketing header, footer or floating contact buttons.
  */
-const APP_SHELL_PREFIXES = ["/crm", "/dashboard"];
+const APP_SHELL_PREFIXES = ["/crm"];
 
 function isAppShellRoute(pathname: string): boolean {
   return APP_SHELL_PREFIXES.some(

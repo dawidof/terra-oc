@@ -1,6 +1,8 @@
 "use client";
 
 import { Fragment, useState } from "react";
+import { Check } from "lucide-react";
+import { PreserveScrollLink } from "@/components/preserve-scroll-link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -83,12 +85,34 @@ export function TrimComparisonTable({ trims, specs, currentSlug }: TrimCompariso
                 <th
                   key={trim.id}
                   className={`py-3 px-4 text-center ${
-                    trim.slug === currentSlug ? "bg-emerald-50 font-semibold" : ""
+                    trim.slug === currentSlug
+                      ? "border-b-2 border-b-brand bg-brand-muted/60 font-semibold"
+                      : ""
                   }`}
                 >
-                  <div>{trim.name}</div>
-                  <div className="text-sm font-normal text-muted-foreground">
-                    {formatPrice(trim.basePrice)}
+                  <PreserveScrollLink href={`/cars/${trim.slug}`} className="block hover:underline">
+                    <div>{trim.name}</div>
+                    <div className="text-sm font-normal text-muted-foreground">
+                      {formatPrice(trim.basePrice)}
+                    </div>
+                  </PreserveScrollLink>
+                  <div className="mt-2">
+                    {trim.slug === currentSlug ? (
+                      <Badge className="gap-1 bg-brand text-brand-foreground">
+                        <Check className="size-3" />
+                        Текущая
+                      </Badge>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="hover:border-brand/50 hover:bg-brand-muted/50 hover:text-brand"
+                        render={<PreserveScrollLink href={`/cars/${trim.slug}`} />}
+                        nativeButton={false}
+                      >
+                        Выбрать
+                      </Button>
+                    )}
                   </div>
                 </th>
               ))}
@@ -173,7 +197,7 @@ export function TrimComparisonTable({ trims, specs, currentSlug }: TrimCompariso
                       <td
                         key={i}
                         className={`py-2 px-4 text-center ${
-                          trims[i]?.slug === currentSlug ? "bg-emerald-50" : ""
+                          trims[i]?.slug === currentSlug ? "bg-brand-muted/60" : ""
                         }`}
                       >
                         {value || "—"}

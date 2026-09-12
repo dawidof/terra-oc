@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Send, CheckCircle, ArrowLeft } from "lucide-react";
+import { getCsrfToken } from "@/lib/csrf-client";
 
 interface LeadFormAnswers {
   budget?: string;
@@ -35,10 +36,9 @@ interface LeadFormProps {
   answers: LeadFormAnswers;
   recommendations: any[];
   onBack: () => void;
-  csrfToken: string;
 }
 
-export function LeadForm({ answers, recommendations, onBack, csrfToken }: LeadFormProps) {
+export function LeadForm({ answers, recommendations, onBack }: LeadFormProps) {
   const searchParams = useSearchParams();
   const utmSource = searchParams.get("utm_source") || undefined;
   const utmMedium = searchParams.get("utm_medium") || undefined;
@@ -96,6 +96,7 @@ export function LeadForm({ answers, recommendations, onBack, csrfToken }: LeadFo
 
       const metadataComment = `<!--SELECTOR_DATA:${JSON.stringify(metadata)}-->`;
 
+      const csrfToken = await getCsrfToken();
       const textLines = [
         `Бюджет: ${answers.budget || "—"}`,
         answers.budgetFallback && `Бюджет (альт): ${answers.budgetFallback}`,
@@ -116,7 +117,7 @@ export function LeadForm({ answers, recommendations, onBack, csrfToken }: LeadFo
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-CSRF-Token": csrfToken,
+          ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
         },
         body: JSON.stringify({
           name,

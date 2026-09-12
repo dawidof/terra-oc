@@ -16,8 +16,40 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { OrderTracker } from "@/components/portal/order-tracker";
-import { StatusBadge } from "@/components/crm/status-badge";
-import { formatDate, formatUsd } from "@/lib/format";
+import { formatUsd } from "@/lib/format";
+import { buildJourneySteps, JOURNEY_STAGES } from "@/lib/journey";
+
+interface JourneyStep {
+  stage: number;
+  key: string;
+  label: string;
+  description: string;
+  state: "complete" | "current" | "future";
+  confirmedAt: string | null;
+}
+
+interface Payment {
+  id: string;
+  label: string;
+  amount: string;
+  currency: string;
+  dueDate: string | null;
+  paidAt: string | null;
+}
+
+interface ClientMessage {
+  message: string;
+  createdAt: string;
+}
+
+interface InspectionMedia {
+  id: string;
+  kind: string;
+  url: string;
+  caption: string | null;
+  mimeType: string | null;
+  createdAt: string;
+}
 
 interface OrderData {
   lead: {
@@ -26,8 +58,10 @@ interface OrderData {
     customerName: string;
     estimatedTotalUsd: string | null;
     createdAt: string;
+    managerName?: string | null;
   };
   vehicle: {
+    id: string;
     status: string;
     vin: string | null;
     location: string | null;
@@ -49,6 +83,77 @@ interface OrderData {
     createdAt: string;
     sentAt: string | null;
   }[];
+  journey: {
+    currentStage: number;
+    currentLabel: string;
+    total: number;
+    steps: JourneyStep[];
+  };
+  photos: { url: string; alt: string | null }[];
+  payments: Payment[];
+  messages: ClientMessage[];
+  inspectionMedia: InspectionMedia[];
+}
+
+function demoJourney(
+  currentStage: number,
+  confirmedAt: Record<number, string> = {}
+): OrderData["journey"] {
+  const stageLabels: Record<number, string> = Object.fromEntries(
+    JOURNEY_STAGES.map((s) => [s.stage, s.label])
+  );
+  return {
+    currentStage,
+    currentLabel: stageLabels[currentStage] || "",
+    total: JOURNEY_STAGES.length,
+    steps: buildJourneySteps(currentStage, confirmedAt),
+  };
+}
+
+function demoPhotos(slug: string): OrderData["photos"] {
+  const parts = ["", "-front", "-interior", "-side", "-rear"];
+  return parts.map((part) => ({
+    url: `/images/cars/${slug}${part}.jpg`,
+    alt: null,
+  }));
+}
+
+function demoPayments(items: {
+  label: string;
+  amount: string;
+  paid?: boolean;
+  date?: string;
+}[]): OrderData["payments"] {
+  return items.map((item, index) => ({
+    id: `payment-demo-${index}`,
+    label: item.label,
+    amount: item.amount,
+    currency: "USD",
+    dueDate: item.paid ? null : item.date || null,
+    paidAt: item.paid ? item.date || null : null,
+    sortOrder: index,
+  }));
+}
+
+function demoInspection(slug: string, date: string): InspectionMedia[] {
+  return [
+    {
+      id: `inspection-${slug}-1`,
+      kind: "photo",
+      url: `/images/cars/${slug}-side.jpg`,
+      caption: "Осмотр кузова",
+      mimeType: "image/jpeg",
+      createdAt: date,
+    },
+    {
+      id: `inspection-${slug}-2`,
+      kind: "photo",
+      url: `/images/cars/${slug}-interior.jpg`,
+      caption: "Проверка салона",
+      mimeType: "image/jpeg",
+      createdAt: date,
+    },
+  ];
 }
 
 const DEMO_ORDERS: OrderData[] = [
@@ -102,6 +207,14 @@ const DEMO_ORDERS: OrderData[] = [
         sentAt: "2026-06-15T10:35:00Z",
       },
     ],
+    journey: demoJourney(2, { 1: "2026-06-15T10:30:00Z" }),
+    photos: demoPhotos("byd-song-plus"),
+    payments: demoPayments([
+      { label: "Предоплата по договору", amount: "12840", paid: true, date: "2026-06-16T00:00:00Z" },
+      { label: "Финальный платёж", amount: "29660", date: "2026-08-10T00:00:00Z" },
+    ]),
+    messages: [],
+    inspectionMedia: [],
   },
   {
     lead: {
@@ -112,24 +225,25 @@ const DEMO_ORDERS: OrderData[] = [
       createdAt: "2026-07-05T09:15:00Z",
     },
     vehicle: {
+      id: "vehicle-demo-002",
       status: "in_transit",
       vin: "LSVAA26E7NS012345",
       location: "Море · порт Пусан",
       expectedDate: "2026-09-20T00:00:00Z",
     },
     configuration: {
-      brandName: "Changan",
-      modelName: "CS75 Plus",
-      trimName: "2.0T Flagship",
+      brandName: "Zeekr",
+      modelName: "7X",
+      trimName: "Core RWD · 75 kWh",
       sourceCountry: "Китай",
       condition: "new",
       configurationJson: {
-        exterior_color: "Серый металлик",
+        exterior_color: "Графитовый",
         interior_color: "Бежевый",
-        wheels: '18" Легкосплавные',
-        engine: "2.0T 218 л.с.",
-        transmission: "AT 8-ступенчатая",
-        drivetrain: "Передний",
+        wheels: '19" Аэродинамические',
+        engine: "Электро 428 л.с.",
+        transmission: "Редуктор",
+        drivetrain: "Задний",
         options: ["LED фары", "Кожаный салон", "Беспроводная зарядка", "Панорамная крыша", "Круиз-контроль"],
         price_breakdown: {
           "Стоимость авто (FOB)": "$28 500",
@@ -150,6 +264,20 @@ const DEMO_ORDERS: OrderData[] = [
         sentAt: "2026-07-08T11:10:00Z",
       },
     ],
+    journey: demoJourney(5, {
+      1: "2026-07-08T11:10:00Z",
+      2: "2026-07-12T09:00:00Z",
+      3: "2026-07-18T14:30:00Z",
+      4: "2026-07-25T10:00:00Z",
+    }),
+    photos: demoPhotos("zeekr-7x"),
+    payments: demoPayments([
+      { label: "Предоплата по договору", amount: "12840", paid: true, date: "2026-07-09T00:00:00Z" },
+      { label: "Оплата поставщику", amount: "17100", paid: true, date: "2026-07-26T00:00:00Z" },
+      { label: "Финальный платёж", amount: "8960", date: "2026-09-25T00:00:00Z" },
+    ]),
+    messages: [],
+    inspectionMedia: demoInspection("zeekr-7x", "2026-07-20T10:00:00Z"),
   },
   {
     lead: {
@@ -160,6 +288,7 @@ const DEMO_ORDERS: OrderData[] = [
       createdAt: "2026-05-20T16:45:00Z",
     },
     vehicle: {
+      id: "vehicle-demo-003",
       status: "sold",
       vin: "L6T78Z4U0PN012345",
       location: "Ташкент, склад Сергели",
@@ -213,6 +342,23 @@ const DEMO_ORDERS: OrderData[] = [
         sentAt: "2026-05-25T09:10:00Z",
       },
     ],
+    journey: demoJourney(7, {
+      1: "2026-05-25T09:10:00Z",
+      2: "2026-05-28T10:00:00Z",
+      3: "2026-06-02T12:00:00Z",
+      4: "2026-06-05T11:00:00Z",
+      5: "2026-06-06T09:00:00Z",
+      6: "2026-07-10T15:00:00Z",
+      7: "2026-07-15T10:00:00Z",
+    }),
+    photos: demoPhotos("geely-monjaro"),
+    payments: demoPayments([
+      { label: "Предоплата по договору", amount: "15360", paid: true, date: "2026-05-26T00:00:00Z" },
+      { label: "Оплата поставщику", amount: "30720", paid: true, date: "2026-06-05T00:00:00Z" },
+      { label: "Финальный платёж", amount: "5120", paid: true, date: "2026-07-16T00:00:00Z" },
+    ]),
+    messages: [],
+    inspectionMedia: demoInspection("geely-monjaro", "2026-06-03T10:00:00Z"),
   },
 ];
 
@@ -224,6 +370,7 @@ function PortalContent() {
 
   const leadIdParam = searchParams.get("leadId");
   const ordersParam = searchParams.get("orders");
+  const quoteIdParam = searchParams.get("quoteId");
 
   const [view, setView] = useState<View>("home");
   const [lookupType, setLookupType] = useState<"phone" | "quoteId">("phone");
@@ -283,6 +430,26 @@ function PortalContent() {
           setView("home");
         })
         .finally(() => setLoading(false));
+    } else if (quoteIdParam) {
+      setLoading(true);
+      setError(null);
+      fetch(`/api/portal/lookup?quoteId=${quoteIdParam}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.lead) {
+            setSelectedOrder(data);
+            setIsDemoMode(false);
+            setView("detail");
+          } else {
+            setError("Расчёт не найден");
+            setView("home");
+          }
+        })
+        .catch(() => {
+          setError("Ошибка сети");
+          setView("home");
+        })
+        .finally(() => setLoading(false));
     } else if (ordersParam) {
       setCurrentOrdersQuery(ordersParam);
 
@@ -322,7 +489,7 @@ function PortalContent() {
       setOrders([]);
       setIsDemoMode(false);
     }
-  }, [leadIdParam, ordersParam]);
+  }, [leadIdParam, ordersParam, quoteIdParam]);
 
   function handleSelectOrder(order: OrderData) {
     setSelectedOrder(order);
@@ -357,10 +524,9 @@ function PortalContent() {
 
     try {
       if (lookupType === "phone") {
-        goTo({ orders: `phone:${phone}`, leadId: null });
+        goTo({ orders: `phone:${phone}`, leadId: null, quoteId: null });
       } else {
-        // For quote lookup, we'd need a different flow; for now use leadId
-        goTo({ leadId: quoteId, orders: null });
+        goTo({ quoteId, orders: null, leadId: null });
       }
     } finally {
       setLoading(false);
@@ -383,7 +549,7 @@ function PortalContent() {
   if (view === "detail" && selectedOrder) {
     return (
       <div className="min-h-screen bg-muted/40">
-        <div className="mx-auto max-w-2xl px-4 py-8">
+        <div className="mx-auto max-w-6xl px-4 py-8">
           <button
             onClick={handleBackToList}
             className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -393,7 +559,8 @@ function PortalContent() {
           </button>
           {isDemoMode && (
             <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800">
-              Демо-режим — пример того, как клиент будет видеть свой заказ
+              <b>Демонстрационный режим</b> · Даты, суммы и материалы ниже
+              показаны только для презентации.
             </div>
           )}
           <OrderTracker order={selectedOrder} />
@@ -423,36 +590,50 @@ function PortalContent() {
             <h2 className="text-xl font-semibold">
               Ваши заказы ({orders.length})
             </h2>
-            {orders.map((order) => (
-              <button
-                key={order.lead.id}
-                onClick={() => handleSelectOrder(order)}
-                className="flex items-center justify-between rounded-xl bg-card p-4 text-left ring-1 ring-foreground/10 transition-colors hover:bg-accent"
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">
-                      Заказ #{order.lead.id.slice(0, 8)}
-                    </span>
-                    <StatusBadge status={order.lead.status} />
+            {orders.map((order) => {
+              const completed = order.journey.currentStage - 1;
+              const percent = Math.round(
+                (completed / order.journey.total) * 100
+              );
+              return (
+                <button
+                  key={order.lead.id}
+                  onClick={() => handleSelectOrder(order)}
+                  className="flex items-center justify-between rounded-xl bg-card p-4 text-left ring-1 ring-foreground/10 transition-colors hover:bg-accent"
+                >
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">
+                        {order.configuration
+                          ? `${order.configuration.brandName || ""} ${order.configuration.modelName || ""}`.trim()
+                          : `Заказ #${order.lead.id.slice(0, 8)}`}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {order.configuration?.trimName &&
+                        `${order.configuration.trimName} · `}
+                      {order.journey.currentLabel}
+                    </p>
+                    <div className="mt-1.5 flex items-center gap-2">
+                      <div className="h-1.5 w-24 overflow-hidden rounded-full bg-muted">
+                        <div
+                          className="h-full rounded-full bg-brand"
+                          style={{ width: `${Math.max(percent, 4)}%` }}
+                        />
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {completed} из {order.journey.total} этапов
+                      </span>
+                    </div>
                   </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {order.configuration?.brandName}{" "}
-                    {order.configuration?.modelName}
-                    {order.configuration?.trimName &&
-                      ` — ${order.configuration.trimName}`}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatDate(order.lead.createdAt)}
-                  </p>
-                </div>
-                {order.lead.estimatedTotalUsd && (
-                  <span className="text-sm font-semibold text-brand">
-                    {formatUsd(order.lead.estimatedTotalUsd)}
-                  </span>
-                )}
-              </button>
-            ))}
+                  {order.lead.estimatedTotalUsd && (
+                    <span className="text-sm font-semibold text-brand">
+                      {formatUsd(order.lead.estimatedTotalUsd)}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>

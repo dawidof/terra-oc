@@ -202,10 +202,6 @@ interface LeadFormAnswers {
   usage?: string;
 }
 
-interface WizardClientProps {
-  csrfToken: string;
-}
-
 function FetchErrorCard({ message, onRetry, loading }: { message: string; onRetry: () => void; loading: boolean }) {
   return (
     <Card>
@@ -224,7 +220,7 @@ function FetchErrorCard({ message, onRetry, loading }: { message: string; onRetr
   );
 }
 
-export function WizardClient({ csrfToken }: WizardClientProps) {
+export function WizardClient() {
   const [step, setStep] = useState(0);
   const [maxStep, setMaxStep] = useState(0);
   const [direction, setDirection] = useState(1);
@@ -391,7 +387,6 @@ export function WizardClient({ csrfToken }: WizardClientProps) {
           answers={buildApiPayload(answers) as LeadFormAnswers}
           recommendations={recommendations}
           onBack={() => setShowLeadForm(false)}
-          csrfToken={csrfToken}
         />
       </div>
     );

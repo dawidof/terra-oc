@@ -1,10 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Palette, Check } from "lucide-react";
+
+export interface TrimConfigSnapshot {
+  exterior_color?: string;
+  interior_color?: string;
+  wheels?: string;
+  options: string[];
+}
 
 interface ColorImage {
   url: string;
@@ -31,6 +38,7 @@ interface OptionGroup {
 interface ConfiguratorProps {
   groups: OptionGroup[];
   colorImages?: Record<string, ColorImage[]>;
+  restoredConfig?: TrimConfigSnapshot | null;
   onConfigurationChange: (config: {
     exterior_color?: string;
     interior_color?: string;
@@ -67,12 +75,63 @@ function groupTypeLabel(type: string): string {
 export function Configurator({
   groups,
   colorImages = {},
+  restoredConfig = null,
   onConfigurationChange,
   onColorSelect,
 }: ConfiguratorProps) {
   const [selections, setSelections] = useState<Record<string, string | null>>({});
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [expandedSwatch, setExpandedSwatch] = useState<string | null>(null);
+  const [restoreApplied, setRestoreApplied] = useState(false);
+
+  useEffect(() => {
+    if (restoreApplied || !restoredConfig) return;
+
+    const groupKeyByType: Record<string, "exterior_color" | "interior_color" | "wheels"> = {
+      exterior_color: "exterior_color",
+      interior_color: "interior_color",
+      wheels: "wheels",
+    };
+
+    const newSelections: Record<string, string | null> = {};
+    for (const group of groups) {
+      const key = groupKeyByType[group.type];
+      if (!key) continue;
+      const name = restoredConfig[key];
+      if (!name) continue;
+      const option = group.options.find((o) => o.name === name && o.available);
+      if (option) newSelections[group.id] = option.id;
+    }
+
+    const restoredOptionIds: string[] = [];
+    for (const name of restoredConfig.options) {
+      for (const group of groups) {
+        if (groupKeyByType[group.type]) continue;
+        const option = group.options.find((o) => o.name === name && o.available);
+        if (option && !restoredOptionIds.includes(option.id)) {
+          restoredOptionIds.push(option.id);
+        }
+      }
+    }
+
+    setRestoreApplied(true);
+    if (Object.keys(newSelections).length === 0 && restoredOptionIds.length === 0) return;
+
+    setSelections(newSelections);
+    setSelectedOptions(restoredOptionIds);
+    emitChange(newSelections, restoredOptionIds);
+
+    const interiorGroup = groups.find((g) => g.type === "interior_color");
+    const interiorId = interiorGroup ? newSelections[interiorGroup.id] : undefined;
+    if (interiorGroup && interiorId) {
+      onColorSelect?.(interiorGroup.id, interiorId, colorImages[interiorId] || [], "interior_color");
+    }
+    const exteriorGroup = groups.find((g) => g.type === "exterior_color");
+    const exteriorId = exteriorGroup ? newSelections[exteriorGroup.id] : undefined;
+    if (exteriorGroup && exteriorId) {
+      onColorSelect?.(exteriorGroup.id, exteriorId, colorImages[exteriorId] || [], "exterior_color");
+    }
+  }, [restoreApplied, restoredConfig, groups, colorImages, onColorSelect]);
 
   function handleGroupSelect(groupId: string, optionId: string) {
     const newSelections = { ...selections, [groupId]: optionId };

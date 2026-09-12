@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Send, CheckCircle } from "lucide-react";
 import { formatUsd } from "@/lib/price-breakdown";
+import { getCsrfToken } from "@/lib/csrf-client";
 
 interface LeadFormProps {
   vehicleName: string;
@@ -41,7 +42,6 @@ interface LeadFormProps {
   sourceCountry: string;
   condition: string;
   sourcePrice: number;
-  csrfToken: string;
   logisticsCost: number | null;
   customsCost: number | null;
   serviceFee: number | null;
@@ -59,7 +59,6 @@ export function LeadForm({
   sourceCountry,
   condition,
   sourcePrice,
-  csrfToken,
   logisticsCost,
   customsCost,
   serviceFee,
@@ -93,11 +92,12 @@ export function LeadForm({
     setLoading(true);
 
     try {
+      const csrfToken = await getCsrfToken();
       const res = await fetch("/api/leads", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-CSRF-Token": csrfToken,
+          ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
         },
         body: JSON.stringify({
           name,

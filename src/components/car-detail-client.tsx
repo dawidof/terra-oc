@@ -6,6 +6,7 @@ import { CarOptionsList } from "@/components/car-options-list";
 import { ConfiguratorSection } from "@/components/configurator-section";
 import { PurchaseProcess } from "@/components/purchase-process";
 import { Section } from "@/components/ui/section";
+import { useRestoreTrimScroll } from "@/components/preserve-scroll-link";
 import type { DetailedBreakdown } from "@/lib/price-breakdown";
 
 interface GalleryImage {
@@ -41,9 +42,9 @@ interface CarDetailClientProps {
   estimatedTotalUsd: string | null;
   trimId: string;
   trimName: string;
+  modelVersionId: string;
   sourceCountry: string | null;
   condition: string;
-  csrfToken: string;
   logisticsCost: number | null;
   customsCost: number | null;
   serviceFee: number | null;
@@ -51,6 +52,7 @@ interface CarDetailClientProps {
   deliveryDays: number | null;
   colorImages?: Record<string, { url: string; alt?: string | null }[]>;
   specs?: React.ReactNode;
+  trimSelector?: React.ReactNode;
   trimComparison?: React.ReactNode;
   similarCars?: React.ReactNode;
 }
@@ -65,9 +67,9 @@ export function CarDetailClient({
   estimatedTotalUsd,
   trimId,
   trimName,
+  modelVersionId,
   sourceCountry,
   condition,
-  csrfToken,
   logisticsCost,
   customsCost,
   serviceFee,
@@ -75,10 +77,12 @@ export function CarDetailClient({
   deliveryDays,
   colorImages = {},
   specs,
+  trimSelector,
   trimComparison,
   similarCars,
 }: CarDetailClientProps) {
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>(initialMedia);
+  useRestoreTrimScroll();
 
   const handleColorSelect = useCallback(
     (_groupId: string, _optionId: string, _images: { url: string; alt?: string | null }[], groupType: string) => {
@@ -111,6 +115,8 @@ export function CarDetailClient({
           {specs}
           <CarOptionsList optionGroups={optionGroups} />
         </div>
+
+        {trimSelector}
       </Section>
 
       <Section background="muted" id="configurator">
@@ -120,12 +126,12 @@ export function CarDetailClient({
             basePrice={basePrice}
             estimatedTotalUsd={estimatedTotalUsd}
             trimId={trimId}
+            modelVersionId={modelVersionId}
             brandName={brandName}
             modelName={modelName}
             trimName={trimName}
             sourceCountry={sourceCountry}
             condition={condition}
-            csrfToken={csrfToken}
             logisticsCost={logisticsCost}
             customsCost={customsCost}
             serviceFee={serviceFee}

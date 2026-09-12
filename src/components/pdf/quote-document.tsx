@@ -1,10 +1,6 @@
-"use client";
+import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 
-import { Document, Page, Text, View, StyleSheet, PDFDownloadLink } from "@react-pdf/renderer";
-import { Button } from "@/components/ui/button";
-import { FileDown } from "lucide-react";
-
-interface QuoteData {
+export interface QuoteData {
   quoteId: string;
   createdAt: string;
   validUntil: string;
@@ -129,7 +125,7 @@ function formatPrice(price: number): string {
   return `$${price.toLocaleString("en-US")}`;
 }
 
-function QuoteDocument({ data }: { data: QuoteData }) {
+export function QuoteDocument({ data }: { data: QuoteData }) {
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -275,26 +271,5 @@ function QuoteDocument({ data }: { data: QuoteData }) {
         </View>
       </Page>
     </Document>
-  );
-}
-
-interface QuoteDownloadProps {
-  data: QuoteData;
-  className?: string;
-}
-
-export function QuoteDownload({ data, className = "" }: QuoteDownloadProps) {
-  return (
-    <PDFDownloadLink
-      document={<QuoteDocument data={data} />}
-      fileName={`terraauto-quote-${data.quoteId.slice(0, 8)}.pdf`}
-    >
-      {({ loading }) => (
-        <Button variant="outline" size="sm" disabled={loading} className={className}>
-          <FileDown className="mr-2 h-4 w-4" />
-          {loading ? "Генерация..." : "Скачать PDF"}
-        </Button>
-      )}
-    </PDFDownloadLink>
   );
 }

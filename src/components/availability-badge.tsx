@@ -1,7 +1,7 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
-import { Package, Truck, Clock, UserCheck, CheckCircle } from "lucide-react";
+import { Truck, Clock, UserCheck, CheckCircle } from "lucide-react";
 
 interface AvailabilityBadgeProps {
   status: string;
@@ -10,12 +10,7 @@ interface AvailabilityBadgeProps {
   className?: string;
 }
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof Package }> = {
-  in_stock: {
-    label: "В наличии",
-    color: "bg-green-100 text-green-800 hover:bg-green-100",
-    icon: Package,
-  },
+const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof Truck }> = {
   in_transit: {
     label: "В пути",
     color: "bg-yellow-100 text-yellow-800 hover:bg-yellow-100",

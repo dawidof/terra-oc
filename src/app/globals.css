@@ -4,6 +4,117 @@
 
 @custom-variant dark (&:is(.dark *));
 
+.rich-text {
+  & > :first-child {
+    margin-top: 0;
+  }
+  & > :last-child {
+    margin-bottom: 0;
+  }
+  & h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+    letter-spacing: -0.01em;
+  }
+  & h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+  & h4 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-top: 1.25rem;
+    margin-bottom: 0.5rem;
+  }
+  & p {
+    margin-top: 0.875rem;
+    margin-bottom: 0.875rem;
+    line-height: 1.75;
+    color: var(--foreground);
+    opacity: 0.9;
+  }
+  & ul,
+  & ol {
+    margin-top: 0.875rem;
+    margin-bottom: 0.875rem;
+    padding-left: 1.5rem;
+    line-height: 1.75;
+    opacity: 0.9;
+    & li {
+      margin-top: 0.375rem;
+      margin-bottom: 0.375rem;
+    }
+  }
+  & ul {
+    list-style: disc;
+  }
+  & ol {
+    list-style: decimal;
+  }
+  & a {
+    color: var(--brand);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    &:hover {
+      opacity: 0.8;
+    }
+  }
+  & img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.75rem;
+    margin-top: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+  & blockquote {
+    border-left: 3px solid var(--brand);
+    padding-left: 1rem;
+    margin-top: 1.25rem;
+    margin-bottom: 1.25rem;
+    font-style: italic;
+    opacity: 0.85;
+  }
+  & table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1.25rem;
+    margin-bottom: 1.25rem;
+    font-size: 0.875rem;
+    & th,
+    & td {
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+    }
+    & th {
+      background: var(--muted);
+      font-weight: 600;
+    }
+  }
+  & hr {
+    border-color: var(--border);
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+  }
+  & pre {
+    background: var(--muted);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    overflow-x: auto;
+    font-size: 0.875rem;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+  }
+  & code {
+    font-family: var(--font-geist-mono), monospace;
+    font-size: 0.875em;
+  }
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

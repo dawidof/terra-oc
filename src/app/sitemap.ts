@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
+import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { trims } from "@/db/schema";
+import { trims, contentPages } from "@/db/schema";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://terraauto.uz";
@@ -73,5 +74,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  return [...staticPages, ...carPages];
+  const publishedPages = await db
+    .select({ slug: contentPages.slug, updatedAt: contentPages.updatedAt })
+    .from(contentPages)
+    .where(eq(contentPages.published, true));
+
+  const contentPageEntries: MetadataRoute.Sitemap = publishedPages.map((page) => ({
+    url: `${baseUrl}/${page.slug}`,
+    lastModified: page.updatedAt,
+    changeFrequency: "monthly" as const,
+    priority: 0.6,
+  }));
+
+  return [...staticPages, ...carPages, ...contentPageEntries];
 }

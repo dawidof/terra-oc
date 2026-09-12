@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { WizardClient } from "@/components/choose/wizard-client";
 import { Section } from "@/components/ui/section";
-import { generateCsrfToken } from "@/lib/csrf-actions";
 import { ArrowLeft } from "lucide-react";
 
 export const metadata = {
@@ -10,8 +9,6 @@ export const metadata = {
 };
 
 export default function ChoosePage() {
-  const csrfToken = generateCsrfToken();
-
   return (
     <Section padding="none" className="py-6">
       <div className="mb-5 flex items-center justify-between gap-4">
@@ -32,7 +29,7 @@ export default function ChoosePage() {
         </span>
       </div>
 
-      <WizardClient csrfToken={csrfToken} />
+      <WizardClient />
     </Section>
   );
 }
