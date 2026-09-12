@@ -3,7 +3,11 @@ import Link from "next/link";
 import { ArrowLeft, Car, Mail, MapPin, MessageSquare, Phone } from "lucide-react";
 
 import { LeadCostEditor } from "@/components/crm/lead-cost-editor";
+import { LeadDelivery } from "@/components/crm/lead-delivery";
 import { LeadDetailActions } from "@/components/crm/lead-detail-actions";
+import { LeadMedia } from "@/components/crm/lead-media";
+import { LeadPayments } from "@/components/crm/lead-payments";
+import { LeadQuotes } from "@/components/crm/lead-quotes";
 import { LeadNotes } from "@/components/crm/lead-notes";
 import { LeadTimeline } from "@/components/crm/lead-timeline";
 import { SelectorComment } from "@/components/crm/selector-comment";
@@ -288,12 +292,48 @@ export default async function LeadDetailPage({ params }: Props) {
           <LeadDetailActions
             leadId={lead.id}
             currentStatus={lead.status}
+            currentJourneyStage={lead.journeyStage}
             currentSource={lead.source}
             currentManagerId={lead.assignedManagerId}
             managers={managers}
             userRole={"manager"}
             nextFollowUpAt={lead.nextFollowUpAt}
           />
+
+          <LeadPayments leadId={lead.id} initialPayments={lead.payments} />
+
+          <LeadMedia leadId={lead.id} initialMedia={lead.media} />
+
+          <LeadQuotes
+            leadId={lead.id}
+            initialQuotes={lead.quotes}
+            configurationJson={config?.configurationJson ?? null}
+            pdfFallback={{
+              customer: {
+                name: lead.customerName,
+                phone: lead.customerPhone || "—",
+                email: lead.customerEmail || undefined,
+              },
+              vehicle: {
+                brandName: config?.brandName || "",
+                modelName: config?.modelName || "",
+                trimName: config?.trimName || "",
+                sourceCountry: config?.sourceCountry || undefined,
+                condition: config?.condition || undefined,
+              },
+              configuration: configJson
+                ? {
+                    exterior_color: configJson.exterior_color,
+                    interior_color: configJson.interior_color,
+                    wheels: configJson.wheels,
+                    options: configJson.options,
+                  }
+                : undefined,
+              breakdown: configJson?.calculatorBreakdown ?? lead.computedBreakdown ?? null,
+            }}
+          />
+
+          <LeadDelivery leadId={lead.id} vehicle={lead.vehicle} journeyStage={lead.journeyStage} />
 
           <div className="flex flex-col gap-3 rounded-xl bg-card p-5 ring-1 ring-foreground/10">
             <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">

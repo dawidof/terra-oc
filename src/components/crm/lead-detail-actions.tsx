@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Clock, Loader2, Save, Trash2, UserPlus } from "lucide-react";
+import { Clock, ChevronRight, Loader2, Save, Trash2, UserPlus } from "lucide-react";
 
 import {
   AlertDialog,
@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toDateInputValue } from "@/lib/format";
+import { JOURNEY_STAGES, JOURNEY_TOTAL, getJourneyStage } from "@/lib/journey";
 
 import { getStatusOptions } from "./status-badge";
 import { SOURCE_OPTIONS } from "./lead-source";
@@ -39,6 +40,7 @@ interface Manager {
 interface LeadDetailActionsProps {
   leadId: string;
   currentStatus: string;
+  currentJourneyStage: number;
   currentSource: string | null;
   currentManagerId: string | null;
   managers: Manager[];
@@ -49,6 +51,7 @@ interface LeadDetailActionsProps {
 export function LeadDetailActions({
   leadId,
   currentStatus,
+  currentJourneyStage,
   currentSource,
   currentManagerId,
   managers,
@@ -57,10 +60,12 @@ export function LeadDetailActions({
 }: LeadDetailActionsProps) {
   const router = useRouter();
   const [status, setStatus] = useState(currentStatus);
+  const [journeyStage, setJourneyStage] = useState(String(currentJourneyStage));
   const [source, setSource] = useState(currentSource || "");
   const [managerId, setManagerId] = useState(currentManagerId || "");
   const [followUpDate, setFollowUpDate] = useState(toDateInputValue(nextFollowUpAt));
   const [loading, setLoading] = useState(false);
+  const [advancing, setAdvancing] = useState(false);
 
   const statusOptions = getStatusOptions();
 
@@ -73,6 +78,9 @@ export function LeadDetailActions({
 
       if (status !== currentStatus) {
         updates.status = status;
+      }
+      if (Number(journeyStage) !== currentJourneyStage) {
+        updates.journeyStage = Number(journeyStage);
       }
       if (source !== (currentSource || "")) {
         updates.source = source || null;
@@ -107,6 +115,33 @@ export function LeadDetailActions({
       toast.error("Ошибка сети при сохранении");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleAdvanceStage() {
+    const current = Number(journeyStage);
+    const next = Math.min(current + 1, JOURNEY_TOTAL);
+    if (next === current) return;
+
+    setAdvancing(true);
+    try {
+      const res = await fetch(`/api/leads/${leadId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ journeyStage: next }),
+      });
+
+      if (res.ok) {
+        setJourneyStage(String(next));
+        toast.success(`Этап: ${getJourneyStage(next).label}`);
+        router.refresh();
+      } else {
+        toast.error("Не удалось обновить этап");
+      }
+    } catch {
+      toast.error("Ошибка сети");
+    } finally {
+      setAdvancing(false);
     }
   }
 
@@ -148,6 +183,56 @@ export function LeadDetailActions({
             ))}
           </SelectContent>
         </Select>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-center justify-between">
+          <Label className="text-xs text-muted-foreground">
+            Этап для клиента
+          </Label>
+          {Number(journeyStage) < JOURNEY_TOTAL && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 gap-1 px-2 text-xs text-brand"
+              onClick={handleAdvanceStage}
+              disabled={advancing}
+            >
+              {advancing ? (
+                <Loader2 className="size-3 animate-spin" />
+              ) : (
+                <ChevronRight className="size-3" />
+              )}
+              Следующий этап
+            </Button>
+          )}
+        </div>
+        <Select
+          value={journeyStage}
+          onValueChange={(v) => v && setJourneyStage(v)}
+          items={JOURNEY_STAGES.map((s) => ({
+            value: String(s.stage),
+            label: `${s.stage}. ${s.label}`,
+          }))}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Этап" />
+          </SelectTrigger>
+          <SelectContent>
+            {JOURNEY_STAGES.map((s) => (
+              <SelectItem
+                key={s.stage}
+                value={String(s.stage)}
+                label={`${s.stage}. ${s.label}`}
+              >
+                {s.stage}. {s.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p className="text-xs text-muted-foreground">
+          Виден клиенту в личном кабинете
+        </p>
       </div>
 
       {(userRole === "admin") && (

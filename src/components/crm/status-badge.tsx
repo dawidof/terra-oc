@@ -108,6 +108,62 @@ const fallbackStyle: StatusStyle = {
   chart: "var(--chart-2)",
 };
 
+/**
+ * Quote statuses (quotes.statusEnum) — kept separate from lead styles so
+ * STATUS_ORDER / getStatusOptions stay lead-only.
+ */
+export const quoteStatusStyles: Record<string, StatusStyle> = {
+  draft: {
+    label: "Черновик",
+    plural: "Черновики",
+    badge: "bg-muted text-muted-foreground ring-1 ring-foreground/10",
+    dot: "bg-muted-foreground/50",
+    chart: "var(--chart-2)",
+  },
+  sent: {
+    label: "Отправлен",
+    plural: "Отправлены",
+    badge: "bg-blue-50 text-blue-700 ring-1 ring-blue-600/20",
+    dot: "bg-blue-500",
+    chart: "var(--chart-3)",
+  },
+  accepted: {
+    label: "Принят",
+    plural: "Приняты",
+    badge: "bg-green-50 text-green-700 ring-1 ring-green-600/20",
+    dot: "bg-green-500",
+    chart: "var(--chart-1)",
+  },
+  expired: {
+    label: "Истёк",
+    plural: "Истекли",
+    badge: "bg-orange-50 text-orange-700 ring-1 ring-orange-600/20",
+    dot: "bg-orange-400",
+    chart: "#f97316",
+  },
+};
+
+export function getQuoteStatusStyle(status: string): StatusStyle {
+  const style = quoteStatusStyles[status];
+  if (!style) return { ...fallbackStyle, label: status, plural: status };
+  return style;
+}
+
+export function QuoteStatusBadge({
+  status,
+  className,
+}: {
+  status: string;
+  className?: string;
+}) {
+  const style = getQuoteStatusStyle(status);
+  return (
+    <Badge variant="secondary" className={cn(style.badge, className)}>
+      {style.label}
+    </Badge>
+  );
+}
+
 export function getStatusStyle(status: string): StatusStyle {
   const style = statusStyles[status];
   if (!style) return { ...fallbackStyle, label: status, plural: status };

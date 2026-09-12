@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { Loader2, Search } from "lucide-react";
+import { Loader2, Search, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,17 @@ interface TrimResult {
   brandName: string;
   basePrice: string | null;
   powertrainType: string | null;
+}
+
+interface LeadResult {
+  id: string;
+  status: string;
+  createdAt: string;
+  customerName: string;
+  customerPhone: string | null;
+  trimName: string | null;
+  brandName: string | null;
+  modelName: string | null;
 }
 
 interface DeliveryAddFormProps {
@@ -54,7 +65,12 @@ export function DeliveryAddForm({
   const [expectedDate, setExpectedDate] = useState("");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [leadQuery, setLeadQuery] = useState("");
+  const [leadResults, setLeadResults] = useState<LeadResult[]>([]);
+  const [searchingLead, setSearchingLead] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<LeadResult | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const leadDebounceRef = useRef<ReturnType<typeof setTimeout>>(null);
 
   const searchTrims = useCallback(async (query: string) => {
     if (query.length < 2) {
@@ -75,6 +91,25 @@ export function DeliveryAddForm({
     }
   }, []);
 
+  const searchLeads = useCallback(async (query: string) => {
+    if (query.length < 2) {
+      setLeadResults([]);
+      return;
+    }
+    setSearchingLead(true);
+    try {
+      const res = await fetch(`/api/admin/leads-search?q=${encodeURIComponent(query)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setLeadResults(data.leads);
+      }
+    } catch {
+      console.error("Failed to search leads");
+    } finally {
+      setSearchingLead(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => searchTrims(trimQuery), 300);
@@ -83,10 +118,25 @@ export function DeliveryAddForm({
     };
   }, [trimQuery, searchTrims]);
 
+  useEffect(() => {
+    if (leadDebounceRef.current) clearTimeout(leadDebounceRef.current);
+    leadDebounceRef.current = setTimeout(() => searchLeads(leadQuery), 300);
+    return () => {
+      if (leadDebounceRef.current) clearTimeout(leadDebounceRef.current);
+    };
+  }, [leadQuery, searchLeads]);
+
   function handleSelectTrim(trim: TrimResult) {
     setSelectedTrim(trim);
     setTrimQuery(`${trim.brandName} ${trim.modelName} — ${trim.trimName}`);
     setTrimResults([]);
+  }
+
+  function handleSelectLead(lead: LeadResult) {
+    setSelectedLead(lead);
+    setLeadQuery(`${lead.customerName} — ${lead.trimName || lead.modelName || "без комплектации"}`);
+    setLeadResults([]);
+    setStatus("reserved");
   }
 
   function resetForm() {
@@ -98,6 +148,9 @@ export function DeliveryAddForm({
     setVin("");
     setExpectedDate("");
     setNotes("");
+    setLeadQuery("");
+    setLeadResults([]);
+    setSelectedLead(null);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -119,6 +172,7 @@ export function DeliveryAddForm({
           vin: vin || null,
           expectedDate: expectedDate || null,
           notes: notes || null,
+          reservedBy: selectedLead?.id || null,
         }),
       });
 
@@ -190,6 +244,58 @@ export function DeliveryAddForm({
             {selectedTrim && (
               <p className="text-xs text-muted-foreground">
                 {selectedTrim.brandName} {selectedTrim.modelName} — {selectedTrim.trimName}
+              </p>
+            )}
+          </div>
+
+          {/* Lead search */}
+          <div className="flex flex-col gap-1.5">
+            <Label>Клиент (заявка)</Label>
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Поиск по имени или телефону..."
+                value={leadQuery}
+                onChange={(e) => {
+                  setLeadQuery(e.target.value);
+                  setSelectedLead(null);
+                }}
+                className="pl-8"
+              />
+              {searchingLead && (
+                <Loader2 className="absolute right-2.5 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+              )}
+              {selectedLead && (
+                <button
+                  type="button"
+                  onClick={() => { setSelectedLead(null); setLeadQuery(""); }}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="size-4" />
+                </button>
+              )}
+            </div>
+            {leadResults.length > 0 && !selectedLead && (
+              <div className="max-h-48 overflow-y-auto rounded-lg border border-border bg-popover text-sm shadow-md">
+                {leadResults.map((lead) => (
+                  <button
+                    key={lead.id}
+                    type="button"
+                    onClick={() => handleSelectLead(lead)}
+                    className="flex w-full flex-col gap-0.5 px-3 py-2 text-left transition-colors hover:bg-accent"
+                  >
+                    <span className="font-medium">{lead.customerName}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {lead.brandName} {lead.modelName} — {lead.trimName || "без комплектации"}
+                      {lead.customerPhone && ` · ${lead.customerPhone}`}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+            {selectedLead && (
+              <p className="text-xs text-muted-foreground">
+                {selectedLead.customerName} — {selectedLead.brandName} {selectedLead.modelName}
               </p>
             )}
           </div>

@@ -1,10 +1,11 @@
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Car, CheckCircle, CheckCheck, Clock, MessageSquare, Phone, User } from "lucide-react";
+import { ArrowRight, Car, CheckCircle, CheckCheck, Clock, MessageSquare, Phone, User, Truck } from "lucide-react";
 
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { getStatusLabel } from "@/components/crm/status-badge";
 import { sourceLabel } from "@/components/crm/lead-source";
+import { getJourneyStage } from "@/lib/journey";
 
 interface Activity {
   id: string;
@@ -26,6 +27,10 @@ const activityIcons: Record<string, { icon: typeof User; className: string }> = 
   proposed_car_added: { icon: Car, className: "text-brand" },
   proposed_car_removed: { icon: Car, className: "text-red-500" },
   proposed_car_status_changed: { icon: Car, className: "text-amber-500" },
+  journey_stage_changed: { icon: Truck, className: "text-cyan-500" },
+  client_message: { icon: MessageSquare, className: "text-emerald-500" },
+  vehicle_reserved: { icon: Truck, className: "text-violet-500" },
+  vehicle_unreserved: { icon: Truck, className: "text-muted-foreground" },
 };
 
 function activityIcon(type: string) {
@@ -64,6 +69,18 @@ function activityLabel(type: string, metadata: Record<string, unknown> | null) {
       return "Удалён предложенный автомобиль";
     case "proposed_car_status_changed":
       return `Статус предложения изменён`;
+    case "journey_stage_changed": {
+      const stage = getJourneyStage(Number(metadata?.stage) || 1);
+      return `Этап для клиента: «${stage.label}»`;
+    }
+    case "client_message": {
+      const message = (metadata?.message as string) || "";
+      return message ? `Сообщение от клиента: «${message}»` : "Сообщение от клиента";
+    }
+    case "vehicle_reserved":
+      return "Автомобиль закреплён за заявкой";
+    case "vehicle_unreserved":
+      return "Автомобиль откреплён от заявки";
     default:
       return type;
   }

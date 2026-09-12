@@ -16,6 +16,15 @@ import { ManagerPerformance } from "./charts/manager-performance";
 import { RevenueEstimate } from "./charts/revenue-estimate";
 import { RevenuePipeline } from "./charts/revenue-pipeline";
 import { ComparisonChart } from "./charts/comparison-chart";
+import { UtmSourcesChart } from "./charts/utm-sources-chart";
+import { UtmTablesCard } from "./charts/utm-tables-card";
+
+interface UtmRow {
+  name: string;
+  total: number;
+  won: number;
+  revenue: number;
+}
 
 interface AnalyticsData {
   leadsTrend: { date: string; count: number }[];
@@ -30,6 +39,11 @@ interface AnalyticsData {
     count: number;
     totalValue: number;
   }[];
+  utmAnalytics?: {
+    sources: UtmRow[];
+    campaigns: UtmRow[];
+    referrerHosts: UtmRow[];
+  };
   comparison: {
     current: {
       totalLeads: number;
@@ -176,6 +190,15 @@ export function AnalyticsDashboard({ dateRange = "30d" }: AnalyticsDashboardProp
         <TopModels data={data.topModels} />
         <SourceBreakdown data={data.sourceBreakdown} />
         <ManagerPerformance data={data.managerPerformance} />
+        {data.utmAnalytics && data.utmAnalytics.sources.length > 0 && (
+          <UtmSourcesChart data={data.utmAnalytics.sources} />
+        )}
+        {data.utmAnalytics && (
+          <UtmTablesCard
+            campaigns={data.utmAnalytics.campaigns}
+            referrerHosts={data.utmAnalytics.referrerHosts}
+          />
+        )}
       </div>
 
       <ExportDialog
