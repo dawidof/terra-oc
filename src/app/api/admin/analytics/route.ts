@@ -102,6 +102,50 @@ export async function GET(request: NextRequest) {
       .groupBy(sql`DATE_TRUNC('month', ${leads.createdAt})`)
       .orderBy(sql`DATE_TRUNC('month', ${leads.createdAt})`);
 
+    // UTM attribution (sources, campaigns, referrer hosts)
+    const utmSourceExpr = sql<string>`COALESCE(NULLIF(${leads.utmSource}, ''), '(без метки)')`;
+    const utmCampaignExpr = sql<string>`COALESCE(NULLIF(${leads.utmCampaign}, ''), '(без кампании)')`;
+    const referrerHostExpr = sql<string>`COALESCE(NULLIF(SPLIT_PART(NULLIF(${leads.referrer}, ''), '/', 3), ''), '(прямой)')`;
+
+    const utmSources = await db
+      .select({
+        name: utmSourceExpr.as("name"),
+        total: sql<number>`COUNT(*)::int`.as("total"),
+        won: sql<number>`COUNT(*) FILTER (WHERE ${leads.status} = 'won')::int`.as("won"),
+        revenue: sql<number>`COALESCE(SUM(${leads.estimatedTotalUsd}) FILTER (WHERE ${leads.status} = 'won'), 0)::float8`.as("revenue"),
+      })
+      .from(leads)
+      .where(gte(leads.createdAt, dateFrom))
+      .groupBy(utmSourceExpr)
+      .orderBy(desc(sql`COUNT(*)`))
+      .limit(8);
+
+    const utmCampaigns = await db
+      .select({
+        name: utmCampaignExpr.as("name"),
+        total: sql<number>`COUNT(*)::int`.as("total"),
+        won: sql<number>`COUNT(*) FILTER (WHERE ${leads.status} = 'won')::int`.as("won"),
+        revenue: sql<number>`COALESCE(SUM(${leads.estimatedTotalUsd}) FILTER (WHERE ${leads.status} = 'won'), 0)::float8`.as("revenue"),
+      })
+      .from(leads)
+      .where(gte(leads.createdAt, dateFrom))
+      .groupBy(utmCampaignExpr)
+      .orderBy(desc(sql`COUNT(*)`))
+      .limit(8);
+
+    const referrerHosts = await db
+      .select({
+        name: referrerHostExpr.as("name"),
+        total: sql<number>`COUNT(*)::int`.as("total"),
+        won: sql<number>`COUNT(*) FILTER (WHERE ${leads.status} = 'won')::int`.as("won"),
+        revenue: sql<number>`COALESCE(SUM(${leads.estimatedTotalUsd}) FILTER (WHERE ${leads.status} = 'won'), 0)::float8`.as("revenue"),
+      })
+      .from(leads)
+      .where(gte(leads.createdAt, dateFrom))
+      .groupBy(referrerHostExpr)
+      .orderBy(desc(sql`COUNT(*)`))
+      .limit(8);
+
     // Summary stats
     const [totalResult] = await db
       .select({ count: sql<number>`COUNT(*)::int` })
@@ -220,6 +264,11 @@ export async function GET(request: NextRequest) {
       managerPerformance,
       revenueEstimate,
       revenuePipeline: pipeline,
+      utmAnalytics: {
+        sources: utmSources,
+        campaigns: utmCampaigns,
+        referrerHosts,
+      },
       comparison: {
         current: {
           totalLeads,

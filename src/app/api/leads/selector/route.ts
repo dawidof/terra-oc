@@ -2,15 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { createLead, type LeadInput } from "@/lib/leads";
 import { selectorLeadSchema } from "@/lib/validation-schemas";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
-// TODO: Fix CSRF validation for Next.js 16
-// import { requireCsrf } from "@/lib/csrf-middleware";
+import { requireCsrf } from "@/lib/csrf-middleware";
 
 export async function POST(request: NextRequest) {
-  // CSRF validation disabled temporarily — see TODO above
-  // const csrf = await requireCsrf(request);
-  // if (!csrf.ok) {
-  //   return NextResponse.json({ error: csrf.error }, { status: 403 });
-  // }
+  const csrf = await requireCsrf(request);
+  if (!csrf.ok) {
+    return NextResponse.json({ error: csrf.error }, { status: 403 });
+  }
 
   const ip = getClientIp(request);
   const rl = rateLimit(`leads-selector:${ip}`, { windowMs: 60_000, maxRequests: 5 });
