@@ -113,6 +113,7 @@ const leadStatusValues = [
 
 export const leadUpdateSchema = z.object({
   status: z.enum(leadStatusValues).optional(),
+  journeyStage: z.number().int().min(1).max(7).optional(),
   source: z.string().max(100).optional(),
   assignedManagerId: z.string().uuid().nullable().optional(),
   nextFollowUpAt: z.string().datetime().nullable().optional(),
@@ -167,3 +168,56 @@ export const reviewUpdateSchema = z.object({
   featured: z.boolean().optional(),
   sortOrder: z.number().int().min(0).optional(),
 });
+
+export const CONTENT_PAGE_RESERVED_SLUGS = [
+  "api",
+  "crm",
+  "login",
+  "logout",
+  "cars",
+  "compare",
+  "choose",
+  "calculator",
+  "portal",
+  "about",
+  "contacts",
+  "how-it-works",
+  "privacy",
+  "reviews",
+  "admin",
+  "dashboard",
+  "sitemap.xml",
+  "robots.txt",
+] as const;
+
+const contentPageSlug = z
+  .string()
+  .min(1)
+  .max(255)
+  .regex(
+    /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+    "Slug может содержать только строчные латинские буквы, цифры и дефисы"
+  )
+  .refine(
+    (slug) => !CONTENT_PAGE_RESERVED_SLUGS.includes(slug as (typeof CONTENT_PAGE_RESERVED_SLUGS)[number]),
+    "Этот slug зарезервирован системным страницам"
+  );
+
+export const contentPageCreateSchema = z.object({
+  slug: contentPageSlug,
+  title: z.string().min(1).max(255),
+  contentHtml: z.string().max(1_000_000).optional(),
+  seoTitle: z.string().max(255).optional(),
+  seoDescription: z.string().max(1000).optional(),
+  published: z.boolean().optional(),
+});
+
+export const contentPageUpdateSchema = contentPageCreateSchema
+  .extend({
+    slug: contentPageSlug.optional(),
+    title: z.string().min(1).max(255).optional(),
+  })
+  .refine(
+    (data) => Object.keys(data).length > 0,
+    "Хотя бы одно поле обязательно"
+  );

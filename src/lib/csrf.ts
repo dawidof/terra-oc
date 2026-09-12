@@ -1,14 +1,32 @@
 import { cookies } from "next/headers";
 
-const COOKIE_NAME = "csrf_signature";
+export const CSRF_COOKIE_NAME = "csrf_signature";
 const MAX_AGE = 3600;
+
+export interface CsrfCookie {
+  name: string;
+  value: string;
+  options: {
+    httpOnly: true;
+    secure: boolean;
+    sameSite: "strict";
+    path: string;
+    maxAge: number;
+  };
+}
+
+export interface IssuedCsrfToken {
+  token: string;
+  cookie: CsrfCookie;
+}
 
 function getSecret(): string {
   const secret = process.env.CSRF_SECRET;
-  if (!secret) {
+  if (secret) return secret;
+  if (process.env.NODE_ENV === "production") {
     throw new Error("CSRF_SECRET environment variable is required");
   }
-  return secret;
+  return "terra-dev-csrf-secret";
 }
 
 function toHex(buffer: ArrayBuffer): string {
@@ -36,34 +54,34 @@ function generateRandomToken(): string {
   return toHex(array.buffer);
 }
 
-export async function generateCsrfToken(): Promise<string> {
+export async function issueCsrfToken(): Promise<IssuedCsrfToken> {
   const token = generateRandomToken();
-  const secret = getSecret();
-  const signature = await hmacSign(token, secret);
+  const signature = await hmacSign(token, getSecret());
 
-  const cookieStore = await cookies();
-  cookieStore.set(COOKIE_NAME, signature, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    path: "/",
-    maxAge: MAX_AGE,
-  });
-
-  return token;
+  return {
+    token,
+    cookie: {
+      name: CSRF_COOKIE_NAME,
+      value: signature,
+      options: {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/",
+        maxAge: MAX_AGE,
+      },
+    },
+  };
 }
 
 export async function validateCsrfToken(token: string | null): Promise<boolean> {
   if (!token) return false;
 
   const cookieStore = await cookies();
-  const storedSignature = cookieStore.get(COOKIE_NAME)?.value;
+  const storedSignature = cookieStore.get(CSRF_COOKIE_NAME)?.value;
   if (!storedSignature) return false;
 
-  const secret = getSecret();
-  const expectedSignature = await hmacSign(token, secret);
-
-  if (expectedSignature !== storedSignature) return false;
+  const expectedSignature = await hmacSign(token, getSecret());
 
   // Timing-safe comparison
   if (expectedSignature.length !== storedSignature.length) return false;

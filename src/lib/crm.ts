@@ -7,7 +7,11 @@ import {
   leadConfigurations,
   leadNotes,
   leadActivities,
+  leadPayments,
+  leadMedia,
+  quotes as quotesTable,
   vehicleOffers,
+  vehicleInventory,
   trims,
   configurationOptionGroups,
   configurationOptions,
@@ -134,6 +138,7 @@ export async function getLeadById(id: string) {
     .select({
       id: leads.id,
       status: leads.status,
+      journeyStage: leads.journeyStage,
       source: leads.source,
       trimId: leads.trimId,
       estimatedTotalUsd: leads.estimatedTotalUsd,
@@ -315,6 +320,55 @@ export async function getLeadById(id: string) {
     }
   }
 
+  const [vehicle] = await db
+    .select({
+      id: vehicleInventory.id,
+      trimId: vehicleInventory.trimId,
+      status: vehicleInventory.status,
+      location: vehicleInventory.location,
+      vin: vehicleInventory.vin,
+      expectedDate: vehicleInventory.expectedDate,
+      reservedAt: vehicleInventory.reservedAt,
+      trimName: trims.name,
+      modelName: carModels.name,
+      brandName: brands.name,
+    })
+    .from(vehicleInventory)
+    .innerJoin(trims, eq(vehicleInventory.trimId, trims.id))
+    .innerJoin(modelVersions, eq(trims.modelVersionId, modelVersions.id))
+    .innerJoin(carModels, eq(modelVersions.carModelId, carModels.id))
+    .innerJoin(brands, eq(carModels.brandId, brands.id))
+    .where(eq(vehicleInventory.reservedBy, id))
+    .limit(1);
+
+  const payments = await db
+    .select()
+    .from(leadPayments)
+    .where(eq(leadPayments.leadId, id))
+    .orderBy(asc(leadPayments.sortOrder), asc(leadPayments.createdAt));
+
+  const leadQuotes = await db
+    .select()
+    .from(quotesTable)
+    .where(eq(quotesTable.leadId, id))
+    .orderBy(desc(quotesTable.createdAt));
+
+  const media = await db
+    .select()
+    .from(leadMedia)
+    .where(eq(leadMedia.leadId, id))
+    .orderBy(asc(leadMedia.sortOrder), asc(leadMedia.createdAt));
+
+  const serializeQuote = (q: typeof leadQuotes[number]) => ({
+    id: q.id,
+    status: q.status,
+    configurationJson: q.configurationJson,
+    pdfUrl: q.pdfUrl,
+    validUntil: q.validUntil ? q.validUntil.toISOString() : null,
+    createdAt: q.createdAt.toISOString(),
+    sentAt: q.sentAt ? q.sentAt.toISOString() : null,
+  });
+
   return {
     ...lead,
     configuration: config || null,
@@ -322,6 +376,23 @@ export async function getLeadById(id: string) {
     resolvedOptionsWithPrices,
     notes,
     activities,
+    quotes: leadQuotes.map(serializeQuote),
+    media: media.map((m) => ({
+      ...m,
+      createdAt: m.createdAt.toISOString(),
+    })),
+    payments: payments.map((p) => ({
+      ...p,
+      dueDate: p.dueDate ? p.dueDate.toISOString() : null,
+      paidAt: p.paidAt ? p.paidAt.toISOString() : null,
+    })),
+    vehicle: vehicle
+      ? {
+          ...vehicle,
+          expectedDate: vehicle.expectedDate ? vehicle.expectedDate.toISOString() : null,
+          reservedAt: vehicle.reservedAt ? vehicle.reservedAt.toISOString() : null,
+        }
+      : null,
   };
 }
 
@@ -337,6 +408,30 @@ export async function updateLeadStatus(leadId: string, status: string, userId: s
     type: "status_changed",
     metadataJson: { newStatus: status },
   });
+}
+
+export async function updateLeadJourneyStage(leadId: string, stage: number, userId: string) {
+  const [current] = await db
+    .select({ journeyStage: leads.journeyStage })
+    .from(leads)
+    .where(eq(leads.id, leadId))
+    .limit(1);
+
+  if (!current) return;
+
+  await db
+    .update(leads)
+    .set({ journeyStage: stage, updatedAt: new Date() })
+    .where(eq(leads.id, leadId));
+
+  if (current.journeyStage !== stage) {
+    await db.insert(leadActivities).values({
+      leadId,
+      userId,
+      type: "journey_stage_changed",
+      metadataJson: { stage, previousStage: current.journeyStage },
+    });
+  }
 }
 
 export async function assignLead(leadId: string, managerId: string, adminId: string) {

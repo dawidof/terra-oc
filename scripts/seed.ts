@@ -23,6 +23,9 @@ import {
   customers,
   leads,
   leadConfigurations,
+  leadActivities,
+  leadPayments,
+  leadMedia,
   vehicleInventory,
 } from "../src/db/schema";
 
@@ -1153,40 +1156,19 @@ async function seed() {
   // ─── Content Pages ──────────────────────────────────────────────────────
   await db.insert(contentPages).values([
     {
-      slug: "how-it-works", title: "Как купить автомобиль", contentHtml: `
-        <h2>Процесс покупки автомобиля через TerraAuto</h2>
-        <p>Мы сделали процесс покупки автомобиля из-за рубежа максимально простым и прозрачным.</p>
+      slug: "import-guide", title: "Гид по импорту автомобиля в Узбекистан", contentHtml: `
+        <h2>Как происходит импорт автомобиля</h2>
+        <p>Мы сделаем процесс покупки автомобиля из-за рубежа максимально простым и прозрачным.</p>
         <h3>1. Выбор автомобиля</h3><p>Просмотрите наш каталог или воспользуйтесь подборщиком.</p>
-        <h3>2. Расчёт стоимости</h3><p>Калькулятор покажет полную стоимость автомобиля с доставкой.</p>
+        <h3>2. Расчёт стоимости</h3><p>Калькулятор покажет полную стоимость автомобиля с доставкой, таможней и сертификацией.</p>
         <h3>3. Оформление и доставка</h3><p>После согласования мы организуем покупку, проверку, таможенное оформление и доставку.</p>
         <h3>4. Получение в Ташкенте</h3><p>Получите готовый автомобиль в нашем офисе.</p>`,
-      seoTitle: "Как купить автомобиль из Китая — Пошаговая инструкция",
-      seoDescription: "Подробная инструкция по покупке автомобиля из Китая через TerraAuto.",
-      published: true,
-    },
-    {
-      slug: "about", title: "О компании TerraAuto", contentHtml: `
-        <h2>О компании TerraAuto</h2>
-        <p>Мы помогаем людям в Узбекистане получить доступ к качественным автомобилям из Китая, Кореи, США и Дубая.</p>
-        <h3>Наши преимущества</h3>
-        <ul><li>Проверка автомобиля перед покупкой</li><li>Доставка под ключ</li><li>Прозрачные сроки</li><li>Поддержка 24/7</li></ul>`,
-      seoTitle: "О компании TerraAuto — Автомобили из Китая",
-      seoDescription: "Узнайте больше о компании TerraAuto: наша миссия, преимущества и опыт работы.",
-      published: true,
-    },
-    {
-      slug: "contacts", title: "Контакты", contentHtml: `
-        <h2>Свяжитесь с нами</h2>
-        <h3>Телефон</h3><p>+998 90 123 45 67</p>
-        <h3>Telegram</h3><p>@terraauto</p>
-        <h3>Email</h3><p>info@terraauto.uz</p>
-        <h3>Адрес офиса</h3><p>г. Ташкент, ул. Амира Темура, 108</p>`,
-      seoTitle: "Контакты TerraAuto — Свяжитесь с нами",
-      seoDescription: "Контактная информация TerraAuto: телефон, Telegram, адрес офиса в Ташкенте.",
+      seoTitle: "Гид по импорту автомобиля в Узбекистан — TerraAuto",
+      seoDescription: "Пошаговый гид: как заказать автомобиль из Китая, Кореи, США и Дубая через TerraAuto.",
       published: true,
     },
   ]).onConflictDoNothing({ target: contentPages.slug });
-  console.log("✓ Content pages: 3 entries");
+  console.log("✓ Content pages: 1 entry");
 
   // ─── Site Settings ──────────────────────────────────────────────────────
   await db.insert(siteSettings).values([
@@ -1231,20 +1213,134 @@ async function seed() {
   const [havalH6Trim] = await db.select().from(trims).where(eq(trims.slug, "h6-base")).limit(1);
 
   const demoLeads = await db.insert(leads).values([
-    { customerId: customerIds[0], assignedManagerId: managerId, status: "new", source: "calculator", estimatedTotalUsd: "42500", comment: "Интересуется электромобилем для семьи" },
-    { customerId: customerIds[1], assignedManagerId: managerId, status: "new", source: "website", estimatedTotalUsd: "35000" },
-    { customerId: customerIds[2], assignedManagerId: managerId, status: "assigned", source: "whatsapp", estimatedTotalUsd: "38000", comment: "Хочет crossover с большими колёсами" },
-    { customerId: customerIds[3], assignedManagerId: managerId, status: "assigned", source: "telegram", estimatedTotalUsd: "52000" },
-    { customerId: customerIds[4], assignedManagerId: managerId, status: "contacted", source: "calculator", estimatedTotalUsd: "31000", lastContactAt: new Date() },
-    { customerId: customerIds[5], assignedManagerId: managerId, status: "contacted", source: "website", estimatedTotalUsd: "45000", lastContactAt: new Date() },
+    { customerId: customerIds[0], assignedManagerId: managerId, status: "new", source: "calculator", estimatedTotalUsd: "42500", comment: "Интересуется электромобилем для семьи", utmSource: "google", utmMedium: "cpc", utmCampaign: "ev_search_tashkent", referrer: "https://google.com/search" },
+    { customerId: customerIds[1], assignedManagerId: managerId, status: "new", source: "website", estimatedTotalUsd: "35000", utmSource: "yandex", utmMedium: "cpc", utmCampaign: "brand_keywords", referrer: "https://yandex.ru/search" },
+    { customerId: customerIds[2], assignedManagerId: managerId, status: "assigned", source: "whatsapp", estimatedTotalUsd: "38000", comment: "Хочет crossover с большими колёсами", utmSource: "instagram", utmMedium: "social", utmCampaign: "suv_reels", referrer: "https://instagram.com/" },
+    { customerId: customerIds[3], assignedManagerId: managerId, status: "assigned", source: "telegram", estimatedTotalUsd: "52000", utmSource: "telegram", utmMedium: "social", utmCampaign: "channel_post", referrer: "https://t.me/terraauto" },
+    { customerId: customerIds[4], assignedManagerId: managerId, status: "contacted", source: "calculator", estimatedTotalUsd: "31000", lastContactAt: new Date(), utmSource: "google", utmMedium: "organic", utmCampaign: null, referrer: "https://google.com/" },
+    { customerId: customerIds[5], assignedManagerId: managerId, status: "contacted", source: "website", estimatedTotalUsd: "45000", lastContactAt: new Date(), referrer: "https://yandex.ru/search" },
     { customerId: customerIds[6], assignedManagerId: managerId, status: "qualified", source: "phone", estimatedTotalUsd: "55000", lastContactAt: new Date(), nextFollowUpAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000) },
-    { customerId: customerIds[7], assignedManagerId: managerId, status: "qualified", source: "whatsapp", estimatedTotalUsd: "28000", lastContactAt: new Date() },
-    { customerId: customerIds[8], assignedManagerId: adminUser?.id, status: "quote_sent", source: "calculator", estimatedTotalUsd: "48000", lastContactAt: new Date(), nextFollowUpAt: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000) },
-    { customerId: customerIds[9], assignedManagerId: adminUser?.id, status: "negotiation", source: "website", estimatedTotalUsd: "62000", lastContactAt: new Date() },
-    { customerId: customerIds[0], assignedManagerId: managerId, status: "won", source: "calculator", estimatedTotalUsd: "42500", lastContactAt: new Date() },
-    { customerId: customerIds[3], assignedManagerId: managerId, status: "lost", source: "telegram", estimatedTotalUsd: "52000", comment: "Выбрал другого поставщика" },
+    { customerId: customerIds[7], assignedManagerId: managerId, status: "qualified", source: "whatsapp", estimatedTotalUsd: "28000", lastContactAt: new Date(), utmSource: "instagram", utmMedium: "social", utmCampaign: "stories_promo", referrer: "https://instagram.com/" },
+    { customerId: customerIds[8], assignedManagerId: adminUser?.id, status: "quote_sent", journeyStage: 2, source: "calculator", estimatedTotalUsd: "48000", lastContactAt: new Date(), nextFollowUpAt: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000), utmSource: "google", utmMedium: "cpc", utmCampaign: "ev_search_tashkent", referrer: "https://google.com/search" },
+    { customerId: customerIds[9], assignedManagerId: adminUser?.id, status: "negotiation", journeyStage: 3, source: "website", estimatedTotalUsd: "62000", lastContactAt: new Date(), utmSource: "yandex", utmMedium: "cpc", utmCampaign: "brand_keywords", referrer: "https://yandex.ru/search" },
+    { customerId: customerIds[0], assignedManagerId: managerId, status: "won", journeyStage: 5, source: "calculator", estimatedTotalUsd: "42500", lastContactAt: new Date(), utmSource: "google", utmMedium: "cpc", utmCampaign: "ev_search_tashkent", referrer: "https://google.com/search" },
+    { customerId: customerIds[3], assignedManagerId: managerId, status: "lost", source: "telegram", estimatedTotalUsd: "52000", comment: "Выбрал другого поставщика", utmSource: "telegram", utmMedium: "social", utmCampaign: "channel_post", referrer: "https://t.me/terraauto" },
   ]).returning();
   console.log(`✓ Demo leads: ${demoLeads.length}`);
+
+  // ─── Demo Journey Activities ───────────────────────────────────────────
+  const daysAgo = (n: number) => new Date(Date.now() - n * 24 * 60 * 60 * 1000);
+  const wonDemoLead = demoLeads[10];
+  const negotiationDemoLead = demoLeads[9];
+
+  if (wonDemoLead) {
+    const wonStages = [1, 2, 3, 4, 5];
+    await db.insert(leadActivities).values(
+      wonStages.map((stage, index) => ({
+        leadId: wonDemoLead.id,
+        userId: managerId,
+        type: "journey_stage_changed",
+        metadataJson: { stage, previousStage: Math.max(stage - 1, 1) },
+        createdAt: daysAgo(30 - index * 6),
+      }))
+    );
+  }
+
+  if (negotiationDemoLead) {
+    await db.insert(leadActivities).values([
+      {
+        leadId: negotiationDemoLead.id,
+        userId: adminUser?.id,
+        type: "journey_stage_changed",
+        metadataJson: { stage: 1, previousStage: 1 },
+        createdAt: daysAgo(20),
+      },
+      {
+        leadId: negotiationDemoLead.id,
+        userId: adminUser?.id,
+        type: "journey_stage_changed",
+        metadataJson: { stage: 2, previousStage: 1 },
+        createdAt: daysAgo(14),
+      },
+      {
+        leadId: negotiationDemoLead.id,
+        userId: adminUser?.id,
+        type: "journey_stage_changed",
+        metadataJson: { stage: 3, previousStage: 2 },
+        createdAt: daysAgo(7),
+      },
+    ]);
+  }
+  console.log("✓ Demo journey activities");
+
+  // ─── Demo Payments ─────────────────────────────────────────────────────
+  if (wonDemoLead) {
+    await db.insert(leadPayments).values([
+      {
+        leadId: wonDemoLead.id,
+        label: "Предоплата по договору",
+        amount: "12840",
+        currency: "USD",
+        paidAt: daysAgo(28),
+        sortOrder: 0,
+      },
+      {
+        leadId: wonDemoLead.id,
+        label: "Оплата поставщику",
+        amount: "17000",
+        currency: "USD",
+        paidAt: daysAgo(10),
+        sortOrder: 1,
+      },
+      {
+        leadId: wonDemoLead.id,
+        label: "Финальный платёж",
+        amount: "12660",
+        currency: "USD",
+        dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+        sortOrder: 2,
+      },
+    ]);
+    console.log("✓ Demo payments");
+  }
+
+  // ─── Demo Inspection Media ─────────────────────────────────────────────
+  if (wonDemoLead) {
+    const inspectionDay = daysAgo(18);
+    await db.insert(leadMedia).values([
+      {
+        leadId: wonDemoLead.id,
+        kind: "photo",
+        url: "/images/cars/tesla-modely-side.jpg",
+        caption: "Осмотр кузова",
+        published: true,
+        mimeType: "image/jpeg",
+        sortOrder: 0,
+        createdAt: inspectionDay,
+      },
+      {
+        leadId: wonDemoLead.id,
+        kind: "photo",
+        url: "/images/cars/tesla-modely-interior.jpg",
+        caption: "Проверка салона",
+        published: true,
+        mimeType: "image/jpeg",
+        sortOrder: 1,
+        createdAt: inspectionDay,
+      },
+      {
+        leadId: wonDemoLead.id,
+        kind: "photo",
+        url: "/images/cars/tesla-modely-front.jpg",
+        caption: "Проверка передней части",
+        published: false,
+        mimeType: "image/jpeg",
+        sortOrder: 2,
+        createdAt: inspectionDay,
+      },
+    ]);
+    console.log("✓ Demo inspection media");
+  }
 
   // ─── Lead Configurations ──────────────────────────────────────────────
   const trimAssignments = [

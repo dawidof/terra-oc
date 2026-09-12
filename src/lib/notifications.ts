@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { leadActivities, users } from "@/db/schema";
+import { leadActivities, leads, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import nodemailer from "nodemailer";
 
@@ -84,5 +84,82 @@ export async function notifyNewLead(lead: LeadNotification): Promise<void> {
       console.error("Email notification failed:", error);
       // Don't throw - notification failure shouldn't block lead creation
     }
+  }
+}
+
+interface ClientMessageNotification {
+  leadId: string;
+  customerName: string;
+  message: string;
+}
+
+export async function notifyClientMessage(
+  notification: ClientMessageNotification
+): Promise<void> {
+  // Log notification to database
+  await db.insert(leadActivities).values({
+    leadId: notification.leadId,
+    type: "notification_sent",
+    metadataJson: {
+      channel: "system",
+      message: `Новое сообщение от клиента ${notification.customerName}`,
+    },
+  });
+
+  // Send email if SMTP is configured
+  const smtpHost = process.env.SMTP_HOST;
+  if (!smtpHost) return;
+
+  try {
+    // Assigned manager first, fallback to admins
+    let recipients: string[] = [];
+    const [lead] = await db
+      .select({ assignedManagerId: leads.assignedManagerId })
+      .from(leads)
+      .where(eq(leads.id, notification.leadId))
+      .limit(1);
+
+    if (lead?.assignedManagerId) {
+      const [manager] = await db
+        .select({ email: users.email })
+        .from(users)
+        .where(eq(users.id, lead.assignedManagerId))
+        .limit(1);
+      if (manager?.email) recipients = [manager.email];
+    }
+
+    if (recipients.length === 0) {
+      recipients = await getAdminEmails();
+    }
+
+    if (recipients.length === 0) return;
+
+    const lines = [
+      `Новое сообщение от клиента в TerraAuto`,
+      ``,
+      `Клиент: ${notification.customerName}`,
+      `Сообщение: ${notification.message}`,
+      ``,
+      `Откройте CRM: ${process.env.NEXT_PUBLIC_SITE_URL || "https://terraauto.uz"}/crm/leads/${notification.leadId}`,
+    ];
+
+    const transporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: Number(process.env.SMTP_PORT || 587),
+      secure: process.env.SMTP_SECURE === "true",
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    });
+
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM || "TerraAuto <noreply@terraauto.uz>",
+      to: recipients.join(", "),
+      subject: `Сообщение от клиента: ${notification.customerName} — TerraAuto`,
+      text: lines.join("\n"),
+    });
+  } catch (error) {
+    console.error("Client message notification failed:", error);
   }
 }

@@ -1,24 +1,88 @@
 import { db } from "@/db";
-import { leads, customers, leadConfigurations, users } from "@/db/schema";
-import { eq, and, lte, isNull, sql } from "drizzle-orm";
+import { leads, customers, users, siteSettings, leadStatusEnum } from "@/db/schema";
+import { eq, and, lte, isNull } from "drizzle-orm";
 import nodemailer from "nodemailer";
 
-interface FollowUpRule {
+export interface FollowUpRule {
   status: string;
   delayHours: number;
   enabled: boolean;
 }
 
-const DEFAULT_RULES: FollowUpRule[] = [
+export const FOLLOW_UP_RULES_KEY = "follow_up_rules";
+
+export const FOLLOW_UP_RULE_STATUSES = [
+  "new",
+  "contacted",
+  "quote_sent",
+  "needs_follow_up",
+] as const;
+
+export const DEFAULT_RULES: FollowUpRule[] = [
   { status: "new", delayHours: 24, enabled: true },
   { status: "contacted", delayHours: 72, enabled: true },
   { status: "quote_sent", delayHours: 72, enabled: true },
   { status: "needs_follow_up", delayHours: 48, enabled: true },
 ];
 
+function normalizeRules(raw: unknown): FollowUpRule[] | null {
+  if (!Array.isArray(raw)) return null;
+
+  const rules: FollowUpRule[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") return null;
+    const { status, delayHours, enabled } = item as Record<string, unknown>;
+    if (
+      typeof status !== "string" ||
+      !FOLLOW_UP_RULE_STATUSES.includes(status as (typeof FOLLOW_UP_RULE_STATUSES)[number])
+    ) {
+      return null;
+    }
+    if (typeof delayHours !== "number" || !Number.isFinite(delayHours) || delayHours < 1 || delayHours > 720) {
+      return null;
+    }
+    rules.push({ status, delayHours, enabled: Boolean(enabled) });
+  }
+
+  const statuses = new Set(rules.map((r) => r.status));
+  if (rules.length !== FOLLOW_UP_RULE_STATUSES.length || statuses.size !== rules.length) {
+    return null;
+  }
+
+  return rules;
+}
+
 export async function getFollowUpRules(): Promise<FollowUpRule[]> {
-  // In production, these would be stored in site_settings
+  try {
+    const [row] = await db
+      .select({ valueJson: siteSettings.valueJson })
+      .from(siteSettings)
+      .where(eq(siteSettings.key, FOLLOW_UP_RULES_KEY))
+      .limit(1);
+
+    const normalized = normalizeRules(row?.valueJson);
+    if (normalized) return normalized;
+  } catch (error) {
+    console.error("Failed to load follow-up rules from site_settings:", error);
+  }
   return DEFAULT_RULES;
+}
+
+export async function saveFollowUpRules(rules: unknown): Promise<FollowUpRule[]> {
+  const normalized = normalizeRules(rules);
+  if (!normalized) {
+    throw new Error("Invalid follow-up rules");
+  }
+
+  await db
+    .insert(siteSettings)
+    .values({ key: FOLLOW_UP_RULES_KEY, valueJson: normalized })
+    .onConflictDoUpdate({
+      target: siteSettings.key,
+      set: { valueJson: normalized },
+    });
+
+  return normalized;
 }
 
 export async function checkFollowUps(): Promise<{
@@ -45,7 +109,7 @@ export async function checkFollowUps(): Promise<{
       .innerJoin(customers, eq(leads.customerId, customers.id))
       .where(
         and(
-          eq(leads.status, rule.status as any),
+          eq(leads.status, rule.status as (typeof leadStatusEnum.enumValues)[number]),
           lte(leads.createdAt, cutoffTime),
           // Either no follow-up set or follow-up is past due
           isNull(leads.nextFollowUpAt)
@@ -58,8 +122,8 @@ export async function checkFollowUps(): Promise<{
     // Send notifications for overdue leads
     for (const lead of overdueLeads) {
       try {
-        await sendFollowUpNotification(lead);
-        notified++;
+        const sent = await sendFollowUpNotification(lead);
+        if (sent) notified++;
       } catch (error) {
         console.error(`Failed to send follow-up for lead ${lead.id}:`, error);
       }
@@ -73,9 +137,9 @@ async function sendFollowUpNotification(lead: {
   id: string;
   customerName: string;
   customerEmail: string | null;
-}) {
+}): Promise<boolean> {
   const smtpHost = process.env.SMTP_HOST;
-  if (!smtpHost) return;
+  if (!smtpHost) return false;
 
   // Get admin emails
   const admins = await db
@@ -83,7 +147,7 @@ async function sendFollowUpNotification(lead: {
     .from(users)
     .where(eq(users.role, "admin"));
 
-  if (admins.length === 0) return;
+  if (admins.length === 0) return false;
 
   const transporter = nodemailer.createTransport({
     host: smtpHost,
@@ -114,6 +178,8 @@ Email клиента: ${lead.customerEmail || "не указан"}
       `.trim(),
     });
   }
+
+  return true;
 }
 
 export async function getOverdueFollowUps(): Promise<

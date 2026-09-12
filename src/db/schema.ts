@@ -424,6 +424,7 @@ export const leads = pgTable("leads", {
     .references(() => customers.id),
   assignedManagerId: uuid("assigned_manager_id").references(() => users.id),
   status: leadStatusEnum("status").notNull().default("new"),
+  journeyStage: integer("journey_stage").notNull().default(1),
   source: varchar("source", { length: 100 }),
   trimId: uuid("trim_id").references(() => trims.id),
   estimatedTotalUsd: numeric("estimated_total_usd", { precision: 12, scale: 2 }),
@@ -442,6 +443,44 @@ export const leads = pgTable("leads", {
     .$onUpdate(() => new Date()),
   lastContactAt: timestamp("last_contact_at", { withTimezone: true }),
   nextFollowUpAt: timestamp("next_follow_up_at", { withTimezone: true }),
+});
+
+// ─── Lead Payments ──────────────────────────────────────────────────────────
+
+export const leadPayments = pgTable("lead_payments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  leadId: uuid("lead_id")
+    .notNull()
+    .references(() => leads.id),
+  label: varchar("label", { length: 255 }).notNull(),
+  amount: numeric("amount", { precision: 12, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 3 }).notNull().default("USD"),
+  dueDate: timestamp("due_date", { withTimezone: true }),
+  paidAt: timestamp("paid_at", { withTimezone: true }),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// ─── Lead Media (inspection photos & videos) ───────────────────────────────
+
+export const leadMedia = pgTable("lead_media", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  leadId: uuid("lead_id")
+    .notNull()
+    .references(() => leads.id),
+  kind: varchar("kind", { length: 10 }).notNull().default("photo"),
+  url: text("url").notNull(),
+  storageKey: text("storage_key"),
+  caption: text("caption"),
+  published: boolean("published").notNull().default(false),
+  sortOrder: integer("sort_order").notNull().default(0),
+  mimeType: varchar("mime_type", { length: 100 }),
+  fileSize: integer("file_size"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
 // ─── Lead Configurations ────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-import { validateCsrfToken } from "@/lib/csrf-actions";
+import { validateCsrfToken } from "@/lib/csrf";
 
 const CSRF_HEADER = "x-csrf-token";
 

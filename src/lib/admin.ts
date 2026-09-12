@@ -8,6 +8,7 @@ import {
   reviews,
   siteSettings,
   auditLogs,
+  contentPages,
 } from "@/db/schema";
 
 const TRIM_UPDATABLE_FIELDS = new Set([
@@ -153,6 +154,64 @@ export async function updateSiteSetting(key: string, value: any, userId: string)
     await db.insert(siteSettings).values({ key, valueJson: value });
     await logAudit(userId, "site_settings", key, "create", null, { value });
   }
+
+  return { success: true };
+}
+
+type ContentPageInsert = typeof contentPages.$inferInsert;
+type ContentPageChanges = Partial<ContentPageInsert>;
+
+export async function createContentPage(
+  data: ContentPageInsert,
+  userId: string
+) {
+  const [page] = await db.insert(contentPages).values(data).returning();
+  await logAudit(userId, "content_page", page.id, "create", null, page);
+
+  return page;
+}
+
+export async function updateContentPage(
+  pageId: string,
+  data: ContentPageChanges,
+  userId: string
+) {
+  const [before] = await db.select().from(contentPages).where(eq(contentPages.id, pageId)).limit(1);
+  if (!before) throw new Error("Content page not found");
+
+  const changes: Record<string, unknown> = {};
+  for (const key of Object.keys(data)) {
+    if (before[key as keyof typeof before] !== (data as Record<string, unknown>)[key]) {
+      changes[key] = (data as Record<string, unknown>)[key];
+    }
+  }
+
+  if (Object.keys(changes).length === 0) return before;
+
+  const [page] = await db
+    .update(contentPages)
+    .set(changes as ContentPageChanges)
+    .where(eq(contentPages.id, pageId))
+    .returning();
+
+  await logAudit(
+    userId,
+    "content_page",
+    pageId,
+    "update",
+    Object.fromEntries(Object.keys(changes).map((k) => [k, before[k as keyof typeof before]])),
+    changes
+  );
+
+  return page;
+}
+
+export async function deleteContentPage(pageId: string, userId: string) {
+  const [before] = await db.select().from(contentPages).where(eq(contentPages.id, pageId)).limit(1);
+  if (!before) throw new Error("Content page not found");
+
+  await db.delete(contentPages).where(eq(contentPages.id, pageId));
+  await logAudit(userId, "content_page", pageId, "delete", before, null);
 
   return { success: true };
 }
