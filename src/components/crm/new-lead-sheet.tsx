@@ -33,7 +33,7 @@ export function NewLeadSheet() {
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [source, setSource] = useState("website");
+  const [source, setSource] = useState("manager");
   const [comment, setComment] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
@@ -67,7 +67,7 @@ export function NewLeadSheet() {
       setOpen(false);
       setName("");
       setPhone("");
-      setSource("website");
+      setSource("manager");
       setComment("");
       router.refresh();
     } catch {

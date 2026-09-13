@@ -120,7 +120,7 @@ export async function createLead(input: LeadInput) {
       customerId,
       trimId: input.trimId,
       status: "new",
-      source: input.source || "website",
+      source: input.source || "manager",
       estimatedTotalUsd: input.estimatedTotal ? String(input.estimatedTotal) : null,
       currency: input.currency || "USD",
       comment: input.comment,
@@ -164,7 +164,7 @@ export async function createLead(input: LeadInput) {
     customerName: input.name,
     customerPhone: input.phone,
     vehicle: input.trimId ? `${input.brandName} ${input.modelName} ${input.trimName}` : undefined,
-    source: input.source || "website",
+    source: input.source || "manager",
     estimatedTotal: input.estimatedTotal ? String(input.estimatedTotal) : undefined,
   }).catch((err) => console.error("Lead notification error:", err));
 

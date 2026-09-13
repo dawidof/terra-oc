@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { DollarSign, Plus, RefreshCw, Save, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -195,8 +196,14 @@ export function LeadCostEditor({
             certificationFees: b.certificationFees,
             serviceFee: b.serviceFee,
           }));
+          toast.success("Расчёт обновлён");
         }
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || "Расчёт недоступен для этой комбинации");
       }
+    } catch {
+      toast.error("Ошибка сети");
     } finally {
       setRecalculating(false);
     }
@@ -299,10 +306,9 @@ export function LeadCostEditor({
       </div>
 
       {/* Additional costs */}
-      {additionalCosts.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <Label className="text-xs font-medium text-muted-foreground uppercase">Дополнительные расходы</Label>
-          {additionalCosts.map((cost, i) => (
+      <div className="flex flex-col gap-2">
+        <Label className="text-xs font-medium text-muted-foreground uppercase">Дополнительные расходы</Label>
+        {additionalCosts.map((cost, i) => (
             <div key={i} className="flex items-center gap-2">
               <Input value={cost.label} onChange={(e) => updateAdditionalCost(i, "label", e.target.value)} className="flex-1" placeholder="Название" />
               <Input type="number" value={cost.amount || ""} onChange={(e) => updateAdditionalCost(i, "amount", e.target.value)} className="w-32" placeholder="0" />
@@ -311,8 +317,10 @@ export function LeadCostEditor({
               </Button>
             </div>
           ))}
-        </div>
-      )}
+        {additionalCosts.length === 0 && (
+          <p className="text-xs text-muted-foreground">Добавьте расходы вручную — перевозка, страховка, хранение и т.д.</p>
+        )}
+      </div>
 
       {/* Add new cost */}
       <div className="flex items-end gap-2">

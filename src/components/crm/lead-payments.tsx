@@ -6,9 +6,10 @@ import { toast } from "sonner";
 import { Check, Loader2, Plus, Trash2, Wallet, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { formatUsd } from "@/lib/format";
+import { formatUsd, formatDate } from "@/lib/format";
 
 interface Payment {
   id: string;
@@ -166,9 +167,9 @@ export function LeadPayments({ leadId, initialPayments }: LeadPaymentsProps) {
               </p>
               <p className="text-xs text-muted-foreground">
                 {payment.paidAt
-                  ? `Оплачено ${new Date(payment.paidAt).toLocaleDateString("ru-RU")}`
+                  ? `Оплачено ${formatDate(payment.paidAt)}`
                   : payment.dueDate
-                    ? `Срок: ${new Date(payment.dueDate).toLocaleDateString("ru-RU")}`
+                    ? `Срок: ${formatDate(payment.dueDate)}`
                     : "Срок не указан"}
               </p>
             </div>
@@ -215,10 +216,10 @@ export function LeadPayments({ leadId, initialPayments }: LeadPaymentsProps) {
         </div>
         <div className="flex gap-2">
           <div className="flex-1">
-            <Input
-              type="date"
+            <DatePicker
               value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
+              onChange={setDueDate}
+              placeholder="Срок оплаты"
             />
           </div>
           <Button type="submit" disabled={adding || !label.trim() || !amount}>

@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 const sourceStyles: Record<string, { label: string; className: string }> = {
-  website: { label: "Сайт", className: "bg-muted text-muted-foreground" },
+  manager: { label: "Менеджер", className: "bg-muted text-muted-foreground" },
   configurator: {
     label: "Конфигуратор",
     className: "bg-violet-50 text-violet-700 ring-1 ring-violet-600/20",

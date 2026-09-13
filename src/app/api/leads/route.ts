@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       sourcePrice: data.sourcePrice,
       estimatedTotal: data.estimatedTotal,
       currency: data.currency,
-      source: data.source || "website",
+      source: data.source || "manager",
       utmSource: data.utmSource,
       utmMedium: data.utmMedium,
       utmCampaign: data.utmCampaign,
